@@ -27,8 +27,10 @@ struct SwiftDataTransactionRepository: TransactionRepositoryProtocol {
     func fetch(for category: Category, in month: Date) throws -> [Transaction] {
         let categoryID = category.id
         let calendar = Calendar.current
-        let start = calendar.date(from: calendar.dateComponents([.year, .month], from: month))!
-        let end = calendar.date(byAdding: .month, value: 1, to: start)!
+        guard let start = calendar.date(from: calendar.dateComponents([.year, .month], from: month)),
+              let end = calendar.date(byAdding: .month, value: 1, to: start) else {
+            return []
+        }
         // Fetch all transactions in the date range first, then filter by category in memory
         // to avoid SwiftData #Predicate limitations with optional chaining ($0.category?.id)
         let descriptor = FetchDescriptor<Transaction>(
@@ -40,10 +42,9 @@ struct SwiftDataTransactionRepository: TransactionRepositoryProtocol {
     }
 
     func existsWithHash(_ hash: String) throws -> Bool {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.importHash == hash }
-        )
-        return try !context.fetch(descriptor).isEmpty
+        let descriptor = FetchDescriptor<Transaction>()
+        let all = try context.fetch(descriptor)
+        return all.contains { $0.importHash == hash }
     }
 
     func save(_ transaction: Transaction) throws {
