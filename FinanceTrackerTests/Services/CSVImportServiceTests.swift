@@ -1,7 +1,7 @@
 import Testing
 import CryptoKit
 import Foundation
-@testable import Demo
+@testable import FinanceTracker
 
 @Suite("CSVImportService")
 struct CSVImportServiceTests {

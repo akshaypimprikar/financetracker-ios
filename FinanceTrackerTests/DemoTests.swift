@@ -1,14 +1,14 @@
 //
-//  DemoTests.swift
-//  DemoTests
+//  FinanceTrackerTests.swift
+//  FinanceTrackerTests
 //
 //  Created by Akshay Pimprikar on 5/5/26.
 //
 
 import Testing
-@testable import Demo
+@testable import FinanceTracker
 
-struct DemoTests {
+struct FinanceTrackerTests {
 
     @Test func example() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.

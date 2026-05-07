@@ -1,6 +1,6 @@
 //
-//  DemoApp.swift
-//  Demo
+//  FinanceTrackerApp.swift
+//  FinanceTracker
 //
 //  Created by Akshay Pimprikar on 5/5/26.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct DemoApp: App {
+struct FinanceTrackerApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Account.self,

@@ -1,13 +1,13 @@
 //
-//  DemoUITestsLaunchTests.swift
-//  DemoUITests
+//  FinanceTrackerUITestsLaunchTests.swift
+//  FinanceTrackerUITests
 //
 //  Created by Akshay Pimprikar on 5/5/26.
 //
 
 import XCTest
 
-final class DemoUITestsLaunchTests: XCTestCase {
+final class FinanceTrackerUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

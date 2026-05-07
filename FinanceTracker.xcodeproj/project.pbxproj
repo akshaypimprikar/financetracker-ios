@@ -12,37 +12,37 @@
 			containerPortal = 70D83DBC2FAA7D680094FEF5 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 70D83DC32FAA7D680094FEF5;
-			remoteInfo = Demo;
+			remoteInfo = FinanceTracker;
 		};
 		70D83DDE2FAA7D6A0094FEF5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 70D83DBC2FAA7D680094FEF5 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 70D83DC32FAA7D680094FEF5;
-			remoteInfo = Demo;
+			remoteInfo = FinanceTracker;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		70D83DC42FAA7D680094FEF5 /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		70D83DD32FAA7D6A0094FEF5 /* DemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		70D83DDD2FAA7D6A0094FEF5 /* DemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		70D83DC42FAA7D680094FEF5 /* FinanceTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinanceTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		70D83DD32FAA7D6A0094FEF5 /* FinanceTrackerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinanceTrackerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		70D83DDD2FAA7D6A0094FEF5 /* FinanceTrackerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinanceTrackerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		70D83DC62FAA7D680094FEF5 /* Demo */ = {
+		70D83DC62FAA7D680094FEF5 /* FinanceTracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Demo;
+			path = FinanceTracker;
 			sourceTree = "<group>";
 		};
-		70D83DD62FAA7D6A0094FEF5 /* DemoTests */ = {
+		70D83DD62FAA7D6A0094FEF5 /* FinanceTrackerTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = DemoTests;
+			path = FinanceTrackerTests;
 			sourceTree = "<group>";
 		};
-		70D83DE02FAA7D6A0094FEF5 /* DemoUITests */ = {
+		70D83DE02FAA7D6A0094FEF5 /* FinanceTrackerUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = DemoUITests;
+			path = FinanceTrackerUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -75,9 +75,9 @@
 		70D83DBB2FAA7D680094FEF5 = {
 			isa = PBXGroup;
 			children = (
-				70D83DC62FAA7D680094FEF5 /* Demo */,
-				70D83DD62FAA7D6A0094FEF5 /* DemoTests */,
-				70D83DE02FAA7D6A0094FEF5 /* DemoUITests */,
+				70D83DC62FAA7D680094FEF5 /* FinanceTracker */,
+				70D83DD62FAA7D6A0094FEF5 /* FinanceTrackerTests */,
+				70D83DE02FAA7D6A0094FEF5 /* FinanceTrackerUITests */,
 				70D83DC52FAA7D680094FEF5 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -85,9 +85,9 @@
 		70D83DC52FAA7D680094FEF5 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				70D83DC42FAA7D680094FEF5 /* Demo.app */,
-				70D83DD32FAA7D6A0094FEF5 /* DemoTests.xctest */,
-				70D83DDD2FAA7D6A0094FEF5 /* DemoUITests.xctest */,
+				70D83DC42FAA7D680094FEF5 /* FinanceTracker.app */,
+				70D83DD32FAA7D6A0094FEF5 /* FinanceTrackerTests.xctest */,
+				70D83DDD2FAA7D6A0094FEF5 /* FinanceTrackerUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,9 +95,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		70D83DC32FAA7D680094FEF5 /* Demo */ = {
+		70D83DC32FAA7D680094FEF5 /* FinanceTracker */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 70D83DE72FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "Demo" */;
+			buildConfigurationList = 70D83DE72FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTracker" */;
 			buildPhases = (
 				70D83DC02FAA7D680094FEF5 /* Sources */,
 				70D83DC12FAA7D680094FEF5 /* Frameworks */,
@@ -108,18 +108,18 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				70D83DC62FAA7D680094FEF5 /* Demo */,
+				70D83DC62FAA7D680094FEF5 /* FinanceTracker */,
 			);
-			name = Demo;
+			name = FinanceTracker;
 			packageProductDependencies = (
 			);
-			productName = Demo;
-			productReference = 70D83DC42FAA7D680094FEF5 /* Demo.app */;
+			productName = FinanceTracker;
+			productReference = 70D83DC42FAA7D680094FEF5 /* FinanceTracker.app */;
 			productType = "com.apple.product-type.application";
 		};
-		70D83DD22FAA7D6A0094FEF5 /* DemoTests */ = {
+		70D83DD22FAA7D6A0094FEF5 /* FinanceTrackerTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 70D83DEA2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "DemoTests" */;
+			buildConfigurationList = 70D83DEA2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTrackerTests" */;
 			buildPhases = (
 				70D83DCF2FAA7D6A0094FEF5 /* Sources */,
 				70D83DD02FAA7D6A0094FEF5 /* Frameworks */,
@@ -131,18 +131,18 @@
 				70D83DD52FAA7D6A0094FEF5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				70D83DD62FAA7D6A0094FEF5 /* DemoTests */,
+				70D83DD62FAA7D6A0094FEF5 /* FinanceTrackerTests */,
 			);
-			name = DemoTests;
+			name = FinanceTrackerTests;
 			packageProductDependencies = (
 			);
-			productName = DemoTests;
-			productReference = 70D83DD32FAA7D6A0094FEF5 /* DemoTests.xctest */;
+			productName = FinanceTrackerTests;
+			productReference = 70D83DD32FAA7D6A0094FEF5 /* FinanceTrackerTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		70D83DDC2FAA7D6A0094FEF5 /* DemoUITests */ = {
+		70D83DDC2FAA7D6A0094FEF5 /* FinanceTrackerUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 70D83DED2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "DemoUITests" */;
+			buildConfigurationList = 70D83DED2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTrackerUITests" */;
 			buildPhases = (
 				70D83DD92FAA7D6A0094FEF5 /* Sources */,
 				70D83DDA2FAA7D6A0094FEF5 /* Frameworks */,
@@ -154,13 +154,13 @@
 				70D83DDF2FAA7D6A0094FEF5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				70D83DE02FAA7D6A0094FEF5 /* DemoUITests */,
+				70D83DE02FAA7D6A0094FEF5 /* FinanceTrackerUITests */,
 			);
-			name = DemoUITests;
+			name = FinanceTrackerUITests;
 			packageProductDependencies = (
 			);
-			productName = DemoUITests;
-			productReference = 70D83DDD2FAA7D6A0094FEF5 /* DemoUITests.xctest */;
+			productName = FinanceTrackerUITests;
+			productReference = 70D83DDD2FAA7D6A0094FEF5 /* FinanceTrackerUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -186,7 +186,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 70D83DBF2FAA7D680094FEF5 /* Build configuration list for PBXProject "Demo" */;
+			buildConfigurationList = 70D83DBF2FAA7D680094FEF5 /* Build configuration list for PBXProject "FinanceTracker" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -200,9 +200,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				70D83DC32FAA7D680094FEF5 /* Demo */,
-				70D83DD22FAA7D6A0094FEF5 /* DemoTests */,
-				70D83DDC2FAA7D6A0094FEF5 /* DemoUITests */,
+				70D83DC32FAA7D680094FEF5 /* FinanceTracker */,
+				70D83DD22FAA7D6A0094FEF5 /* FinanceTrackerTests */,
+				70D83DDC2FAA7D6A0094FEF5 /* FinanceTrackerUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -258,12 +258,12 @@
 /* Begin PBXTargetDependency section */
 		70D83DD52FAA7D6A0094FEF5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 70D83DC32FAA7D680094FEF5 /* Demo */;
+			target = 70D83DC32FAA7D680094FEF5 /* FinanceTracker */;
 			targetProxy = 70D83DD42FAA7D6A0094FEF5 /* PBXContainerItemProxy */;
 		};
 		70D83DDF2FAA7D6A0094FEF5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 70D83DC32FAA7D680094FEF5 /* Demo */;
+			target = 70D83DC32FAA7D680094FEF5 /* FinanceTracker */;
 			targetProxy = 70D83DDE2FAA7D6A0094FEF5 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -410,7 +410,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.Demo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -442,7 +442,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.Demo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -464,7 +464,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.DemoTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTrackerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -472,7 +472,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Demo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Demo";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FinanceTracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FinanceTracker";
 			};
 			name = Debug;
 		};
@@ -486,7 +486,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.DemoTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTrackerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -494,7 +494,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Demo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Demo";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FinanceTracker.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FinanceTracker";
 			};
 			name = Release;
 		};
@@ -506,7 +506,7 @@
 				DEVELOPMENT_TEAM = FUJ85H7AFN;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.DemoUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTrackerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -514,7 +514,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Demo;
+				TEST_TARGET_NAME = FinanceTracker;
 			};
 			name = Debug;
 		};
@@ -526,7 +526,7 @@
 				DEVELOPMENT_TEAM = FUJ85H7AFN;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.DemoUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pimprikar.FinanceTrackerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -534,14 +534,14 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = Demo;
+				TEST_TARGET_NAME = FinanceTracker;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		70D83DBF2FAA7D680094FEF5 /* Build configuration list for PBXProject "Demo" */ = {
+		70D83DBF2FAA7D680094FEF5 /* Build configuration list for PBXProject "FinanceTracker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70D83DE52FAA7D6A0094FEF5 /* Debug */,
@@ -550,7 +550,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		70D83DE72FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "Demo" */ = {
+		70D83DE72FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTracker" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70D83DE82FAA7D6A0094FEF5 /* Debug */,
@@ -559,7 +559,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		70D83DEA2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "DemoTests" */ = {
+		70D83DEA2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTrackerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70D83DEB2FAA7D6A0094FEF5 /* Debug */,
@@ -568,7 +568,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		70D83DED2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "DemoUITests" */ = {
+		70D83DED2FAA7D6A0094FEF5 /* Build configuration list for PBXNativeTarget "FinanceTrackerUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				70D83DEE2FAA7D6A0094FEF5 /* Debug */,

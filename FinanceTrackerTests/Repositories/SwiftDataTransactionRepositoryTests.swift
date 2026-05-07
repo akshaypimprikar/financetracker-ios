@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 import SwiftData
-@testable import Demo
+@testable import FinanceTracker
 
 @Suite("SwiftDataTransactionRepository")
 struct SwiftDataTransactionRepositoryTests {
