@@ -20,7 +20,7 @@ struct AccountListView: View {
                     Text(viewModel.netWorth(),
                          format: .currency(code: "USD"))
                     .bold()
-                    .foregroundStyle(viewModel.netWorth() >= 0 ? .primary : .red)
+                    .foregroundStyle(viewModel.netWorth() >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                 }
             }
 
@@ -91,7 +91,7 @@ struct AccountRow: View {
             Spacer()
             Text(balance, format: .currency(code: account.currency))
                 .bold()
-                .foregroundStyle(balance >= 0 ? .primary : .red)
+                .foregroundStyle(balance >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
         }
     }
 }

@@ -41,7 +41,7 @@ struct DashboardView: View {
                 .foregroundStyle(.secondary)
             Text(viewModel.netWorth, format: .currency(code: "USD"))
                 .font(.system(size: 36, weight: .bold))
-                .foregroundStyle(viewModel.netWorth >= 0 ? .primary : .red)
+                .foregroundStyle(viewModel.netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
         }
         .frame(maxWidth: .infinity)
         .padding()
