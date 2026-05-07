@@ -37,8 +37,7 @@ final class AccountViewModel {
     }
 
     func netWorth() -> Decimal {
-        let active = accounts.filter { !$0.isArchived }
-        let pairs = active.map { ($0, (try? transactionRepo.fetch(for: $0)) ?? []) }
+        let pairs = accounts.map { ($0, (try? transactionRepo.fetch(for: $0)) ?? []) }
         return netWorthService.netWorth(accounts: pairs, balanceService: balanceService)
     }
 
