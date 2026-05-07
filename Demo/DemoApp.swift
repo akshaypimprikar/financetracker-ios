@@ -11,11 +11,16 @@ import SwiftData
 @main
 struct DemoApp: App {
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+        let schema = Schema([
+            Account.self,
+            Transaction.self,
+            Category.self,
+            Budget.self,
+            ImportRecord.self,
+        ])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: schema, configurations: [config])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
