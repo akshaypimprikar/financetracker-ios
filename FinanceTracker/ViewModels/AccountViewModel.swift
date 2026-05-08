@@ -4,7 +4,6 @@ import Observation
 @Observable
 final class AccountViewModel {
     private(set) var accounts: [Account] = []
-    var errorMessage: String?
 
     private let accountRepo: any AccountRepositoryProtocol
     private let transactionRepo: any TransactionRepositoryProtocol
