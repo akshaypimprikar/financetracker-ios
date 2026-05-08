@@ -8,7 +8,7 @@
 
 **Tech Stack:** Swift 6, SwiftUI, SwiftData, `@Observable` (Observation framework), Apple Testing (`@Suite` / `@Test` / `#expect`), Swift Charts (Plan 2b).
 
-**All commands run from:** `/Users/akshaypimprikar/Desktop/Demo/Demo/` (the directory containing `FinanceTracker.xcodeproj`)
+**All commands run from:** `/Users/akshaypimprikar/Desktop/FinanceTracker/FinanceTracker/` (the directory containing `FinanceTracker.xcodeproj`)
 
 > **Simulator:** Always `iPhone 17` — iOS 26.4 only ships with iPhone 17.
 

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills -type f -name \"*.md\" | head -20)",
+      "Read(//Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/**)",
+      "Bash(awk '{print $NF}')",
+      "Bash(gh auth *)",
+      "Read(//Users/akshaypimprikar/.claude/plugins/**)",
+      "Read(//Users/akshaypimprikar/.claude/**)",
+      "Bash(brew list *)",
+      "Read(//usr/local/bin/**)",
+      "Bash(brew install *)",
+      "Bash(gh --version)",
+      "Bash(sed -i '' 's|//  DemoApp\\\\.swift|//  FinanceTrackerApp.swift|g; s|//  Demo$|//  FinanceTracker|g' FinanceTracker/FinanceTrackerApp.swift)",
+      "Bash(sed -i '' 's|//  DemoUITestsLaunchTests\\\\.swift|//  FinanceTrackerUITestsLaunchTests.swift|g; s|//  DemoUITests$|//  FinanceTrackerUITests|g; s|final class DemoUITestsLaunchTests|final class FinanceTrackerUITestsLaunchTests|g' FinanceTrackerUITests/DemoUITestsLaunchTests.swift)",
+      "Bash(sed -i '' 's|//  DemoUITests\\\\.swift|//  FinanceTrackerUITests.swift|g; s|//  DemoUITests$|//  FinanceTrackerUITests|g; s|final class DemoUITests|final class FinanceTrackerUITests|g' FinanceTrackerUITests/DemoUITests.swift)",
+      "Bash(sed -i '' 's|//  DemoTests\\\\.swift|//  FinanceTrackerTests.swift|g; s|//  DemoTests$|//  FinanceTrackerTests|g' FinanceTrackerTests/DemoTests.swift)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(mkdir -p ~/.claude/skills/ios-build-verify)",
+      "Bash(mkdir -p ~/.claude/skills/ios-swiftdata-test-fixture)"
+    ],
+    "additionalDirectories": [
+      "/Users/akshaypimprikar/Desktop/ios-agent-workflow"
+    ]
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
+}
