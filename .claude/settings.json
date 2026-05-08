@@ -18,10 +18,44 @@
       "Bash(git remote *)",
       "Bash(git push *)",
       "Bash(mkdir -p ~/.claude/skills/ios-build-verify)",
-      "Bash(mkdir -p ~/.claude/skills/ios-swiftdata-test-fixture)"
+      "Bash(mkdir -p ~/.claude/skills/ios-swiftdata-test-fixture)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow log --oneline -10)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow remote -v)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow status --short)",
+      "Skill(schedule)",
+      "Skill(schedule:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(claude --version)",
+      "Bash(bash -c 'cmd=$\\(jq -r \".tool_input.command\"\\); echo \"hook would fire for: $cmd\"')",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add .claude/settings.json)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker commit -m ' *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "claude --dangerously-skip-permissions -p 'Compare the ios-agent-workflow commands at /Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/ against the current FinanceTracker project at /Users/akshaypimprikar/Desktop/FinanceTracker. Check if: (1) any CLAUDE.md architectural rules have changed that should be reflected in the command files, (2) new patterns/services/layers have been added that the commands should reference, (3) any outdated paths, simulator names, or framework references exist in the commands. If updates are needed, apply them, commit, and push to origin. Report a summary of what was checked and what changed.' --cwd /Users/akshaypimprikar/Desktop/ios-agent-workflow",
+            "if": "Bash(git push*)",
+            "statusMessage": "Checking ios-agent-workflow for needed updates...",
+            "async": true
+          },
+          {
+            "type": "command",
+            "command": "claude --dangerously-skip-permissions -p 'Compare the ios-agent-workflow commands at /Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/ against the current FinanceTracker project at /Users/akshaypimprikar/Desktop/FinanceTracker. Check if: (1) any CLAUDE.md architectural rules have changed that should be reflected in the command files, (2) new patterns/services/layers have been added that the commands should reference, (3) any outdated paths, simulator names, or framework references exist in the commands. If updates are needed, apply them, commit, and push to origin. Report a summary of what was checked and what changed.' --cwd /Users/akshaypimprikar/Desktop/ios-agent-workflow",
+            "if": "Bash(gh pr*)",
+            "statusMessage": "Checking ios-agent-workflow for needed updates...",
+            "async": true
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
