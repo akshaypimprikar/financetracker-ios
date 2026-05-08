@@ -5,6 +5,10 @@ import Observation
 final class AccountViewModel {
     private(set) var accounts: [Account] = []
 
+    var currency: String {
+        accounts.first(where: { !$0.isArchived })?.currency ?? "USD"
+    }
+
     private let accountRepo: any AccountRepositoryProtocol
     private let transactionRepo: any TransactionRepositoryProtocol
     private let balanceService: BalanceService

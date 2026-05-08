@@ -59,10 +59,5 @@ struct FinanceTrackerTabView: View {
             Text("Settings — coming in Plan 2c")
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
-        .task {
-            try? accountVM.load()
-            try? transactionVM.load()
-            try? dashboardVM.load()
-        }
     }
 }

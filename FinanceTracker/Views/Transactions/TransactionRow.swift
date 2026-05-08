@@ -20,7 +20,7 @@ struct TransactionRow: View {
                 }
             }
             Spacer()
-            Text(transaction.amount, format: .currency(code: "USD"))
+            Text(transaction.amount, format: .currency(code: transaction.account.currency))
                 .foregroundStyle(
                     transaction.type == .credit ? .green :
                     transaction.type == .transfer ? .blue : .primary

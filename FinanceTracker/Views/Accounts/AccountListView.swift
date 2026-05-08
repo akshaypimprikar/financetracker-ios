@@ -18,7 +18,7 @@ struct AccountListView: View {
                     Text("Net Worth")
                     Spacer()
                     Text(viewModel.netWorth(),
-                         format: .currency(code: "USD"))
+                         format: .currency(code: viewModel.currency))
                     .bold()
                     .foregroundStyle(viewModel.netWorth() >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                 }

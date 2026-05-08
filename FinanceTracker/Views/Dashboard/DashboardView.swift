@@ -13,7 +13,8 @@ struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Budgets").font(.headline)
                         ForEach(viewModel.budgetProgresses, id: \.0.id) { budget, progress in
-                            BudgetProgressCard(budget: budget, progress: progress)
+                            BudgetProgressCard(budget: budget, progress: progress,
+                                               currency: viewModel.currency)
                         }
                     }
                 }
@@ -39,7 +40,7 @@ struct DashboardView: View {
             Text("Net Worth")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(viewModel.netWorth, format: .currency(code: "USD"))
+            Text(viewModel.netWorth, format: .currency(code: viewModel.currency))
                 .font(.system(size: 36, weight: .bold))
                 .foregroundStyle(viewModel.netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
         }
@@ -53,7 +54,7 @@ struct DashboardView: View {
         HStack {
             Text("Spent this month")
             Spacer()
-            Text(viewModel.spendingThisMonth, format: .currency(code: "USD"))
+            Text(viewModel.spendingThisMonth, format: .currency(code: viewModel.currency))
                 .bold()
         }
         .padding()
@@ -65,6 +66,7 @@ struct DashboardView: View {
 private struct BudgetProgressCard: View {
     let budget: Budget
     let progress: BudgetProgress
+    let currency: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -72,9 +74,9 @@ private struct BudgetProgressCard: View {
                 Text(budget.category.name)
                     .font(.subheadline)
                 Spacer()
-                Text(progress.spent, format: .currency(code: "USD"))
+                Text(progress.spent, format: .currency(code: currency))
                     .font(.subheadline.bold())
-                Text("/ \(progress.limit.formatted(.currency(code: "USD")))")
+                Text("/ \(progress.limit.formatted(.currency(code: currency)))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

@@ -10,7 +10,7 @@ struct TransactionDetailView: View {
             Section {
                 LabeledContent("Payee", value: transaction.payee)
                 LabeledContent("Amount") {
-                    Text(transaction.amount, format: .currency(code: "USD"))
+                    Text(transaction.amount, format: .currency(code: transaction.account.currency))
                 }
                 LabeledContent("Date") {
                     Text(transaction.date,

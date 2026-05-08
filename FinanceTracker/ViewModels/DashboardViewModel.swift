@@ -7,6 +7,7 @@ final class DashboardViewModel {
     private(set) var spendingThisMonth: Decimal = 0
     private(set) var recentTransactions: [Transaction] = []
     private(set) var budgetProgresses: [(Budget, BudgetProgress)] = []
+    private(set) var currency: String = "USD"
 
     private let accountRepo: any AccountRepositoryProtocol
     private let transactionRepo: any TransactionRepositoryProtocol
@@ -35,7 +36,10 @@ final class DashboardViewModel {
         let accounts = try accountRepo.fetchAll()
         let allTransactions = try transactionRepo.fetchAll()
 
-        let pairs = accounts.filter { !$0.isArchived }.map { account in
+        let activeAccounts = accounts.filter { !$0.isArchived }
+        currency = activeAccounts.first?.currency ?? "USD"
+
+        let pairs = activeAccounts.map { account in
             (account, allTransactions.filter { $0.account.id == account.id })
         }
         netWorth = netWorthService.netWorth(accounts: pairs, balanceService: balanceService)
