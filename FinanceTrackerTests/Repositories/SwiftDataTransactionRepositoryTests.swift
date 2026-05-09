@@ -6,12 +6,6 @@ import SwiftData
 @Suite("SwiftDataTransactionRepository")
 struct SwiftDataTransactionRepositoryTests {
 
-    func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Account.self, Transaction.self, Category.self, Budget.self, ImportRecord.self])
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: schema, configurations: [config])
-    }
-
     @Test func fetchForAccountReturnsOnlyThatAccountsTransactions() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)

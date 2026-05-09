@@ -1,22 +1,63 @@
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Environment(\.modelContext) private var context
+
     var body: some View {
-        TabView {
-            Text("Dashboard")
-                .tabItem { Label("Dashboard", systemImage: "chart.bar.fill") }
-            Text("Transactions")
-                .tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down") }
-            Text("Budgets")
-                .tabItem { Label("Budgets", systemImage: "target") }
-            Text("Accounts")
-                .tabItem { Label("Accounts", systemImage: "building.columns.fill") }
-            Text("Settings")
-                .tabItem { Label("Settings", systemImage: "gear") }
-        }
+        FinanceTrackerTabView(modelContext: context)
     }
 }
 
-#Preview {
-    ContentView()
+struct FinanceTrackerTabView: View {
+    @State private var accountVM: AccountViewModel
+    @State private var transactionVM: TransactionViewModel
+    @State private var dashboardVM: DashboardViewModel
+
+    init(modelContext: ModelContext) {
+        let accountRepo = SwiftDataAccountRepository(context: modelContext)
+        let transactionRepo = SwiftDataTransactionRepository(context: modelContext)
+        let categoryRepo = SwiftDataCategoryRepository(context: modelContext)
+        let budgetRepo = SwiftDataBudgetRepository(context: modelContext)
+
+        _accountVM = State(wrappedValue: AccountViewModel(
+            accountRepo: accountRepo,
+            transactionRepo: transactionRepo
+        ))
+        _transactionVM = State(wrappedValue: TransactionViewModel(
+            transactionRepo: transactionRepo,
+            accountRepo: accountRepo,
+            categoryRepo: categoryRepo
+        ))
+        _dashboardVM = State(wrappedValue: DashboardViewModel(
+            accountRepo: accountRepo,
+            transactionRepo: transactionRepo,
+            budgetRepo: budgetRepo
+        ))
+    }
+
+    var body: some View {
+        TabView {
+            NavigationStack {
+                DashboardView(viewModel: dashboardVM)
+            }
+            .tabItem { Label("Dashboard", systemImage: "chart.bar.fill") }
+
+            NavigationStack {
+                TransactionListView(viewModel: transactionVM)
+            }
+            .tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down") }
+
+            Text("Budgets — coming in Plan 2c")
+                .tabItem { Label("Budgets", systemImage: "target") }
+
+            NavigationStack {
+                AccountListView(viewModel: accountVM)
+            }
+            .tabItem { Label("Accounts", systemImage: "building.columns.fill") }
+
+            Text("Settings — coming in Plan 2c")
+                .tabItem { Label("Settings", systemImage: "gear") }
+        }
+    }
 }

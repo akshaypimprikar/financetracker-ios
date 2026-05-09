@@ -8,11 +8,11 @@
 
 **Tech Stack:** Swift 6, SwiftUI, SwiftData, Apple Testing framework (`@Test` / `#expect`), CryptoKit (SHA256 for import dedup), UserNotifications
 
-> **Note on file inclusion:** This project uses `PBXFileSystemSynchronizedRootGroup` (Xcode 16). Any `.swift` file created inside `Demo/Demo/`, `Demo/DemoTests/`, or `Demo/DemoUITests/` is automatically compiled — no `project.pbxproj` editing required.
+> **Note on file inclusion:** This project uses `PBXFileSystemSynchronizedRootGroup` (Xcode 16). Any `.swift` file created inside `FinanceTracker/FinanceTracker/`, `FinanceTracker/FinanceTrackerTests/`, or `FinanceTracker/FinanceTrackerUITests/` is automatically compiled — no `project.pbxproj` editing required.
 
 > **This is Plan 1 of 3.** Plan 2 covers ViewModels + all UI screens. Plan 3 covers the multi-agent workflow command files.
 
-**All commands run from:** `Demo/Demo/` (the directory containing `Demo.xcodeproj`)
+**All commands run from:** `FinanceTracker/FinanceTracker/` (the directory containing `FinanceTracker.xcodeproj`)
 
 ---
 
