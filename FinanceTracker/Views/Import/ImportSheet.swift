@@ -1,0 +1,173 @@
+import SwiftUI
+import UniformTypeIdentifiers
+
+struct ImportSheet: View {
+    @Bindable var viewModel: ImportViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var isPickingFile = false
+    @State private var dateColIndex = 0
+    @State private var amountColIndex = 1
+    @State private var payeeColIndex = 2
+    @State private var hasHeader = true
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                switch viewModel.step {
+                case .filePicker:    filePickerStep
+                case .columnMapping: columnMappingStep
+                case .preview:       previewStep
+                }
+            }
+            .navigationTitle(stepTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        viewModel.reset()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .fileImporter(
+            isPresented: $isPickingFile,
+            allowedContentTypes: [.commaSeparatedText, .plainText]
+        ) { result in
+            guard let url = try? result.get(),
+                  url.startAccessingSecurityScopedResource(),
+                  let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+            url.stopAccessingSecurityScopedResource()
+            viewModel.loadCSV(text)
+        }
+    }
+
+    private var stepTitle: String {
+        switch viewModel.step {
+        case .filePicker:    "Import CSV"
+        case .columnMapping: "Map Columns"
+        case .preview:       "Review Import"
+        }
+    }
+
+    // MARK: Step 1 — File picker
+
+    private var filePickerStep: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "doc.text")
+                .font(.system(size: 72))
+                .foregroundStyle(.teal)
+            Text("Choose a CSV file to import")
+                .font(.headline)
+            Text("Supported: comma- or semicolon-delimited, any column order")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            Button("Choose File") { isPickingFile = true }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+    }
+
+    // MARK: Step 2 — Column mapping
+
+    private var columnMappingStep: some View {
+        Form {
+            Section("Column Positions (0-based)") {
+                Stepper("Date: column \(dateColIndex)",
+                        value: $dateColIndex, in: 0...20)
+                Stepper("Amount: column \(amountColIndex)",
+                        value: $amountColIndex, in: 0...20)
+                Stepper("Payee: column \(payeeColIndex)",
+                        value: $payeeColIndex, in: 0...20)
+                Toggle("First row is header", isOn: $hasHeader)
+            }
+
+            if !viewModel.csvSampleRows.isEmpty {
+                Section("File preview (first rows)") {
+                    ForEach(Array(viewModel.csvSampleRows.prefix(4).enumerated()), id: \.offset) { _, row in
+                        Text(row.enumerated().map { "\($0.offset):\($0.element)" }.joined(separator: "  "))
+                            .font(.caption.monospaced())
+                            .lineLimit(1)
+                    }
+                }
+            }
+
+            Section {
+                Button("Parse & Preview") {
+                    let mapping = ColumnMapping(
+                        dateIndex: dateColIndex,
+                        amountIndex: amountColIndex,
+                        payeeIndex: payeeColIndex,
+                        hasHeader: hasHeader
+                    )
+                    try? viewModel.applyMapping(mapping)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: Step 3 — Preview & confirm
+
+    private var previewStep: some View {
+        List {
+            Section {
+                HStack {
+                    Text("New transactions")
+                    Spacer()
+                    Text("\(viewModel.pendingTransactions.count)")
+                        .bold()
+                        .foregroundStyle(.green)
+                }
+                HStack {
+                    Text("Skipped (duplicates)")
+                    Spacer()
+                    Text("\(viewModel.skippedCount)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section("Import into account") {
+                Picker("Account", selection: $viewModel.selectedAccount) {
+                    ForEach(viewModel.accounts) { account in
+                        Text(account.name).tag(account as Account?)
+                    }
+                }
+            }
+
+            if !viewModel.pendingTransactions.isEmpty {
+                Section("Transactions to import") {
+                    ForEach(viewModel.pendingTransactions, id: \.importHash) { tx in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(tx.payee)
+                                Text(tx.date,
+                                     format: .dateTime.month(.abbreviated).day().year())
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(tx.amount, format: .currency(code: "USD"))
+                        }
+                    }
+                }
+            }
+
+            Section {
+                Button("Import \(viewModel.pendingTransactions.count) Transactions") {
+                    try? viewModel.confirmImport()
+                    dismiss()
+                }
+                .frame(maxWidth: .infinity)
+                .disabled(viewModel.pendingTransactions.isEmpty ||
+                          viewModel.selectedAccount == nil)
+            }
+        }
+    }
+}
