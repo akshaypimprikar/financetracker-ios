@@ -1,0 +1,100 @@
+import Testing
+import Foundation
+import SwiftData
+@testable import FinanceTracker
+
+@Suite("BudgetViewModel")
+struct BudgetViewModelTests {
+
+    func startOfMay2026() -> Date {
+        Calendar.current.date(from: DateComponents(year: 2026, month: 5, day: 1))!
+    }
+
+    @Test func loadFetchesBudgetsForSelectedMonth() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        let budget = Budget(monthlyLimit: 500, month: startOfMay2026(), category: category)
+        ctx.insert(category); ctx.insert(budget)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        try vm.load()
+
+        #expect(vm.budgets.count == 1)
+        #expect(vm.budgets[0].0.category.name == "Food")
+    }
+
+    @Test func addBudgetPersistsAndRefreshes() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Transport", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        try vm.load()
+        #expect(vm.budgets.isEmpty)
+
+        try vm.add(category: category, monthlyLimit: 200)
+
+        #expect(vm.budgets.count == 1)
+        #expect(vm.budgets[0].0.monthlyLimit == 200)
+    }
+
+    @Test func progressReflectsSpending() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        let category = Category(name: "Food", type: .expense)
+        let budget = Budget(monthlyLimit: 200, month: startOfMay2026(), category: category)
+        ctx.insert(account); ctx.insert(category); ctx.insert(budget)
+        let txDate = Calendar.current.date(from: DateComponents(year: 2026, month: 5, day: 15))!
+        ctx.insert(Transaction(date: txDate, amount: 80, payee: "Grocery",
+                               type: .debit, account: account, category: category))
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        try vm.load()
+
+        #expect(vm.budgets[0].1.spent == 80)
+        #expect(vm.budgets[0].1.remaining == 120)
+        #expect(vm.budgets[0].1.isOverBudget == false)
+    }
+
+    @Test func unbudgetedCategoriesExcludesBudgetedOnes() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let food = Category(name: "Food", type: .expense)
+        let transport = Category(name: "Transport", type: .expense)
+        let budget = Budget(monthlyLimit: 200, month: startOfMay2026(), category: food)
+        ctx.insert(food); ctx.insert(transport); ctx.insert(budget)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        try vm.load()
+
+        #expect(vm.unbudgetedCategories.count == 1)
+        #expect(vm.unbudgetedCategories[0].name == "Transport")
+    }
+}
