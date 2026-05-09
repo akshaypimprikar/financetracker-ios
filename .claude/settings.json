@@ -1,89 +1,32 @@
 {
   "permissions": {
     "allow": [
+      "Read(//Users/akshaypimprikar/.claude/**)",
+      "Read(//Users/akshaypimprikar/.claude/plugins/**)",
+      "Read(//usr/local/bin/**)",
       "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills -type f -name \"*.md\" | head -20)",
-      "Read(//Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/**)",
       "Bash(awk '{print $NF}')",
       "Bash(gh auth *)",
-      "Read(//Users/akshaypimprikar/.claude/plugins/**)",
-      "Read(//Users/akshaypimprikar/.claude/**)",
+      "Bash(gh pr *)",
+      "Bash(gh release *)",
       "Bash(brew list *)",
-      "Read(//usr/local/bin/**)",
       "Bash(brew install *)",
       "Bash(gh --version)",
-      "Bash(sed -i '' 's|//  DemoApp\\\\.swift|//  FinanceTrackerApp.swift|g; s|//  Demo$|//  FinanceTracker|g' FinanceTracker/FinanceTrackerApp.swift)",
-      "Bash(sed -i '' 's|//  DemoUITestsLaunchTests\\\\.swift|//  FinanceTrackerUITestsLaunchTests.swift|g; s|//  DemoUITests$|//  FinanceTrackerUITests|g; s|final class DemoUITestsLaunchTests|final class FinanceTrackerUITestsLaunchTests|g' FinanceTrackerUITests/DemoUITestsLaunchTests.swift)",
-      "Bash(sed -i '' 's|//  DemoUITests\\\\.swift|//  FinanceTrackerUITests.swift|g; s|//  DemoUITests$|//  FinanceTrackerUITests|g; s|final class DemoUITests|final class FinanceTrackerUITests|g' FinanceTrackerUITests/DemoUITests.swift)",
-      "Bash(sed -i '' 's|//  DemoTests\\\\.swift|//  FinanceTrackerTests.swift|g; s|//  DemoTests$|//  FinanceTrackerTests|g' FinanceTrackerTests/DemoTests.swift)",
+      "Bash(claude --version)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "Bash(mkdir -p ~/.claude/skills/ios-build-verify)",
-      "Bash(mkdir -p ~/.claude/skills/ios-swiftdata-test-fixture)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow log --oneline -10)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow remote -v)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow status --short)",
+      "Bash(git pull *)",
+      "Bash(mkdir -p *)",
+      "Bash(xcodebuild *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow *)",
       "Skill(schedule)",
       "Skill(schedule:*)",
       "Skill(update-config)",
-      "Skill(update-config:*)",
-      "Bash(claude --version)",
-      "Bash(bash -c 'cmd=$\\(jq -r \".tool_input.command\"\\); echo \"hook would fire for: $cmd\"')",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add .claude/settings.json)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker commit -m ' *)",
-      "Bash(git pull *)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/FinanceTracker/FinanceTracker/Repositories/Protocols/ImportRecordRepositoryProtocol.swift FinanceTracker/FinanceTracker/FinanceTracker/Repositories/SwiftData/SwiftDataImportRecordRepository.swift FinanceTracker/FinanceTracker/FinanceTracker/Views/Transactions/AddTransactionSheet.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker rev-parse --show-toplevel)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker ls-files FinanceTracker/)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/Repositories/Protocols/ImportRecordRepositoryProtocol.swift FinanceTracker/Repositories/SwiftData/SwiftDataImportRecordRepository.swift FinanceTracker/Views/Transactions/AddTransactionSheet.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker ls-files)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/ViewModels/ImportViewModel.swift FinanceTrackerTests/ViewModels/ImportViewModelTests.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/Views/Import/ImportSheet.swift FinanceTracker/Views/Transactions/TransactionListView.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/ViewModels/BudgetViewModel.swift FinanceTracker/ContentView.swift FinanceTrackerTests/ViewModels/BudgetViewModelTests.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/Views/Budgets/BudgetListView.swift FinanceTracker/Views/Budgets/AddBudgetSheet.swift FinanceTracker/Views/Budgets/BudgetDetailView.swift FinanceTracker/ViewModels/CategoryViewModel.swift FinanceTracker/Views/Settings/SettingsView.swift FinanceTracker/Views/Settings/AddCategorySheet.swift FinanceTracker/ContentView.swift)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker log main..feature/plan-2bc-import-budgets-settings --oneline)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push -u origin feature/plan-2bc-import-budgets-settings)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker log --oneline -10)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker diff .claude/settings.json)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add .gitignore CLAUDE.md .claude/settings.json)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker checkout -b feature/plan-3-multi-agent-workflow)",
-      "Bash(mkdir -p /Users/akshaypimprikar/Desktop/FinanceTracker/.claude/commands)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add .claude/commands/ docs/superpowers/plans/2026-05-08-finance-app-plan3-multi-agent-workflow.md CLAUDE.md .claude/settings.json)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push -u origin feature/plan-3-multi-agent-workflow)"
+      "Skill(update-config:*)"
     ],
     "additionalDirectories": [
-      "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
-      "/Users/akshaypimprikar/Desktop/FinanceTracker/.claude"
-    ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "claude --dangerously-skip-permissions -p 'Compare the ios-agent-workflow commands at /Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/ against the current FinanceTracker project at /Users/akshaypimprikar/Desktop/FinanceTracker. Check if: (1) any CLAUDE.md architectural rules have changed that should be reflected in the command files, (2) new patterns/services/layers have been added that the commands should reference, (3) any outdated paths, simulator names, or framework references exist in the commands. If updates are needed, apply them, commit, and push to origin. Report a summary of what was checked and what changed.' --cwd /Users/akshaypimprikar/Desktop/ios-agent-workflow",
-            "if": "Bash(git push*)",
-            "statusMessage": "Checking ios-agent-workflow for needed updates...",
-            "async": true
-          },
-          {
-            "type": "command",
-            "command": "claude --dangerously-skip-permissions -p 'Compare the ios-agent-workflow commands at /Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/ against the current FinanceTracker project at /Users/akshaypimprikar/Desktop/FinanceTracker. Check if: (1) any CLAUDE.md architectural rules have changed that should be reflected in the command files, (2) new patterns/services/layers have been added that the commands should reference, (3) any outdated paths, simulator names, or framework references exist in the commands. If updates are needed, apply them, commit, and push to origin. Report a summary of what was checked and what changed.' --cwd /Users/akshaypimprikar/Desktop/ios-agent-workflow",
-            "if": "Bash(gh pr*)",
-            "statusMessage": "Checking ios-agent-workflow for needed updates...",
-            "async": true
-          },
-          {
-            "type": "command",
-            "command": "claude --dangerously-skip-permissions -p 'A PR was just created for the FinanceTracker iOS project. Review and maintain all Claude Code automation. Steps: (1) Read CLAUDE.md and the latest committed files to understand the current project state — new ViewModels, views, services, layers. (2) Read all skill files under ~/.claude/skills/ (ios-build-verify, ios-swiftdata-test-fixture, etc.) and check for outdated simulator names, file paths, or patterns. (3) Read .claude/settings.json and review existing hooks, permissions, and allowed commands — remove stale per-commit Bash allow entries, add any missing broad patterns. (4) Check ~/.claude/skills/ for any skill that should be added, updated, or removed given the current project architecture. (5) Apply all updates — edit skill files and settings.json in place. (6) Commit any changed files with a short descriptive commit message. Report what was reviewed and what changed (including \"no changes needed\" if nothing required updating).' --cwd /Users/akshaypimprikar/Desktop/FinanceTracker",
-            "if": "Bash(gh pr create*)",
-            "statusMessage": "Reviewing and updating Claude Code agents and skills...",
-            "async": true
-          }
-        ]
-      }
+      "/Users/akshaypimprikar/Desktop/ios-agent-workflow"
     ]
   },
   "enabledPlugins": {
