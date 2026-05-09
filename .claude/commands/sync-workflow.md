@@ -29,15 +29,23 @@ Check for drift in these areas (keep `<AppName>` placeholders — ios-agent-work
 ### 4. Apply updates
 Edit only the lines that differ. Do not copy FinanceTracker-specific paths (e.g. `/Users/akshaypimprikar/...`) into the template.
 
-### 5. Commit and push
+### 5. Open a PR — never push directly to main
 ```bash
+# Create a branch, commit, push, open PR
+git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow checkout -b sync/<YYYY-MM-DD>
 git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow add .claude/commands/
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow commit -m "chore: sync commands from FinanceTracker — <brief summary of what changed>"
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow push
+git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow commit -m "chore: sync commands from FinanceTracker — <brief summary>"
+git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow push -u origin sync/<YYYY-MM-DD>
+gh pr create --repo akshaypimprikar/ios-agent-workflow \
+  --title "chore: sync commands from FinanceTracker — <brief summary>" \
+  --body "## Changes\n<bullet list of what changed and why>\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
+  --base main
 ```
 
+If nothing changed, do not create a branch or PR — report "no changes needed" instead.
+
 ### 6. Report
-List every file changed and what was updated. If nothing needed changing, say so explicitly.
+List every file changed and what was updated, plus the PR URL. If nothing needed changing, say so explicitly.
 
 ## Done when
-ios-agent-workflow is committed and pushed, report delivered.
+PR is open on ios-agent-workflow (or "no changes needed" confirmed), report delivered.
