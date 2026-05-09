@@ -23,10 +23,13 @@
       "Skill(schedule)",
       "Skill(schedule:*)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Edit(~/.claude/skills/ios-build-verify/**)",
+      "Bash(mkdir -p /Users/akshaypimprikar/.claude/skills/ios-coverage)"
     ],
     "additionalDirectories": [
-      "/Users/akshaypimprikar/Desktop/ios-agent-workflow"
+      "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
+      "/Users/akshaypimprikar/.claude/skills"
     ]
   },
   "enabledPlugins": {

@@ -34,8 +34,9 @@ Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 - [ ] Test coverage ≥80% on new code
 - [ ] Tests use `import Testing` with `@Suite`/`@Test`/`#expect()` — not XCTest
 
-**Build:**
-- [ ] Full test suite passes: `xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'` (run from git root)
+**Build & Coverage:**
+- [ ] Full test suite passes (run from git root): `xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'`
+- [ ] Coverage ≥80% on all new files — use the `ios-coverage` skill to capture and read an `.xcresult` bundle
 
 ### Code quality checks
 
