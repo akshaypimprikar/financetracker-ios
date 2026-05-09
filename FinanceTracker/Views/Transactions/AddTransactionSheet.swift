@@ -11,7 +11,7 @@ struct AddTransactionSheet: View {
     @State private var type = TransactionType.debit
     @State private var selectedAccount: Account?
     @State private var selectedToAccount: Account?
-    @State private var selectedCategory: Category?
+    @State private var selectedCategoryID: UUID?
 
     private var isTransfer: Bool { type == .transfer }
 
@@ -54,10 +54,10 @@ struct AddTransactionSheet: View {
                             }
                         }
                     } else {
-                        Picker("Category", selection: $selectedCategory) {
-                            Text("Uncategorized").tag(nil as Category?)
+                        Picker("Category", selection: $selectedCategoryID) {
+                            Text("Uncategorized").tag(nil as UUID?)
                             ForEach(viewModel.categories) { cat in
-                                Text(cat.name).tag(cat as Category?)
+                                Text(cat.name).tag(cat.id as UUID?)
                             }
                         }
                     }
@@ -82,7 +82,7 @@ struct AddTransactionSheet: View {
                             notes: notes.isEmpty ? nil : notes,
                             type: type, account: account,
                             toAccount: isTransfer ? selectedToAccount : nil,
-                            category: isTransfer ? nil : selectedCategory
+                            category: isTransfer ? nil : viewModel.categories.first { $0.id == selectedCategoryID }
                         )
                         dismiss()
                     }

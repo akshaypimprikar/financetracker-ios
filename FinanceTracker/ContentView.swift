@@ -13,12 +13,16 @@ struct FinanceTrackerTabView: View {
     @State private var accountVM: AccountViewModel
     @State private var transactionVM: TransactionViewModel
     @State private var dashboardVM: DashboardViewModel
+    @State private var budgetVM: BudgetViewModel
+    @State private var importVM: ImportViewModel
+    @State private var categoryVM: CategoryViewModel
 
     init(modelContext: ModelContext) {
-        let accountRepo = SwiftDataAccountRepository(context: modelContext)
-        let transactionRepo = SwiftDataTransactionRepository(context: modelContext)
-        let categoryRepo = SwiftDataCategoryRepository(context: modelContext)
-        let budgetRepo = SwiftDataBudgetRepository(context: modelContext)
+        let accountRepo      = SwiftDataAccountRepository(context: modelContext)
+        let transactionRepo  = SwiftDataTransactionRepository(context: modelContext)
+        let categoryRepo     = SwiftDataCategoryRepository(context: modelContext)
+        let budgetRepo       = SwiftDataBudgetRepository(context: modelContext)
+        let importRecordRepo = SwiftDataImportRecordRepository(context: modelContext)
 
         _accountVM = State(wrappedValue: AccountViewModel(
             accountRepo: accountRepo,
@@ -34,6 +38,19 @@ struct FinanceTrackerTabView: View {
             transactionRepo: transactionRepo,
             budgetRepo: budgetRepo
         ))
+        _budgetVM = State(wrappedValue: BudgetViewModel(
+            budgetRepo: budgetRepo,
+            transactionRepo: transactionRepo,
+            categoryRepo: categoryRepo
+        ))
+        _importVM = State(wrappedValue: ImportViewModel(
+            transactionRepo: transactionRepo,
+            accountRepo: accountRepo,
+            importRecordRepo: importRecordRepo
+        ))
+        _categoryVM = State(wrappedValue: CategoryViewModel(
+            categoryRepo: categoryRepo
+        ))
     }
 
     var body: some View {
@@ -44,20 +61,32 @@ struct FinanceTrackerTabView: View {
             .tabItem { Label("Dashboard", systemImage: "chart.bar.fill") }
 
             NavigationStack {
-                TransactionListView(viewModel: transactionVM)
+                TransactionListView(viewModel: transactionVM, importVM: importVM)
             }
             .tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down") }
 
-            Text("Budgets — coming in Plan 2c")
-                .tabItem { Label("Budgets", systemImage: "target") }
+            NavigationStack {
+                BudgetListView(viewModel: budgetVM)
+            }
+            .tabItem { Label("Budgets", systemImage: "target") }
 
             NavigationStack {
                 AccountListView(viewModel: accountVM)
             }
             .tabItem { Label("Accounts", systemImage: "building.columns.fill") }
 
-            Text("Settings — coming in Plan 2c")
-                .tabItem { Label("Settings", systemImage: "gear") }
+            NavigationStack {
+                SettingsView(categoryVM: categoryVM)
+            }
+            .tabItem { Label("Settings", systemImage: "gear") }
+        }
+        .task {
+            try? accountVM.load()
+            try? transactionVM.load()
+            try? dashboardVM.load()
+            try? budgetVM.load()
+            try? importVM.load()
+            try? categoryVM.load()
         }
     }
 }

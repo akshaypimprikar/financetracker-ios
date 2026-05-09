@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-All commands run from `/Users/akshaypimprikar/Desktop/FinanceTracker/FinanceTracker/` (the directory containing `FinanceTracker.xcodeproj`).
+All commands run from `/Users/akshaypimprikar/Desktop/FinanceTracker/` (the git root, which contains `FinanceTracker.xcodeproj`).
 
 ```bash
 # Build

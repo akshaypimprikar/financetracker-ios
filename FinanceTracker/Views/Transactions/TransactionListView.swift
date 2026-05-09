@@ -2,7 +2,9 @@ import SwiftUI
 
 struct TransactionListView: View {
     @Bindable var viewModel: TransactionViewModel
+    @Bindable var importVM: ImportViewModel
     @State private var isPresentingAdd = false
+    @State private var isPresentingImport = false
 
     var body: some View {
         List {
@@ -27,12 +29,19 @@ struct TransactionListView: View {
         .searchable(text: $viewModel.searchText, prompt: "Search payee")
         .navigationTitle("Transactions")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("Import", systemImage: "square.and.arrow.down") {
+                    isPresentingImport = true
+                }
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
             }
         }
         .sheet(isPresented: $isPresentingAdd) {
             AddTransactionSheet(viewModel: viewModel)
+        }
+        .sheet(isPresented: $isPresentingImport) {
+            ImportSheet(viewModel: importVM)
+                .onDisappear { try? viewModel.load() }
         }
         .onAppear { try? viewModel.load() }
     }
