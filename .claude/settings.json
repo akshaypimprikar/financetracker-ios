@@ -42,7 +42,10 @@
       "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add FinanceTracker/Views/Budgets/BudgetListView.swift FinanceTracker/Views/Budgets/AddBudgetSheet.swift FinanceTracker/Views/Budgets/BudgetDetailView.swift FinanceTracker/ViewModels/CategoryViewModel.swift FinanceTracker/Views/Settings/SettingsView.swift FinanceTracker/Views/Settings/AddCategorySheet.swift FinanceTracker/ContentView.swift)",
       "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker log main..feature/plan-2bc-import-budgets-settings --oneline)",
       "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push -u origin feature/plan-2bc-import-budgets-settings)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push)"
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker push)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker log --oneline -10)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker diff .claude/settings.json)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker add .gitignore CLAUDE.md .claude/settings.json)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow"

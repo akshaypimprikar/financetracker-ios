@@ -1,0 +1,29 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+
+# Editor
+.vscode/
+
+# Superpowers plugin cache
+.superpowers/
