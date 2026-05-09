@@ -13,7 +13,9 @@ struct FinanceTrackerTabView: View {
     @State private var accountVM: AccountViewModel
     @State private var transactionVM: TransactionViewModel
     @State private var dashboardVM: DashboardViewModel
+    @State private var budgetVM: BudgetViewModel
     @State private var importVM: ImportViewModel
+    @State private var categoryVM: CategoryViewModel
 
     init(modelContext: ModelContext) {
         let accountRepo      = SwiftDataAccountRepository(context: modelContext)
@@ -36,10 +38,18 @@ struct FinanceTrackerTabView: View {
             transactionRepo: transactionRepo,
             budgetRepo: budgetRepo
         ))
+        _budgetVM = State(wrappedValue: BudgetViewModel(
+            budgetRepo: budgetRepo,
+            transactionRepo: transactionRepo,
+            categoryRepo: categoryRepo
+        ))
         _importVM = State(wrappedValue: ImportViewModel(
             transactionRepo: transactionRepo,
             accountRepo: accountRepo,
             importRecordRepo: importRecordRepo
+        ))
+        _categoryVM = State(wrappedValue: CategoryViewModel(
+            categoryRepo: categoryRepo
         ))
     }
 
@@ -55,22 +65,28 @@ struct FinanceTrackerTabView: View {
             }
             .tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down") }
 
-            Text("Budgets — coming soon")
-                .tabItem { Label("Budgets", systemImage: "target") }
+            NavigationStack {
+                BudgetListView(viewModel: budgetVM)
+            }
+            .tabItem { Label("Budgets", systemImage: "target") }
 
             NavigationStack {
                 AccountListView(viewModel: accountVM)
             }
             .tabItem { Label("Accounts", systemImage: "building.columns.fill") }
 
-            Text("Settings — coming soon")
-                .tabItem { Label("Settings", systemImage: "gear") }
+            NavigationStack {
+                SettingsView(categoryVM: categoryVM)
+            }
+            .tabItem { Label("Settings", systemImage: "gear") }
         }
         .task {
             try? accountVM.load()
             try? transactionVM.load()
             try? dashboardVM.load()
+            try? budgetVM.load()
             try? importVM.load()
+            try? categoryVM.load()
         }
     }
 }
