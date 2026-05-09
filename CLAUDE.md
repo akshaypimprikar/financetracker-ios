@@ -89,6 +89,45 @@ All protocols import `Foundation` only. SwiftData implementations are in `Financ
 
 **Test framework:** `import Testing` with `@Suite` / `@Test` / `#expect()` — NOT XCTest for unit tests.
 
-## Navigation (Plan 2)
+## Navigation
 
 5-tab structure: **Dashboard · Transactions · Budgets · Accounts · Settings**
+
+## Agent Workflow
+
+Seven slash commands live in `.claude/commands/`. Use them in sequence for any new feature:
+
+```
+/spec "feature idea"        → design spec saved to docs/superpowers/specs/
+/plan docs/.../spec.md      → implementation plan saved to docs/superpowers/plans/
+/feature docs/.../plan.md   → implement plan task-by-task with TDD + per-task commits
+/test <branch>              → comprehensive test coverage (run in parallel with /review)
+/review <PR#>               → architecture compliance + code quality check
+/bugfix "description"       → regression test first, then minimal fix, then PR
+/release 1.0.0              → version bump, CHANGELOG, tag, GitHub release
+```
+
+### Standard pipeline
+
+```
+/spec → user approves → /plan → user approves → /feature + /test (parallel) → /review → merge to main
+```
+
+### Agent enforcement rules
+
+| Agent | Must do before any code |
+|---|---|
+| `/spec` | Read CLAUDE.md + existing models/services/protocols |
+| `/plan` | Read spec + every file the spec says will be touched |
+| `/feature` | Read CLAUDE.md + full plan; confirm on `feature/*` branch off `main` |
+| `/test` | Read CLAUDE.md; confirm test framework is `import Testing` (not XCTest) for unit tests |
+| `/review` | Run full `xcodebuild test` suite; report ✅/❌ per check |
+| `/bugfix` | Write failing regression test BEFORE touching production code |
+| `/release` | Run all pre-flight checks; stop if any fail |
+
+### Branch strategy
+
+- Features: `feature/<name>` → PR → `main`
+- Bug fixes: `fix/<name>` → PR → `main`
+- Specs: `spec/<name>` (spec doc only, no app code)
+- Releases: `release/<version>` → merge → `main`, tagged `v<version>`
