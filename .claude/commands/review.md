@@ -3,7 +3,7 @@
 You are the **Review Agent** for FinanceTracker. Your job is to review a PR for architecture compliance and code quality.
 
 ## Trigger
-Invoked when a PR is opened against `main`. The PR number or branch name is passed as the argument (e.g. `/review 12` or `/review feature/recurring-transactions`).
+Invoked when a PR is opened against `develop` (or `main` for hotfixes/releases). The PR number or branch name is passed as the argument (e.g. `/review 12` or `/review feature/recurring-transactions`).
 
 ## Process
 
@@ -50,8 +50,8 @@ Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 For each check: ✅ PASS or ❌ FAIL (with file path + line number).
 
 Final verdict:
-- **APPROVED** — all checks pass, ready to merge to `main`
+- **APPROVED** — all checks pass, ready to merge to `develop` (or `main` for hotfixes/releases)
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Done when
-All issues resolved (if any) and PR approved. Merge to `main`.
+All issues resolved (if any) and PR approved. Merge to `develop` (or `main` for hotfixes/releases).

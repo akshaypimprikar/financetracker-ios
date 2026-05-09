@@ -75,7 +75,7 @@ If the feature idea implies multiple independent subsystems, say so and suggest 
 - New repository protocols go in `FinanceTracker/Repositories/Protocols/`, implementations in `FinanceTracker/Repositories/SwiftData/`
 
 ## Branching
-Work on branch `spec/<feature-name>`. Save spec to `docs/superpowers/specs/YYYY-MM-DD-<feature-name>.md` and commit.
+Branch `spec/<feature-name>` off `develop`. Save spec to `docs/superpowers/specs/YYYY-MM-DD-<feature-name>.md` and commit. Open PR to `develop`.
 
 ## Done when
 The user reviews the spec and says it's approved. Then hand off to the Planner Agent (`/plan`).

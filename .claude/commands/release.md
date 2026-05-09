@@ -7,7 +7,7 @@ Invoked with a version number (e.g. `/release 1.0.0`).
 
 ## Pre-flight checks (must all pass before continuing)
 
-- [ ] All tests pass on `main`:
+- [ ] All tests pass on `develop`:
   ```bash
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17' \
@@ -15,11 +15,11 @@ Invoked with a version number (e.g. `/release 1.0.0`).
   ```
 - [ ] No TODO/FIXME in any file added since last release:
   ```bash
-  git diff <last-tag>..main -- '*.swift' | grep -E "TODO|FIXME"
+  git diff <last-tag>..develop -- '*.swift' | grep -E "TODO|FIXME"
   ```
 - [ ] No force-unwraps in production code added since last release:
   ```bash
-  git diff <last-tag>..main -- 'FinanceTracker/*.swift' | grep -E '^\+.*[^!]![^=]'
+  git diff <last-tag>..develop -- 'FinanceTracker/*.swift' | grep -E '^\+.*[^!]![^=]'
   ```
 
 If any check fails, stop and report what must be fixed.
@@ -28,9 +28,9 @@ If any check fails, stop and report what must be fixed.
 
 All commands run from git root `/Users/akshaypimprikar/Desktop/FinanceTracker/`.
 
-### 1. Create the release branch
+### 1. Create the release branch off develop
 ```bash
-git checkout main && git pull
+git checkout develop && git pull
 git checkout -b release/<version>
 ```
 
@@ -61,12 +61,17 @@ git commit -m "chore: bump version to <version>"
 git tag -a v<version> -m "Release <version>"
 ```
 
-### 5. Merge to main
+### 5. Merge to main, then back to develop
 ```bash
 git checkout main
 git merge release/<version> --no-ff
 git push origin main
 git push origin v<version>
+
+git checkout develop
+git merge release/<version> --no-ff
+git push origin develop
+
 git branch -d release/<version>
 ```
 
@@ -78,4 +83,4 @@ gh release create v<version> \
 ```
 
 ## Done when
-`main` tagged, GitHub release created, `CHANGELOG.md` committed.
+`main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed.

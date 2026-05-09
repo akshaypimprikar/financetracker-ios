@@ -41,4 +41,11 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 Eight slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → PR → `/review` + `/test` + `code-review:code-review` (parallel) → merge to `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → PR → `develop` → `/review` + `/test` + `code-review:code-review` (parallel) → release → `main`
+
+Branch strategy (gitflow):
+- `feature/*` → `develop`
+- `fix/*` → `develop` (hotfix: `hotfix/*` → `main` + `develop`)
+- `release/*` → `main` + `develop`
+- `spec/*` → `develop`
+- `main` receives only release and hotfix merges, never direct feature PRs
