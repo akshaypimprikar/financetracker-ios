@@ -25,7 +25,8 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Edit(~/.claude/skills/ios-build-verify/**)",
-      "Bash(mkdir -p /Users/akshaypimprikar/.claude/skills/ios-coverage)"
+      "Bash(mkdir -p /Users/akshaypimprikar/.claude/skills/ios-coverage)",
+      "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
