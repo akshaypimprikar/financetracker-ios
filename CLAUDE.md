@@ -41,4 +41,4 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 Eight slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` + `/test` (parallel) → `/review` → merge to `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task + security-review before PR) + `/test` (parallel) → `/review` → merge to `main`
