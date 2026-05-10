@@ -51,6 +51,7 @@ struct SettingsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
+                    .accessibilityIdentifier("add-category-button")
             }
         }
         .sheet(isPresented: $isPresentingAdd) {
