@@ -20,6 +20,7 @@ struct AddAccountSheet: View {
             Form {
                 Section("Account Details") {
                     TextField("Name", text: $name)
+                        .accessibilityIdentifier("account-name-field")
                     Picker("Type", selection: $type) {
                         ForEach(AccountType.allCases, id: \.self) { t in
                             Text(t.rawValue.capitalized).tag(t)
@@ -51,6 +52,7 @@ struct AddAccountSheet: View {
                         dismiss()
                     }
                     .disabled(!canAdd)
+                    .accessibilityIdentifier("add-account-confirm")
                 }
             }
         }
