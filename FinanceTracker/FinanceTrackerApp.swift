@@ -18,7 +18,8 @@ struct FinanceTrackerApp: App {
             Budget.self,
             ImportRecord.self,
         ])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let isUITesting = CommandLine.arguments.contains("--uitesting")
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isUITesting)
         do {
             return try ModelContainer(for: schema, configurations: [config])
         } catch {
