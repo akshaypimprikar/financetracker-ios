@@ -22,6 +22,7 @@ struct AddBudgetSheet: View {
                     }
                     TextField("Monthly limit", text: $limitText)
                         .keyboardType(.decimalPad)
+                        .accessibilityIdentifier("budget-limit-field")
                 }
             }
             .navigationTitle("New Budget")
@@ -38,6 +39,7 @@ struct AddBudgetSheet: View {
                         dismiss()
                     }
                     .disabled(!canAdd)
+                    .accessibilityIdentifier("add-budget-confirm")
                 }
             }
         }

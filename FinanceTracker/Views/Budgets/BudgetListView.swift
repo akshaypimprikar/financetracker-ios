@@ -47,6 +47,7 @@ struct BudgetListView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
                     .disabled(viewModel.unbudgetedCategories.isEmpty)
+                    .accessibilityIdentifier("add-budget-button")
             }
         }
         .sheet(isPresented: $isPresentingAdd) {
