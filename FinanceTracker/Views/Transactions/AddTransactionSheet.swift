@@ -28,8 +28,10 @@ struct AddTransactionSheet: View {
                     DatePicker("Date", selection: $date,
                                displayedComponents: .date)
                     TextField("Payee", text: $payee)
+                        .accessibilityIdentifier("transaction-payee-field")
                     TextField("Amount", text: $amountText)
                         .keyboardType(.decimalPad)
+                        .accessibilityIdentifier("transaction-amount-field")
                 }
 
                 Section {
@@ -87,6 +89,7 @@ struct AddTransactionSheet: View {
                         dismiss()
                     }
                     .disabled(!canAdd)
+                    .accessibilityIdentifier("add-transaction-confirm")
                 }
             }
         }
