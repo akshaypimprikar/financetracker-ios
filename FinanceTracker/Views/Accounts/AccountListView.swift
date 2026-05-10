@@ -64,6 +64,7 @@ struct AccountListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
+                    .accessibilityIdentifier("add-account-button")
             }
         }
         .sheet(isPresented: $isPresentingAdd) {

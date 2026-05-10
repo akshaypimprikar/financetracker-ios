@@ -34,6 +34,7 @@ struct TransactionListView: View {
                     isPresentingImport = true
                 }
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
+                    .accessibilityIdentifier("add-transaction-button")
             }
         }
         .sheet(isPresented: $isPresentingAdd) {
