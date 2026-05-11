@@ -13,6 +13,7 @@ struct AddCategorySheet: View {
             Form {
                 Section {
                     TextField("Name", text: $name)
+                        .accessibilityIdentifier("category-name-field")
                     Picker("Type", selection: $type) {
                         ForEach(CategoryType.allCases, id: \.self) { t in
                             Text(t.rawValue.capitalized).tag(t)
@@ -37,6 +38,7 @@ struct AddCategorySheet: View {
                         dismiss()
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityIdentifier("add-category-confirm")
                 }
             }
         }

@@ -32,6 +32,7 @@ Edit only the lines that differ. Do not copy FinanceTracker-specific paths (e.g.
 ### 5. Open a PR — never push directly to main
 ```bash
 # Create a branch, commit, push, open PR
+git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow checkout develop && git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow pull
 git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow checkout -b sync/<YYYY-MM-DD>
 git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow add .claude/commands/
 git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow commit -m "chore: sync commands from FinanceTracker — <brief summary>"
@@ -39,7 +40,7 @@ git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow push -u origin sync/<YY
 gh pr create --repo akshaypimprikar/ios-agent-workflow \
   --title "chore: sync commands from FinanceTracker — <brief summary>" \
   --body "## Changes\n<bullet list of what changed and why>\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
-  --base main
+  --base develop
 ```
 
 If nothing changed, do not create a branch or PR — report "no changes needed" instead.

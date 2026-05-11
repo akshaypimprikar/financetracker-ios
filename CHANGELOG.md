@@ -4,16 +4,19 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
-## [Unreleased]
+## [1.0.0] — 2026-05-11
 
 ### Added
-- Multi-agent workflow: 8 slash commands in `.claude/commands/` (`/spec`, `/plan`, `/feature`, `/test`, `/review`, `/bugfix`, `/release`, `/sync-workflow`)
-- Agent Workflow section in `CLAUDE.md` documenting the pipeline and per-agent enforcement rules
+- **Multi-agent workflow** — 8 slash commands (`/spec`, `/plan`, `/feature`, `/test`, `/review`, `/bugfix`, `/release`, `/sync-workflow`) defining a full spec → plan → TDD → PR → release pipeline
+- **UI tests** — 6 XCUITest flows covering tab navigation, add account, add transaction, add budget, and add category; `--uitesting` launch arg switches SwiftData to in-memory store for clean isolation
+- **Accessibility identifiers** — 13 identifiers across 8 view files for stable test targeting
+- **Gitflow** — `develop` integration branch; `feature/*`, `fix/*`, `spec/*` → `develop`; `release/*` → `main` via PR
+- **README** — project overview, pipeline diagram, architecture summary, repo structure guide
 - `.gitignore` covering Xcode derived data, `.DS_Store`, Claude local files, and plugin cache
+- `CLAUDE.md` trimmed to 44 lines with always-on architecture rules and agent pipeline
 
 ### Fixed
 - Removed nested duplicate Xcode project structure that caused `PBXFileSystemSynchronizedRootGroup` to compile every Swift file twice
-- Updated CLAUDE.md build directory from nested `FinanceTracker/FinanceTracker/` to the git root
 
 ---
 
