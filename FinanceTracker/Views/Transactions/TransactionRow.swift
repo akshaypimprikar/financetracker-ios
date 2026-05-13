@@ -5,25 +5,25 @@ struct TransactionRow: View {
 
     var body: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.tight) {
                 Text(transaction.payee)
-                    .font(.body)
+                    .font(Theme.Typography.rowTitle)
                 if let category = transaction.category {
                     Text(category.name)
-                        .font(.caption)
+                        .font(Theme.Typography.rowSubtitle)
                         .foregroundStyle(.secondary)
                 } else {
                     Text(transaction.date,
                          format: .dateTime.month(.abbreviated).day())
-                        .font(.caption)
+                        .font(Theme.Typography.rowSubtitle)
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer()
             Text(transaction.amount, format: .currency(code: transaction.account.currency))
                 .foregroundStyle(
-                    transaction.type == .credit ? .green :
-                    transaction.type == .transfer ? .blue : .primary
+                    transaction.type == .credit ? Theme.Colors.positive :
+                    transaction.type == .transfer ? Theme.Colors.transfer : .primary
                 )
         }
     }

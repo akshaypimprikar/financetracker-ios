@@ -40,17 +40,17 @@ struct AccountDetailView: View {
                 Section("Transactions") {
                     ForEach(transactions) { tx in
                         HStack {
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: Theme.Spacing.tight) {
                                 Text(tx.payee)
                                 Text(tx.date,
                                      format: .dateTime.month(.abbreviated).day().year())
-                                    .font(.caption)
+                                    .font(Theme.Typography.rowSubtitle)
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
                             Text(tx.amount,
                                  format: .currency(code: account.currency))
-                            .foregroundStyle(tx.type == .credit ? .green : .primary)
+                            .foregroundStyle(tx.type == .credit ? Theme.Colors.positive : .primary)
                         }
                     }
                 }

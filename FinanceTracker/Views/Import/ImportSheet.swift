@@ -53,15 +53,15 @@ struct ImportSheet: View {
     // MARK: Step 1 — File picker
 
     private var filePickerStep: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: Theme.Spacing.sheetSpacing) {
             Spacer()
             Image(systemName: "doc.text")
                 .font(.system(size: 72))
-                .foregroundStyle(.teal)
+                .foregroundStyle(Theme.Colors.primaryInteractive)
             Text("Choose a CSV file to import")
-                .font(.headline)
+                .font(Theme.Typography.sectionHeader)
             Text("Supported: comma- or semicolon-delimited, any column order")
-                .font(.caption)
+                .font(Theme.Typography.rowSubtitle)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
@@ -92,7 +92,7 @@ struct ImportSheet: View {
                 Section("File preview (first rows)") {
                     ForEach(Array(viewModel.csvSampleRows.prefix(4).enumerated()), id: \.offset) { _, row in
                         Text(row.enumerated().map { "\($0.offset):\($0.element)" }.joined(separator: "  "))
-                            .font(.caption.monospaced())
+                            .font(Theme.Typography.code)
                             .lineLimit(1)
                     }
                 }
@@ -123,7 +123,7 @@ struct ImportSheet: View {
                     Spacer()
                     Text("\(viewModel.pendingTransactions.count)")
                         .bold()
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Theme.Colors.positive)
                 }
                 HStack {
                     Text("Skipped (duplicates)")
