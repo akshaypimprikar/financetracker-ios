@@ -39,13 +39,16 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 ## Agent commands
 
-Eight slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow`
+Nine slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design`
 
 Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → PR → `develop` → `/review` + `/test` + `code-review:code-review` (parallel) → release → `main`
+
+UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token. Run `/design` bootstrap once to establish `FinanceTracker/Theme/` and `docs/design-system.md`.
 
 Branch strategy (gitflow):
 - `feature/*` → `develop`
 - `fix/*` → `develop` (hotfix: `hotfix/*` → `main` + `develop`)
 - `release/*` → `main` + `develop`
 - `spec/*` → `develop`
+- `design/*` → `develop`
 - `main` receives only release and hotfix merges, never direct feature PRs
