@@ -20,10 +20,14 @@ for target in report.get("targets", []):
         continue
     for file in target.get("files", []):
         path = file.get("path", "")
+        name = file.get("name", path)
         if "Tests" in path or path.endswith("main.swift"):
             continue
+        # Views and Sheets contain no business logic — tested via UI tests, not unit tests
+        if name.endswith("View.swift") or name.endswith("Sheet.swift"):
+            continue
         source_files.append({
-            "name": file.get("name", path),
+            "name": name,
             "coverage": file.get("lineCoverage", 0.0),
         })
 
