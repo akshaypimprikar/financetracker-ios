@@ -9,9 +9,12 @@ All notable changes to FinanceTracker are documented here.
 ### Added
 - **`/design` agent** — bootstrap and extend modes; establishes `FinanceTracker/Theme/` token system before UI features are built; enforced via `/spec` (Design section) and `/review` (design compliance checklist)
 - **Theme token system** — `Colors.swift`, `Spacing.swift`, `Typography.swift` with semantic tokens; all existing views refactored to use tokens
-- **`docs/design-system.md`** — canonical token reference and component pattern guide
+- **`Theme/Charts.swift`** — chart visualisation tokens: `balanceLine`, `balanceAreaFill`, `spendingBar`, `gridLine`, `minHeight`, `lineStrokeWidth`
+- **`docs/design-system.md`** — canonical token reference and component pattern guide, now including Data Visualisation section with balance line and spending bar chart patterns
 - **Theme unit tests** — 15 tests covering all color and spacing token values
-- **PR checks CI** — GitHub Actions workflow running full test suite + architecture review + code quality review automatically on every PR
+- **PR checks CI** — GitHub Actions workflow running full test suite on every PR, with coverage enforcement (fail <60%, warn <80%)
+- **Coverage enforcement** — `xccov` check in CI reports per-file line coverage; blocks PRs below 60%, warns below 80%
+- **Pre-push git hook** — blocks direct pushes to `develop`/`main` and pushes to already-merged PR branches
 
 ---
 

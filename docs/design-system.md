@@ -122,4 +122,59 @@ ProgressView(value: min(progress.percentUsed, 1.0))
 
 ## Data Visualisation
 
-*Not yet implemented. Tokens will be added to `FinanceTracker/Theme/Charts.swift` when the charts feature ships. Run `/design "chart visualisation"` before that spec is written.*
+`Theme.Charts` — `FinanceTracker/Theme/Charts.swift`
+
+### Colors
+
+| Token | Value | Meaning |
+|---|---|---|
+| `balanceLine` | `.teal` | Stroke colour for the running balance line chart in AccountDetailView |
+| `balanceAreaFill` | `.teal.opacity(0.08)` | Gradient fill under the balance line — same hue as `netWorthCardBackground` at lower opacity |
+| `spendingBar` | `.orange` | Bar fill for the spending breakdown chart in BudgetDetailView — echoes `spendingCardBackground` |
+| `gridLine` | `Color(.separator)` | Chart axis grid lines; system colour so it respects dark mode automatically |
+
+### Sizes
+
+| Token | Value | Meaning |
+|---|---|---|
+| `minHeight` | `180pt` | Minimum chart frame height when embedded in a `List` section |
+| `lineStrokeWidth` | `2pt` | Balance line stroke width |
+
+### Reused tokens
+
+Charts share these tokens from the existing system — no duplication:
+
+| Token | Source | Use in charts |
+|---|---|---|
+| `Theme.Spacing.cornerRadiusCard` | Spacing | Callout/annotation bubble corner radius |
+| `Theme.Spacing.cardPadding` | Spacing | Horizontal chart padding |
+| `Theme.Typography.rowSubtitle` | Typography | Axis labels |
+
+### Component patterns
+
+#### Balance Line Chart (AccountDetailView)
+A line chart showing running account balance over time. Area below the line is filled with `balanceAreaFill`.
+
+```swift
+Chart(dataPoints) { point in
+    LineMark(x: .value("Date", point.date), y: .value("Balance", point.balance))
+        .foregroundStyle(Theme.Charts.balanceLine)
+        .lineStyle(StrokeStyle(lineWidth: Theme.Charts.lineStrokeWidth))
+    AreaMark(x: .value("Date", point.date), y: .value("Balance", point.balance))
+        .foregroundStyle(Theme.Charts.balanceAreaFill)
+}
+.frame(minHeight: Theme.Charts.minHeight)
+.padding(.horizontal, Theme.Spacing.cardPadding)
+```
+
+#### Spending Bar Chart (BudgetDetailView)
+A bar chart showing spending per category for the current month. All bars use `spendingBar`.
+
+```swift
+Chart(categoryTotals) { item in
+    BarMark(x: .value("Category", item.name), y: .value("Spent", item.amount))
+        .foregroundStyle(Theme.Charts.spendingBar)
+}
+.frame(minHeight: Theme.Charts.minHeight)
+.padding(.horizontal, Theme.Spacing.cardPadding)
+```
