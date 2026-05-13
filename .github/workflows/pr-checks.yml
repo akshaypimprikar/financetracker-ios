@@ -17,12 +17,15 @@ jobs:
         with:
           xcode-version: '16'
 
+      - name: List available simulators
+        run: xcrun simctl list devices available
+
       - name: Run full test suite
         run: |
           set -o pipefail
           xcodebuild test \
             -project FinanceTracker.xcodeproj \
             -scheme FinanceTracker \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination 'platform=iOS Simulator,OS:latest,name=iPhone 16' \
             2>&1 | tee xcode.log
           grep -E "TEST SUCCEEDED|TEST FAILED" xcode.log
