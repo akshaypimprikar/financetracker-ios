@@ -12,18 +12,17 @@ Every feature follows the same disciplined path:
 
 ```
 Idea
-  └─ /design  → establish or extend Theme token system before any UI work
   └─ /spec    → design spec, 2–3 approaches proposed, you choose
   └─ /plan    → task-by-task implementation plan with exact code + commands
   └─ /feature → TDD implementation: failing test → implement → pass → commit
-  └─ /review  → architecture + design compliance check (layer rules, type safety, Theme tokens, coverage)
+  └─ /review  → architecture compliance check (layer rules, type safety, coverage)
   └─ /test    → coverage report via xccov
   └─ /release → version bump, CHANGELOG, PR from develop → main, tag
 ```
 
 You approve twice per feature: after the spec and after the plan. Everything else runs autonomously until you hit merge.
 
-Nine slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets.
+Eight slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, commit conventions, and PR targets.
 
 ---
 
@@ -76,9 +75,7 @@ SwiftData Repositories — concrete implementations, swappable
 FinanceTracker/          — app source (Models, Services, Repositories, ViewModels, Views)
 FinanceTrackerTests/     — unit + integration tests
 FinanceTrackerUITests/   — XCUITest flows (5 core user flows)
-.claude/commands/        — agent definitions (/spec, /plan, /feature, /review, /test, /bugfix, /release, /sync-workflow, /design)
-FinanceTracker/Theme/    — semantic design tokens (Colors, Spacing, Typography)
-docs/design-system.md   — token reference and component patterns
+.claude/commands/        — agent definitions (/spec, /plan, /feature, /review, /test, /bugfix, /release, /sync-workflow)
 docs/superpowers/
   specs/                 — design specs (approved before any code is written)
   plans/                 — implementation plans (approved before the feature agent runs)
@@ -99,7 +96,6 @@ feature/*   — off develop, one per feature
 fix/*       — off develop (hotfix/* off main)
 release/*   — off develop, PR to main, back-merged to develop
 spec/*      — off develop, for spec + plan docs
-design/*    — off develop, for Theme token additions
 ```
 
 ---
@@ -125,13 +121,3 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 ```
 
 > Simulator: `iPhone 17` — iOS 26.4 ships with iPhone 17 only.
-
-### First-time setup
-
-Activate the pre-push git hook (blocks direct pushes to `develop`/`main` and pushes to merged-PR branches):
-
-```bash
-git config core.hooksPath .githooks
-```
-
-Run this once after cloning.

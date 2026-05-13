@@ -4,17 +4,6 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
-## [Unreleased]
-
-### Added
-- **`/design` agent** — bootstrap and extend modes; establishes `FinanceTracker/Theme/` token system before UI features are built; enforced via `/spec` (Design section) and `/review` (design compliance checklist)
-- **Theme token system** — `Colors.swift`, `Spacing.swift`, `Typography.swift` with semantic tokens; all existing views refactored to use tokens
-- **`docs/design-system.md`** — canonical token reference and component pattern guide
-- **Theme unit tests** — 15 tests covering all color and spacing token values
-- **PR checks CI** — GitHub Actions workflow running full test suite + architecture review + code quality review automatically on every PR
-
----
-
 ## [1.0.0] — 2026-05-11
 
 ### Added

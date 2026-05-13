@@ -62,21 +62,21 @@ private struct BudgetRow: View {
     let progress: BudgetProgress
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.rowSpacing) {
+        VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Label(budget.category.name, systemImage: budget.category.icon)
                     .font(.subheadline.bold())
                 Spacer()
                 Text(progress.spent, format: .currency(code: "USD"))
                     .bold()
-                    .foregroundStyle(progress.isOverBudget ? Theme.Colors.destructive : .primary)
+                    .foregroundStyle(progress.isOverBudget ? .red : .primary)
                 Text("/ \(progress.limit.formatted(.currency(code: "USD")))")
-                    .font(Theme.Typography.rowSubtitle)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: min(progress.percentUsed, 1.0))
-                .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                .tint(progress.isOverBudget ? .red : .accentColor)
         }
-        .padding(.vertical, Theme.Spacing.compact)
+        .padding(.vertical, 4)
     }
 }

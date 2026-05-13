@@ -5,13 +5,13 @@ struct DashboardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: Theme.Spacing.cardPadding) {
+            VStack(spacing: 16) {
                 netWorthCard
                 spendingCard
 
                 if !viewModel.budgetProgresses.isEmpty {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
-                        Text("Budgets").font(Theme.Typography.sectionHeader)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Budgets").font(.headline)
                         ForEach(viewModel.budgetProgresses, id: \.0.id) { budget, progress in
                             BudgetProgressCard(budget: budget, progress: progress,
                                                currency: viewModel.currency)
@@ -20,34 +20,34 @@ struct DashboardView: View {
                 }
 
                 if !viewModel.recentTransactions.isEmpty {
-                    VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
-                        Text("Recent Transactions").font(Theme.Typography.sectionHeader)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent Transactions").font(.headline)
                         ForEach(viewModel.recentTransactions) { tx in
                             TransactionRow(transaction: tx)
-                                .padding(.vertical, Theme.Spacing.tight)
+                                .padding(.vertical, 2)
                         }
                     }
                 }
             }
-            .padding(Theme.Spacing.cardPadding)
+            .padding()
         }
         .navigationTitle("Dashboard")
         .onAppear { try? viewModel.load() }
     }
 
     private var netWorthCard: some View {
-        VStack(spacing: Theme.Spacing.compact) {
+        VStack(spacing: 4) {
             Text("Net Worth")
-                .font(Theme.Typography.rowSubtitle)
+                .font(.caption)
                 .foregroundStyle(.secondary)
             Text(viewModel.netWorth, format: .currency(code: viewModel.currency))
-                .font(Theme.Typography.amountDisplay)
-                .foregroundStyle(viewModel.netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
+                .font(.system(size: 36, weight: .bold))
+                .foregroundStyle(viewModel.netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
         }
         .frame(maxWidth: .infinity)
-        .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.netWorthCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCardLarge))
+        .padding()
+        .background(.teal.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     private var spendingCard: some View {
@@ -57,9 +57,9 @@ struct DashboardView: View {
             Text(viewModel.spendingThisMonth, format: .currency(code: viewModel.currency))
                 .bold()
         }
-        .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.spendingCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCard))
+        .padding()
+        .background(.orange.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
@@ -69,7 +69,7 @@ private struct BudgetProgressCard: View {
     let currency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.compact) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(budget.category.name)
                     .font(.subheadline)
@@ -77,12 +77,12 @@ private struct BudgetProgressCard: View {
                 Text(progress.spent, format: .currency(code: currency))
                     .font(.subheadline.bold())
                 Text("/ \(progress.limit.formatted(.currency(code: currency)))")
-                    .font(Theme.Typography.rowSubtitle)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: min(progress.percentUsed, 1.0))
-                .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                .tint(progress.isOverBudget ? .red : .accentColor)
         }
-        .padding(.vertical, Theme.Spacing.compact)
+        .padding(.vertical, 4)
     }
 }
