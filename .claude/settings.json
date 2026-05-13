@@ -26,11 +26,31 @@
       "Skill(update-config:*)",
       "Edit(~/.claude/skills/ios-build-verify/**)",
       "Bash(mkdir -p /Users/akshaypimprikar/.claude/skills/ios-coverage)",
-      "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")"
+      "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")",
+      "Bash(git cherry-pick *)",
+      "Bash(chmod +x /Users/akshaypimprikar/Desktop/FinanceTracker/.githooks/pre-push)",
+      "Bash(git config *)",
+      "Bash(.githooks/pre-push)",
+      "Bash(BRANCH=develop bash .githooks/pre-push)",
+      "Bash(gh run *)",
+      "Bash(grep -v \"^\\\\s*$\")"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
       "/Users/akshaypimprikar/.claude/skills"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified — run /sync-workflow to propagate changes to ios-agent-workflow.\"}' || true; } 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

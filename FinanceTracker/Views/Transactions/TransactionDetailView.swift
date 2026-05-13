@@ -30,7 +30,7 @@ struct TransactionDetailView: View {
                 if let hash = transaction.importHash {
                     LabeledContent("Import ID") {
                         Text(hash.prefix(8) + "…")
-                            .font(.caption.monospaced())
+                            .font(Theme.Typography.code)
                             .foregroundStyle(.secondary)
                     }
                 }

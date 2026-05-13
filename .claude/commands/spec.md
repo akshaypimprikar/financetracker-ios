@@ -17,6 +17,7 @@ Before asking anything, read:
 - `FinanceTracker/Services/` — existing domain services
 - `FinanceTracker/Repositories/Protocols/` — existing repository protocols
 - Any existing related views or ViewModels
+- `docs/design-system.md` and `FinanceTracker/Theme/` — if the feature touches any Views, read these before proposing UI approaches. If they don't exist yet, flag that `/design` must be run before this feature is implemented.
 
 ### 2. Ask clarifying questions
 Ask only what you need to make architecture decisions. Typical questions:
@@ -55,6 +56,12 @@ New or modified services — method signatures + pure-function contracts.
 
 ## Navigation
 New screens, sheets, or changes to existing navigation.
+
+## Design
+*Only required for features that touch Views.*
+- List every new visual component and which Theme tokens it uses
+- If a new visual pattern has no existing token, flag it — `/design "pattern"` must run before `/feature`
+- If `docs/design-system.md` does not exist, flag that `/design` bootstrap must run first
 
 ## Future Extension Points
 What's explicitly deferred and where it plugs in later.
