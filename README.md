@@ -125,3 +125,13 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 ```
 
 > Simulator: `iPhone 17` — iOS 26.4 ships with iPhone 17 only.
+
+### First-time setup
+
+Activate the pre-push git hook (blocks direct pushes to `develop`/`main` and pushes to merged-PR branches):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Run this once after cloning.

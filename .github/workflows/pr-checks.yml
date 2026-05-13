@@ -5,10 +5,6 @@ on:
     types: [opened, synchronize, reopened]
     branches: [develop, main]
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   test:
     name: Test Suite
@@ -26,57 +22,3 @@ jobs:
             -scheme FinanceTracker \
             -destination 'platform=iOS Simulator,name=iPhone 17' \
             2>&1 | grep -E "Test.*passed|Test.*failed|TEST SUCCEEDED|TEST FAILED"
-
-  review:
-    name: Architecture & Design Review
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            You are the Review Agent for FinanceTracker. Review PR #${{ github.event.pull_request.number }}.
-
-            Follow the process defined in .claude/commands/review.md exactly.
-            Read CLAUDE.md first for architecture rules.
-            Read docs/design-system.md and FinanceTracker/Theme/ for design rules — only if the PR touches Views/.
-
-            Skip the build and test suite steps — a separate CI job handles those.
-
-            Post your full review as a comment on PR #${{ github.event.pull_request.number }}, using the output format from review.md:
-            - ✅ PASS or ❌ FAIL for each check with file path + line number
-            - Final verdict: APPROVED or CHANGES REQUESTED
-
-  code-review:
-    name: Code Quality Review
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            Perform a thorough code quality review of PR #${{ github.event.pull_request.number }} on the FinanceTracker iOS project.
-
-            Focus on:
-            - Code clarity and naming
-            - Single responsibility — functions doing one thing
-            - No magic numbers for monetary thresholds
-            - No commented-out code
-            - No TODO/FIXME without a linked issue
-            - Swift idioms and best practices
-            - Any subtle bugs or logic errors
-
-            Look at the diff for this PR. For each file changed, review the new and modified code.
-
-            Post your findings as a comment on PR #${{ github.event.pull_request.number }}.
-            Format: file path + line number for each issue. End with an overall verdict.
