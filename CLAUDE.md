@@ -51,4 +51,7 @@ Branch strategy (gitflow):
 - `release/*` → `main` + `develop`
 - `spec/*` → `develop`
 - `design/*` → `develop`
+- `ci/*` → `develop`
 - `main` receives only release and hotfix merges, never direct feature PRs
+
+**PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to the repo default branch (`main`) — omitting `--base` silently targets the wrong branch.
