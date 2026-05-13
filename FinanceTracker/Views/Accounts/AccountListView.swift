@@ -20,7 +20,7 @@ struct AccountListView: View {
                     Text(viewModel.netWorth(),
                          format: .currency(code: viewModel.currency))
                     .bold()
-                    .foregroundStyle(viewModel.netWorth() >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
+                    .foregroundStyle(viewModel.netWorth() >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                 }
             }
 
@@ -79,20 +79,20 @@ struct AccountRow: View {
     let balance: Decimal
 
     var body: some View {
-        HStack(spacing: Theme.Spacing.elementSpacing) {
+        HStack(spacing: 12) {
             Image(systemName: account.icon)
-                .foregroundStyle(Color(hex: account.colorHex) ?? Theme.Colors.primaryInteractive)
+                .foregroundStyle(Color(hex: account.colorHex) ?? .accentColor)
                 .frame(width: 28)
-            VStack(alignment: .leading, spacing: Theme.Spacing.tight) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(account.name)
                 Text(account.type.rawValue.capitalized)
-                    .font(Theme.Typography.rowSubtitle)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer()
             Text(balance, format: .currency(code: account.currency))
                 .bold()
-                .foregroundStyle(balance >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
+                .foregroundStyle(balance >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
         }
     }
 }
