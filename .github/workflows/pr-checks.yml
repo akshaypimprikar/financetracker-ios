@@ -20,9 +20,28 @@ jobs:
       - name: Run full test suite
         run: |
           set -o pipefail
+
+          # Dynamically pick the latest available iPhone simulator (non-Pro/Plus/Max/SE)
+          SIM_ID=$(xcrun simctl list devices available -j | python3 -c "
+import json, sys
+devices = json.load(sys.stdin)['devices']
+for runtime in sorted(devices, reverse=True):
+    if 'iOS' not in runtime:
+        continue
+    for d in devices[runtime]:
+        name = d.get('name', '')
+        if d.get('isAvailable') and 'iPhone' in name \
+                and 'Pro' not in name and 'Plus' not in name \
+                and 'Max' not in name and 'SE' not in name \
+                and 'Air' not in name:
+            print(d['udid'])
+            raise SystemExit
+")
+          echo "Selected simulator: $SIM_ID"
+
           xcodebuild test \
             -project FinanceTracker.xcodeproj \
             -scheme FinanceTracker \
-            -destination 'platform=iOS Simulator,OS:26.2,name=iPhone 17' \
+            -destination "id=$SIM_ID" \
             2>&1 | tee xcode.log
           grep -E "TEST SUCCEEDED|TEST FAILED" xcode.log
