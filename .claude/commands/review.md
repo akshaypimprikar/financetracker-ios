@@ -38,6 +38,15 @@ Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 - [ ] Full test suite passes (run from git root): `xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'`
 - [ ] Coverage ≥80% on all new files — use the `ios-coverage` skill to capture and read an `.xcresult` bundle
 
+### Design compliance checks
+*Only applies to PRs that touch `Views/` or add new UI components. Read `docs/design-system.md` and `FinanceTracker/Theme/` before running these checks.*
+
+- [ ] No hardcoded colors where a `Theme.Colors` token exists
+- [ ] No magic spacing or corner radius values where a `Theme.Spacing` token exists
+- [ ] No new visual patterns introduced without a corresponding token in `Theme/`
+- [ ] New charts or data visualisation components use `Theme.Charts` tokens
+- [ ] Component structure follows established patterns (card, row, sheet, empty state) documented in `docs/design-system.md`
+
 ### Code quality checks
 
 - [ ] No commented-out code committed
