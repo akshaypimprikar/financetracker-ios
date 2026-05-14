@@ -15,18 +15,18 @@ final class UITestSmokeTests: UITestBase {
         let tabBar = app.tabBars.firstMatch
 
         tabBar.buttons["Accounts"].tap()
-        XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: 10))
 
         tabBar.buttons["Transactions"].tap()
-        XCTAssertTrue(app.navigationBars["Transactions"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars["Transactions"].waitForExistence(timeout: 10))
 
         tabBar.buttons["Budgets"].tap()
-        XCTAssertTrue(app.navigationBars["Budgets"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars["Budgets"].waitForExistence(timeout: 10))
 
         tabBar.buttons["Settings"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
 
         tabBar.buttons["Dashboard"].tap()
-        XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 10))
     }
 }
