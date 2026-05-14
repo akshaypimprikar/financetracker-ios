@@ -4,6 +4,12 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches: [develop, main]
+    paths:
+      - 'FinanceTracker/**'
+      - 'FinanceTrackerTests/**'
+      - 'FinanceTrackerUITests/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
 
 jobs:
   test:
