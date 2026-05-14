@@ -23,8 +23,9 @@ for target in report.get("targets", []):
         name = file.get("name", path)
         if "Tests" in path or path.endswith("main.swift"):
             continue
-        # Views and Sheets contain no business logic — tested via UI tests, not unit tests
-        if name.endswith("View.swift") or name.endswith("Sheet.swift"):
+        # UI-only files contain no business logic — tested via UI tests, not unit tests
+        if (name.endswith("View.swift") or name.endswith("Sheet.swift") or
+                name.endswith("Row.swift") or name.startswith("Color+")):
             continue
         source_files.append({
             "name": name,
