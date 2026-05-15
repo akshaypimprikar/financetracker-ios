@@ -1,23 +1,19 @@
-name: PR Checks
+name: UI Tests
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  push:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
-      - 'FinanceTrackerTests/**'
       - 'FinanceTrackerUITests/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: ui-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  unit-tests:
-    name: Unit Tests
+  ui-tests:
+    name: UI Tests
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -31,11 +27,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: deriveddata-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerTests/**/*.swift') }}
+          key: deriveddata-ui-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerUITests/**/*.swift') }}
           restore-keys: |
-            deriveddata-${{ runner.os }}-
+            deriveddata-ui-${{ runner.os }}-
 
-      - name: Run unit and integration tests
+      - name: Run UI tests
         run: |
           set -o pipefail
           SIM_ID=$(xcrun simctl list devices available -j | python3 scripts/select_simulator.py)
@@ -44,12 +40,6 @@ jobs:
             -project FinanceTracker.xcodeproj \
             -scheme FinanceTracker \
             -destination "id=$SIM_ID" \
-            -skip-testing:FinanceTrackerUITests \
-            -resultBundlePath result.xcresult \
+            -only-testing:FinanceTrackerUITests \
             2>&1 | tee xcode.log
           grep -E "TEST SUCCEEDED|TEST FAILED" xcode.log
-
-      - name: Check coverage
-        run: |
-          xcrun xccov view --report --json result.xcresult > coverage.json
-          python3 scripts/check_coverage.py coverage.json
