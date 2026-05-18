@@ -39,10 +39,9 @@ final class AccountViewModel {
         (try? transactionRepo.fetch(for: account)) ?? []
     }
 
-    func runningBalanceData(for account: Account) -> [(date: Date, balance: Double)] {
+    func runningBalanceData(for account: Account) -> [BalanceDataPoint] {
         let txs = (try? transactionRepo.fetch(for: account)) ?? []
         return balanceService.runningBalance(for: account, transactions: txs)
-            .map { (date: $0.date, balance: NSDecimalNumber(decimal: $0.balance).doubleValue) }
     }
 
     func netWorth() -> Decimal {

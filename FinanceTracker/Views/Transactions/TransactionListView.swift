@@ -12,17 +12,27 @@ struct TransactionListView: View {
                 accountFilterPicker
             }
 
-            ForEach(viewModel.filteredTransactions) { tx in
-                NavigationLink {
-                    TransactionDetailView(transaction: tx, viewModel: viewModel)
-                } label: {
-                    TransactionRow(transaction: tx)
+            if viewModel.filteredTransactions.isEmpty {
+                ContentUnavailableView(
+                    "No Transactions",
+                    systemImage: "tray",
+                    description: Text(viewModel.searchText.isEmpty
+                                      ? "Tap + to add your first transaction"
+                                      : "No results for \"\(viewModel.searchText)\"")
+                )
+            } else {
+                ForEach(viewModel.filteredTransactions) { tx in
+                    NavigationLink {
+                        TransactionDetailView(transaction: tx, viewModel: viewModel)
+                    } label: {
+                        TransactionRow(transaction: tx)
+                    }
                 }
-            }
-            .onDelete { indexSet in
-                let txs = viewModel.filteredTransactions
-                for index in indexSet {
-                    try? viewModel.delete(txs[index])
+                .onDelete { indexSet in
+                    let txs = viewModel.filteredTransactions
+                    for index in indexSet {
+                        try? viewModel.delete(txs[index])
+                    }
                 }
             }
         }

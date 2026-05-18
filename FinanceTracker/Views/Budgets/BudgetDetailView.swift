@@ -5,29 +5,29 @@ struct BudgetDetailView: View {
     let budget: Budget
     let progress: BudgetProgress
     @Bindable var viewModel: BudgetViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var spendingData: [MonthlySpendingPoint] = []
 
     var body: some View {
-        let spendingData = viewModel.monthlySpendingHistory(for: budget.category)
-        let hasSpending = spendingData.contains { $0.spent > 0 }
-
         List {
             Section("Progress") {
                 HStack {
                     Text("Spent")
                     Spacer()
-                    Text(progress.spent, format: .currency(code: "USD"))
+                    Text(progress.spent, format: .currency(code: viewModel.currency))
                         .bold()
                         .foregroundStyle(progress.isOverBudget ? Theme.Colors.destructive : .primary)
                 }
                 HStack {
                     Text("Limit")
                     Spacer()
-                    Text(progress.limit, format: .currency(code: "USD"))
+                    Text(progress.limit, format: .currency(code: viewModel.currency))
                 }
                 HStack {
                     Text("Remaining")
                     Spacer()
-                    Text(progress.remaining, format: .currency(code: "USD"))
+                    Text(progress.remaining, format: .currency(code: viewModel.currency))
                         .foregroundStyle(progress.remaining < 0 ? Theme.Colors.destructive : Theme.Colors.positive)
                 }
                 ProgressView(value: min(progress.percentUsed, 1.0))
@@ -35,12 +35,12 @@ struct BudgetDetailView: View {
                     .padding(.vertical, Theme.Spacing.compact)
             }
 
-            if hasSpending {
+            if spendingData.contains(where: { $0.spent > 0 }) {
                 Section("Spending History") {
-                    Chart(spendingData, id: \.month) { point in
+                    Chart(spendingData) { point in
                         BarMark(
                             x: .value("Month", point.month, unit: .month),
-                            y: .value("Spent", point.spent)
+                            y: .value("Spent", NSDecimalNumber(decimal: point.spent).doubleValue)
                         )
                         .foregroundStyle(Theme.Charts.spendingBar)
                     }
@@ -59,8 +59,12 @@ struct BudgetDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Delete Budget", role: .destructive) {
                     try? viewModel.delete(budget)
+                    dismiss()
                 }
             }
+        }
+        .onAppear {
+            spendingData = viewModel.monthlySpendingHistory(for: budget.category)
         }
     }
 }
