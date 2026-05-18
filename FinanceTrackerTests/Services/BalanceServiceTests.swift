@@ -6,11 +6,6 @@ import SwiftData
 @Suite("BalanceService")
 struct BalanceServiceTests {
 
-    func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Account.self, Transaction.self, Category.self, Budget.self, ImportRecord.self])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
-    }
-
     @Test func openingBalanceWithNoTransactions() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
@@ -105,6 +100,20 @@ struct BalanceServiceTests {
 
         let points = BalanceService().runningBalance(for: account, transactions: [tx])
         #expect(points.last?.balance == 2000)
+    }
+
+    @Test func transferWithNilToAccountDoesNotCrash() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking, openingBalance: 500)
+        ctx.insert(account)
+        // Transfer with no toAccount — should not crash and should debit source
+        let tx = Transaction(date: .now, amount: 100, payee: "Transfer Out", type: .transfer,
+                             account: account, toAccount: nil)
+        ctx.insert(tx)
+
+        let balance = BalanceService().balance(for: account, transactions: [tx])
+        #expect(balance == 400)
     }
 
     @Test func runningBalanceSortsTransactionsByDate() throws {
