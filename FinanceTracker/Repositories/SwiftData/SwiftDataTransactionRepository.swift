@@ -17,11 +17,13 @@ struct SwiftDataTransactionRepository: TransactionRepositoryProtocol {
 
     func fetch(for account: Account) throws -> [Transaction] {
         let accountID = account.id
+        // Fetch all and filter in memory to include transactions where this account
+        // is either the source OR the transfer destination (toAccount).
         let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account.id == accountID },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
-        return try context.fetch(descriptor)
+        let all = try context.fetch(descriptor)
+        return all.filter { $0.account.id == accountID || $0.toAccount?.id == accountID }
     }
 
     func fetch(for category: Category, in month: Date) throws -> [Transaction] {
@@ -41,9 +43,20 @@ struct SwiftDataTransactionRepository: TransactionRepositoryProtocol {
         return results.filter { $0.category?.id == categoryID }
     }
 
+    func fetchRecent(limit: Int) throws -> [Transaction] {
+        var descriptor = FetchDescriptor<Transaction>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return try context.fetch(descriptor)
+    }
+
     func existsWithHash(_ hash: String) throws -> Bool {
-        let descriptor = FetchDescriptor<Transaction>()
-        let all = try context.fetch(descriptor)
+        // Filter in memory — SwiftData optional-String predicate on importHash
+        // requires in-memory filtering to avoid #Predicate limitations with optionals.
+        var descriptor = FetchDescriptor<Transaction>()
+        descriptor.fetchLimit = 1
+        let all = try context.fetch(FetchDescriptor<Transaction>())
         return all.contains { $0.importHash == hash }
     }
 
