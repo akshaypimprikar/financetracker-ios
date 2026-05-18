@@ -5,11 +5,10 @@ struct AccountDetailView: View {
     let account: Account
     @Bindable var viewModel: AccountViewModel
 
-    var body: some View {
-        let transactions = viewModel.transactions(for: account)
-            .sorted { $0.date > $1.date }
-        let balanceData = viewModel.runningBalanceData(for: account)
+    @State private var transactions: [Transaction] = []
+    @State private var balanceData: [BalanceDataPoint] = []
 
+    var body: some View {
         List {
             Section {
                 HStack {
@@ -35,16 +34,16 @@ struct AccountDetailView: View {
 
             if !balanceData.isEmpty {
                 Section("Balance History") {
-                    Chart(balanceData, id: \.date) { point in
+                    Chart(balanceData) { point in
                         LineMark(
                             x: .value("Date", point.date),
-                            y: .value("Balance", point.balance)
+                            y: .value("Balance", NSDecimalNumber(decimal: point.balance).doubleValue)
                         )
                         .foregroundStyle(Theme.Charts.balanceLine)
                         .lineStyle(StrokeStyle(lineWidth: Theme.Charts.lineStrokeWidth))
                         AreaMark(
                             x: .value("Date", point.date),
-                            y: .value("Balance", point.balance)
+                            y: .value("Balance", NSDecimalNumber(decimal: point.balance).doubleValue)
                         )
                         .foregroundStyle(Theme.Charts.balanceAreaFill)
                     }
@@ -85,6 +84,10 @@ struct AccountDetailView: View {
                     try? viewModel.archive(account)
                 }
             }
+        }
+        .onAppear {
+            transactions = viewModel.transactions(for: account).sorted { $0.date > $1.date }
+            balanceData = viewModel.runningBalanceData(for: account)
         }
     }
 }

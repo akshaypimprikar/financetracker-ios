@@ -18,7 +18,8 @@ struct AddTransactionSheet: View {
     private var canAdd: Bool {
         !payee.trimmingCharacters(in: .whitespaces).isEmpty &&
         Decimal(string: amountText) != nil &&
-        selectedAccount != nil
+        selectedAccount != nil &&
+        (!isTransfer || selectedToAccount != nil)
     }
 
     var body: some View {

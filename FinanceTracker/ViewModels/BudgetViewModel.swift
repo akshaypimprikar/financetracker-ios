@@ -10,6 +10,10 @@ final class BudgetViewModel {
         return cal.date(from: cal.dateComponents([.year, .month], from: .now)) ?? .now
     }()
 
+    var currency: String {
+        Locale.current.currency?.identifier ?? "USD"
+    }
+
     private let budgetRepo: any BudgetRepositoryProtocol
     private let transactionRepo: any TransactionRepositoryProtocol
     private let categoryRepo: any CategoryRepositoryProtocol
@@ -30,8 +34,8 @@ final class BudgetViewModel {
     func load() throws {
         categories = try categoryRepo.fetchAll()
         let cal = Calendar.current
-        let start = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth))!
-        let end = cal.date(byAdding: .month, value: 1, to: start)!
+        guard let start = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)),
+              let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
         let allBudgets = try budgetRepo.fetchAll(for: selectedMonth)
         let allTx = try transactionRepo.fetchAll()
 
@@ -50,8 +54,7 @@ final class BudgetViewModel {
 
     func add(category: Category, monthlyLimit: Decimal) throws {
         let cal = Calendar.current
-        let month = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth))!
-        // Guard against duplicate budgets for the same category in the same month
+        guard let month = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)) else { return }
         if let _ = try budgetRepo.fetch(for: category, in: month) {
             throw BudgetError.duplicateBudget
         }
@@ -73,14 +76,14 @@ final class BudgetViewModel {
     static let defaultSpendingHistoryMonths = 12
     var spendingHistoryMonths: Int = BudgetViewModel.defaultSpendingHistoryMonths
 
-    func monthlySpendingHistory(for category: Category) -> [(month: Date, spent: Double)] {
+    func monthlySpendingHistory(for category: Category) -> [MonthlySpendingPoint] {
         let cal = Calendar.current
         let base = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
-        return (0..<spendingHistoryMonths).reversed().compactMap { offset -> (month: Date, spent: Double)? in
+        return (0..<spendingHistoryMonths).reversed().compactMap { offset -> MonthlySpendingPoint? in
             guard let month = cal.date(byAdding: .month, value: -offset, to: base) else { return nil }
             let txs = (try? transactionRepo.fetch(for: category, in: month)) ?? []
             let total = budgetCalcService.totalSpent(transactions: txs)
-            return (month: month, spent: NSDecimalNumber(decimal: total).doubleValue)
+            return MonthlySpendingPoint(month: month, spent: total)
         }
     }
 }

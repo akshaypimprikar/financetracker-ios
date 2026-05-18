@@ -34,10 +34,10 @@ struct ImportSheet: View {
             isPresented: $isPickingFile,
             allowedContentTypes: [.commaSeparatedText, .plainText]
         ) { result in
-            guard let url = try? result.get(),
-                  url.startAccessingSecurityScopedResource(),
-                  let text = try? String(contentsOf: url, encoding: .utf8) else { return }
-            url.stopAccessingSecurityScopedResource()
+            guard let url = try? result.get() else { return }
+            guard url.startAccessingSecurityScopedResource() else { return }
+            defer { url.stopAccessingSecurityScopedResource() }
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
             viewModel.loadCSV(text)
         }
     }
@@ -153,7 +153,7 @@ struct ImportSheet: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(tx.amount, format: .currency(code: "USD"))
+                            Text(tx.amount, format: .currency(code: viewModel.selectedAccount?.currency ?? Locale.current.currency?.identifier ?? "USD"))
                         }
                     }
                 }
