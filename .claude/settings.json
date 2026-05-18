@@ -1,10 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/akshaypimprikar/.claude/**)",
-      "Read(//Users/akshaypimprikar/.claude/plugins/**)",
-      "Read(//usr/local/bin/**)",
-      "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills -type f -name \"*.md\" | head -20)",
+      "Read(/Users/akshaypimprikar/.claude/**)",
+      "Read(/Users/akshaypimprikar/.claude/plugins/**)",
+      "Read(/usr/local/bin/**)",
+      "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills -type f -name \"*.md\" | head -20)",
       "Bash(awk '{print $NF}')",
       "Bash(gh auth *)",
       "Bash(gh pr *)",
@@ -33,7 +33,9 @@
       "Bash(.githooks/pre-push)",
       "Bash(BRANCH=develop bash .githooks/pre-push)",
       "Bash(gh run *)",
-      "Bash(grep -v \"^\\\\s*$\")"
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(claude auth *)",
+      "Write(/Users/akshaypimprikar/Desktop/FinanceTracker/docs/pipeline-review/*)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
@@ -48,6 +50,16 @@
           {
             "type": "command",
             "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified — run /sync-workflow to propagate changes to ios-agent-workflow.\"}' || true; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "REVIEW_DIR='/Users/akshaypimprikar/Desktop/FinanceTracker/docs/pipeline-review'; UNADDRESSED=$(grep -rl 'addressed: false' \"$REVIEW_DIR\"/*.md 2>/dev/null); if [ -n \"$UNADDRESSED\" ]; then COUNT=$(echo \"$UNADDRESSED\" | wc -l | tr -d ' '); LATEST=$(echo \"$UNADDRESSED\" | sort | tail -1 | xargs basename 2>/dev/null); jq -n --arg count \"$COUNT\" --arg file \"$LATEST\" '{\"systemMessage\": \"PIPELINE REVIEW ALERT: \\($count) unaddressed pipeline review report(s) exist in docs/pipeline-review/. Latest: \\($file). Before starting any planned work, ask the user whether they want to address these findings first.\"}'; fi 2>/dev/null || true"
           }
         ]
       }
