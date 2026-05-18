@@ -61,4 +61,18 @@ final class BudgetViewModel {
         let budgetedIDs = Set(budgets.map { $0.0.category.id })
         return categories.filter { !budgetedIDs.contains($0.id) }
     }
+
+    static let defaultSpendingHistoryMonths = 12
+    var spendingHistoryMonths: Int = BudgetViewModel.defaultSpendingHistoryMonths
+
+    func monthlySpendingHistory(for category: Category) -> [(month: Date, spent: Double)] {
+        let cal = Calendar.current
+        let base = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)) ?? selectedMonth
+        return (0..<spendingHistoryMonths).reversed().compactMap { offset -> (month: Date, spent: Double)? in
+            guard let month = cal.date(byAdding: .month, value: -offset, to: base) else { return nil }
+            let txs = (try? transactionRepo.fetch(for: category, in: month)) ?? []
+            let total = budgetCalcService.totalSpent(transactions: txs)
+            return (month: month, spent: NSDecimalNumber(decimal: total).doubleValue)
+        }
+    }
 }

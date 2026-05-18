@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct AccountDetailView: View {
     let account: Account
@@ -7,6 +8,7 @@ struct AccountDetailView: View {
     var body: some View {
         let transactions = viewModel.transactions(for: account)
             .sorted { $0.date > $1.date }
+        let balanceData = viewModel.runningBalanceData(for: account)
 
         List {
             Section {
@@ -28,6 +30,26 @@ struct AccountDetailView: View {
                     Spacer()
                     Text(account.currency)
                         .foregroundStyle(.secondary)
+                }
+            }
+
+            if !balanceData.isEmpty {
+                Section("Balance History") {
+                    Chart(balanceData, id: \.date) { point in
+                        LineMark(
+                            x: .value("Date", point.date),
+                            y: .value("Balance", point.balance)
+                        )
+                        .foregroundStyle(Theme.Charts.balanceLine)
+                        .lineStyle(StrokeStyle(lineWidth: Theme.Charts.lineStrokeWidth))
+                        AreaMark(
+                            x: .value("Date", point.date),
+                            y: .value("Balance", point.balance)
+                        )
+                        .foregroundStyle(Theme.Charts.balanceAreaFill)
+                    }
+                    .frame(minHeight: Theme.Charts.minHeight)
+                    .padding(.horizontal, Theme.Spacing.cardPadding)
                 }
             }
 
