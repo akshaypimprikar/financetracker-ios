@@ -44,9 +44,17 @@ final class BudgetViewModel {
         }
     }
 
+    enum BudgetError: Error {
+        case duplicateBudget
+    }
+
     func add(category: Category, monthlyLimit: Decimal) throws {
         let cal = Calendar.current
         let month = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth))!
+        // Guard against duplicate budgets for the same category in the same month
+        if let _ = try budgetRepo.fetch(for: category, in: month) {
+            throw BudgetError.duplicateBudget
+        }
         let budget = Budget(monthlyLimit: monthlyLimit, month: month, category: category)
         try budgetRepo.save(budget)
         try load()

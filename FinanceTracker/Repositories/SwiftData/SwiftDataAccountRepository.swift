@@ -15,6 +15,14 @@ struct SwiftDataAccountRepository: AccountRepositoryProtocol {
         return try context.fetch(descriptor)
     }
 
+    func fetchAllActive() throws -> [Account] {
+        let descriptor = FetchDescriptor<Account>(
+            predicate: #Predicate { !$0.isArchived },
+            sortBy: [SortDescriptor(\.name)]
+        )
+        return try context.fetch(descriptor)
+    }
+
     func fetch(id: UUID) throws -> Account? {
         let descriptor = FetchDescriptor<Account>(
             predicate: #Predicate { $0.id == id }

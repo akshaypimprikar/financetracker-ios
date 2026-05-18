@@ -82,6 +82,53 @@ struct SwiftDataTransactionRepositoryTests {
         #expect(results[0].payee == "Supermarket")
     }
 
+    @Test func fetchForAccountIncludesTransferDestination() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let repo = SwiftDataTransactionRepository(context: ctx)
+
+        let source = Account(name: "Checking", type: .checking)
+        let dest = Account(name: "Savings", type: .savings)
+        ctx.insert(source); ctx.insert(dest)
+        let transfer = Transaction(date: .now, amount: 500, payee: "Transfer", type: .transfer,
+                                   account: source, toAccount: dest)
+        try repo.save(transfer)
+
+        // Savings is the destination — it should appear in its own account's transaction list
+        let destTxs = try repo.fetch(for: dest)
+        #expect(destTxs.count == 1)
+        #expect(destTxs[0].payee == "Transfer")
+    }
+
+    @Test func fetchRecentReturnsLimitedResults() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let repo = SwiftDataTransactionRepository(context: ctx)
+
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        for i in 1...5 {
+            try repo.save(Transaction(date: .now, amount: Decimal(i * 10), payee: "Tx\(i)",
+                                      type: .debit, account: account))
+        }
+
+        let recent = try repo.fetchRecent(limit: 3)
+        #expect(recent.count == 3)
+    }
+
+    @Test func existsWithHashReturnsFalseForNilImportHash() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let repo = SwiftDataTransactionRepository(context: ctx)
+
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        // Transaction with no importHash
+        try repo.save(Transaction(date: .now, amount: 10, payee: "NoHash", type: .debit, account: account))
+
+        #expect(try repo.existsWithHash("somehash") == false)
+    }
+
     @Test func deleteRemovesTransaction() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)

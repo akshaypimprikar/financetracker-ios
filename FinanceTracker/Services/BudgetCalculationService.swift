@@ -22,9 +22,7 @@ struct MonthlySpendingPoint: Identifiable {
 
 struct BudgetCalculationService {
     func progress(budget: Budget, transactions: [Transaction]) -> BudgetProgress {
-        let spent = transactions
-            .filter { $0.type == .debit }
-            .reduce(Decimal.zero) { $0 + $1.amount }
+        let spent = totalSpent(transactions: transactions)
         return BudgetProgress(spent: spent, limit: budget.monthlyLimit)
     }
 

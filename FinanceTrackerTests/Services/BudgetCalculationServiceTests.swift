@@ -6,11 +6,6 @@ import SwiftData
 @Suite("BudgetCalculationService")
 struct BudgetCalculationServiceTests {
 
-    func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Account.self, Transaction.self, Category.self, Budget.self, ImportRecord.self])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
-    }
-
     func makeMay2026() -> Date {
         var comps = DateComponents()
         comps.year = 2026; comps.month = 5; comps.day = 1

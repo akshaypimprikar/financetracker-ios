@@ -37,7 +37,9 @@ struct BalanceService {
         let sorted = transactions.sorted { $0.date < $1.date }
         var points: [BalanceDataPoint] = []
         var running = account.openingBalance
-        points.append(BalanceDataPoint(date: sorted[0].date, balance: running))
+        // Anchor 1 second before the first transaction so chart IDs are always unique
+        let anchorDate = sorted[0].date.addingTimeInterval(-1)
+        points.append(BalanceDataPoint(date: anchorDate, balance: running))
         for tx in sorted {
             switch tx.type {
             case .credit:

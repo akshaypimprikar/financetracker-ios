@@ -19,4 +19,9 @@ struct SwiftDataImportRecordRepository: ImportRecordRepositoryProtocol {
         context.insert(record)
         try context.save()
     }
+
+    func delete(_ record: ImportRecord) throws {
+        context.delete(record)
+        try context.save()
+    }
 }
