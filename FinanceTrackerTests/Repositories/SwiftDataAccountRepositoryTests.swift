@@ -41,6 +41,19 @@ struct SwiftDataAccountRepositoryTests {
         #expect(result == nil)
     }
 
+    @Test func fetchAllActiveExcludesArchivedAccounts() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let repo = SwiftDataAccountRepository(context: ctx)
+
+        try repo.save(Account(name: "Active Checking", type: .checking, isArchived: false))
+        try repo.save(Account(name: "Archived Savings", type: .savings, isArchived: true))
+
+        let active = try repo.fetchAllActive()
+        #expect(active.count == 1)
+        #expect(active[0].name == "Active Checking")
+    }
+
     @Test func deleteRemovesAccount() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)

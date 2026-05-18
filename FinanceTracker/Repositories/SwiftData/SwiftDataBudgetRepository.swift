@@ -15,7 +15,8 @@ struct SwiftDataBudgetRepository: BudgetRepositoryProtocol {
             return []
         }
         let descriptor = FetchDescriptor<Budget>(
-            predicate: #Predicate { $0.month >= start && $0.month < end }
+            predicate: #Predicate { $0.month >= start && $0.month < end },
+            sortBy: [SortDescriptor(\.monthlyLimit, order: .reverse)]
         )
         return try context.fetch(descriptor)
     }
