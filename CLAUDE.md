@@ -39,9 +39,9 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 ## Agent commands
 
-Nine slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → PR → `develop` → `/review` + `/test` + `code-review:code-review` (parallel) → release → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR → `develop` → `/review` → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token. Run `/design` bootstrap once to establish `FinanceTracker/Theme/` and `docs/design-system.md`.
 

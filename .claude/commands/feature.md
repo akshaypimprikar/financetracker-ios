@@ -7,8 +7,6 @@ Invoked after the user approves a plan. The plan path is passed as the argument 
 
 ## Process
 
-Use the `superpowers:subagent-driven-development` skill to execute the plan.
-
 Before starting any task:
 - Read `CLAUDE.md` — build commands, architecture rules
 - Read the plan document in full
@@ -44,4 +42,4 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green. Open a PR to `develop`. Then `/review`, `/test`, and `code-review:code-review` run in parallel on the PR.
+All tasks complete, full test suite green. Run `/gates` to verify pre-PR criteria, then open a PR to `develop`. Then `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` run in parallel.
