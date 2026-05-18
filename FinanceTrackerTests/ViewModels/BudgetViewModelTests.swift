@@ -97,4 +97,60 @@ struct BudgetViewModelTests {
         #expect(vm.unbudgetedCategories.count == 1)
         #expect(vm.unbudgetedCategories[0].name == "Transport")
     }
+
+    @Test func monthlySpendingHistoryReturnsCorrectNumberOfMonths() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+
+        let points = vm.monthlySpendingHistory(for: category)
+        #expect(points.count == BudgetViewModel.defaultSpendingHistoryMonths)
+    }
+
+    @Test func monthlySpendingHistoryRespectsCustomWindowSize() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        vm.spendingHistoryMonths = 3
+
+        let points = vm.monthlySpendingHistory(for: category)
+        #expect(points.count == 3)
+    }
+
+    @Test func monthlySpendingHistoryReturnsZeroForMonthsWithNoTransactions() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        vm.spendingHistoryMonths = 3
+
+        let points = vm.monthlySpendingHistory(for: category)
+        #expect(points.allSatisfy { $0.spent == 0.0 })
+    }
 }

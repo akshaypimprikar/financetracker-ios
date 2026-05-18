@@ -113,6 +113,39 @@ struct AccountViewModelTests {
         #expect(vm.accounts[0].isArchived == true)
     }
 
+    @Test func runningBalanceDataReturnsEmptyWhenNoTransactions() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking, openingBalance: 500)
+        ctx.insert(account)
+        try ctx.save()
+
+        let vm = AccountViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx)
+        )
+        #expect(vm.runningBalanceData(for: account).isEmpty)
+    }
+
+    @Test func runningBalanceDataConvertsDecimalToDouble() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking, openingBalance: 1000)
+        ctx.insert(account)
+        let tx = Transaction(date: .now, amount: 250, payee: "Rent", type: .debit, account: account)
+        ctx.insert(tx)
+        try ctx.save()
+
+        let vm = AccountViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx)
+        )
+        let points = vm.runningBalanceData(for: account)
+        #expect(points.count == 2)
+        #expect(points[0].balance == 1000.0)
+        #expect(points[1].balance == 750.0)
+    }
+
     @Test func transactionsReturnsOnlyAccountTransactions() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
