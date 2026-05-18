@@ -98,6 +98,29 @@ struct BudgetViewModelTests {
         #expect(vm.unbudgetedCategories[0].name == "Transport")
     }
 
+    @Test func addThrowsOnDuplicateBudgetForSameCategoryAndMonth() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.selectedMonth = startOfMay2026()
+        try vm.add(category: category, monthlyLimit: 200)
+
+        #expect(throws: BudgetViewModel.BudgetError.duplicateBudget) {
+            try vm.add(category: category, monthlyLimit: 300)
+        }
+        // Only one budget should exist
+        #expect(vm.budgets.count == 1)
+        #expect(vm.budgets[0].0.monthlyLimit == 200)
+    }
+
     @Test func monthlySpendingHistoryReturnsCorrectNumberOfMonths() throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
