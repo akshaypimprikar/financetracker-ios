@@ -1,10 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Read(//Users/akshaypimprikar/.claude/**)",
-      "Read(//Users/akshaypimprikar/.claude/plugins/**)",
-      "Read(//usr/local/bin/**)",
-      "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills -type f -name \"*.md\" | head -20)",
+      "Read(/Users/akshaypimprikar/.claude/**)",
+      "Read(/Users/akshaypimprikar/.claude/plugins/**)",
+      "Read(/usr/local/bin/**)",
+      "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills -type f -name \"*.md\" | head -20)",
       "Bash(awk '{print $NF}')",
       "Bash(gh auth *)",
       "Bash(gh pr *)",

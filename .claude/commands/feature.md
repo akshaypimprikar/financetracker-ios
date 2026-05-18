@@ -15,7 +15,8 @@ Before starting any task:
 ## Per-task rules
 - Follow TDD: write failing test first, confirm failure, implement, confirm pass
 - After implementation passes tests, run the `simplify` skill on changed files before committing
-- One commit per task (after simplify pass)
+- Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent)
+- One commit per task (after simplify pass and CHANGELOG update)
 - Run `xcodebuild test` after every task — do not proceed if tests fail
 - Never edit `project.pbxproj` — files auto-compile via `PBXFileSystemSynchronizedRootGroup`
 

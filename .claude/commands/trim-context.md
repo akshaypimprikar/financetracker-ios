@@ -1,6 +1,11 @@
 # Trim Context Agent
 
-Audit and reduce always-on token costs. Run this after completing any plan.
+## Trigger
+Invoked manually after completing any plan: `/trim-context`.
+
+## Process
+
+Audit and reduce always-on token costs.
 
 ## What to audit
 
@@ -48,3 +53,6 @@ End with the new line count for CLAUDE.md.
 - Do not remove content that is genuinely useful and not available elsewhere
 - Do not add new content — this is a reduction pass only
 - Commit any changes to CLAUDE.md and settings.json with message `chore: trim context after <plan-name>`
+
+## Done when
+CLAUDE.md is ≤50 lines, stale memory entries removed, settings.json allow list tightened, and changes committed.

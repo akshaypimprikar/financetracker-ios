@@ -47,6 +47,20 @@ grep -A 10 "## \[Unreleased\]" CHANGELOG.md 2>/dev/null | grep -v "^##" | grep -
 Pass: at least one non-empty line under `## [Unreleased]`.
 Fail: section missing or empty — create the section and add a one-line summary per task commit on this branch using `git log develop...HEAD --oneline`.
 
+### Gate 6 — Coverage (conditional: new Swift files on branch)
+```bash
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift'
+```
+If any new `.swift` files are listed, run the `ios-coverage` skill to capture coverage and verify ≥80% on new code.
+Skip this gate if the branch contains no new files (fixes and refactors only).
+
+### Gate 7 — Security (conditional: sensitive code paths)
+```bash
+git diff develop...HEAD --name-only -- '*.swift' | grep -E "CSVImport|Repository|SwiftData|UserNotification"
+```
+If any matches, run the `security-review` skill before opening the PR.
+Skip this gate if no sensitive files were modified.
+
 ## Gate summary
 
 Report every gate before opening the PR:
