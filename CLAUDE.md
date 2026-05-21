@@ -46,3 +46,5 @@ Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
 **PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
+
+**Cross-repo rule:** never use `cd` for ios-agent-workflow operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow <cmd>` and `gh pr create --repo akshaypimprikar/ios-agent-workflow`.
