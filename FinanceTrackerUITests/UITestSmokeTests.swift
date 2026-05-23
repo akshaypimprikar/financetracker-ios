@@ -4,7 +4,7 @@ final class UITestSmokeTests: UITestBase {
 
     func testAllTabsExistAfterLaunch() {
         let tabBar = app.tabBars.firstMatch
-        XCTAssertTrue(tabBar.buttons["Dashboard"].waitForExistence(timeout: 3))
+        XCTAssertTrue(tabBar.buttons["Dashboard"].waitForExistence(timeout: 10))
         XCTAssertTrue(tabBar.buttons["Transactions"].exists)
         XCTAssertTrue(tabBar.buttons["Budgets"].exists)
         XCTAssertTrue(tabBar.buttons["Accounts"].exists)

@@ -6,18 +6,28 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
-### Fixed
-- **Chart UI tests** — corrected accessibility identifiers (`add-*-confirm`, `*-field`), removed wrong navigation assumption (tab switch preserves `AccountDetailView` in `NavigationStack`), skipped redundant Picker interaction in budget test (`onAppear` auto-selects first category)
+---
+
+## [1.1.0] — 2026-05-23
 
 ### Added
-- **`/design` agent** — bootstrap and extend modes; establishes `FinanceTracker/Theme/` token system before UI features are built; enforced via `/spec` (Design section) and `/review` (design compliance checklist)
+- **Charts** — running balance line chart on Account detail; month-over-month spending bar chart on Budget detail; both gated on data presence
 - **Theme token system** — `Colors.swift`, `Spacing.swift`, `Typography.swift` with semantic tokens; all existing views refactored to use tokens
 - **`Theme/Charts.swift`** — chart visualisation tokens: `balanceLine`, `balanceAreaFill`, `spendingBar`, `gridLine`, `minHeight`, `lineStrokeWidth`
-- **`docs/design-system.md`** — canonical token reference and component pattern guide, now including Data Visualisation section with balance line and spending bar chart patterns
+- **`docs/design-system.md`** — canonical token reference and component pattern guide, including Data Visualisation section
 - **Theme unit tests** — 15 tests covering all color and spacing token values
-- **PR checks CI** — GitHub Actions workflow running full test suite on every PR, with coverage enforcement (fail <60%, warn <80%)
-- **Coverage enforcement** — `xccov` check in CI reports per-file line coverage; blocks PRs below 60%, warns below 80%
-- **Pre-push git hook** — blocks direct pushes to `develop`/`main` and pushes to already-merged PR branches
+- **`/design` agent** — bootstrap and extend modes; establishes `Theme/` token system before UI features; enforced via `/spec` and `/review`
+- **PR checks CI** — GitHub Actions workflow with coverage enforcement (fail <60%, warn <80%) and path-filtered triggers
+- **UI tests CI** — separate workflow blocking PRs on `UITestChartsTests` failures; `pull_request` trigger added so broken tests can no longer reach `develop`
+- **Coverage enforcement** — `xccov` check reports per-file line coverage
+- **Pre-push git hook** — blocks direct pushes to `develop`/`main` and already-merged PR branches
+- **Pipeline tooling** — `/gates`, `/pipeline-review`, `/status` commands; CHANGELOG rule in `/bugfix`; cross-repo shell safety rule in CLAUDE.md
+
+### Fixed
+- **Correctness** — `BalanceService` anchor offset; `CSVImportService` negative amounts and date-only hash; `BudgetViewModel` duplicate detection; `TransactionRepository` transfer fetch; `BudgetRepository` sort order
+- **Chart UI tests** — corrected accessibility identifiers, removed wrong NavigationStack navigation assumption, skipped redundant Picker interaction in budget test
+- **All UI tests** — increased timeouts from 3s to 10s and added navigation bar existence checks before button taps; 3s was consistently too short for CI runners
+- **UX** — rendering and interaction correctness across ViewModels and Views
 
 ---
 
