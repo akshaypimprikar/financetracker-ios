@@ -36,7 +36,8 @@ struct CSVImportService {
             }
             guard columns.count > max(mapping.dateIndex, mapping.amountIndex, mapping.payeeIndex) else { return nil }
             guard let date = Self.parseDate(columns[mapping.dateIndex]) else { return nil }
-            guard let amount = Decimal(string: columns[mapping.amountIndex]) else { return nil }
+            guard let rawAmount = Decimal(string: columns[mapping.amountIndex]) else { return nil }
+            let amount = abs(rawAmount)
             let payee = columns[mapping.payeeIndex]
             return ParsedTransaction(
                 date: date,
@@ -52,10 +53,21 @@ struct CSVImportService {
     }
 
     static func importHash(date: Date, amount: Decimal, payee: String) -> String {
-        let input = "\(Int(date.timeIntervalSince1970))-\(amount)-\(payee.lowercased().trimmingCharacters(in: .whitespaces))"
+        let dateString = Self.iso8601DateFormatter.string(from: date)
+        let input = "\(dateString)-\(amount)-\(payee.lowercased().trimmingCharacters(in: .whitespaces))"
         let digest = SHA256.hash(data: Data(input.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
+
+    private static let iso8601DateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        // Use the device calendar timezone so parsed dates (which use Calendar.current)
+        // and importHash dates both produce the same date-only string for the same local day.
+        f.timeZone = Calendar.current.timeZone
+        return f
+    }()
 
     private static func parseDate(_ string: String) -> Date? {
         dateFormatters.lazy.compactMap { $0.date(from: string) }.first

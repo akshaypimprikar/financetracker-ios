@@ -39,13 +39,12 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 ## Agent commands
 
-Eight slash commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/test` `/review` `/bugfix` `/release` `/sync-workflow`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → PR → `develop` → `/review` + `/test` + `code-review:code-review` (parallel) → release → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR → `develop` → `/review` → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
 
-Branch strategy (gitflow):
-- `feature/*` → `develop`
-- `fix/*` → `develop` (hotfix: `hotfix/*` → `main` + `develop`)
-- `release/*` → `main` + `develop`
-- `spec/*` → `develop`
-- `main` receives only release and hotfix merges, never direct feature PRs
+UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
+
+**PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
+
+**Cross-repo rule:** never use `cd` for ios-agent-workflow operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow <cmd>` and `gh pr create --repo akshaypimprikar/ios-agent-workflow`.

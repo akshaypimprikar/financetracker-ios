@@ -40,7 +40,11 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   2>&1 | grep -E "TEST SUCCEEDED|TEST FAILED"
 ```
 
-### 5. Commit and PR
+### 5. Update CHANGELOG
+
+Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent). Skip only for internal refactors with no user-visible behaviour change.
+
+### 6. Commit and PR
 
 ```bash
 git add <changed files>

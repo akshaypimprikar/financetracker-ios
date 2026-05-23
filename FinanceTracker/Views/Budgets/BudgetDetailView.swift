@@ -1,9 +1,13 @@
 import SwiftUI
+import Charts
 
 struct BudgetDetailView: View {
     let budget: Budget
     let progress: BudgetProgress
     @Bindable var viewModel: BudgetViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var spendingData: [MonthlySpendingPoint] = []
 
     var body: some View {
         List {
@@ -11,24 +15,38 @@ struct BudgetDetailView: View {
                 HStack {
                     Text("Spent")
                     Spacer()
-                    Text(progress.spent, format: .currency(code: "USD"))
+                    Text(progress.spent, format: .currency(code: viewModel.currency))
                         .bold()
-                        .foregroundStyle(progress.isOverBudget ? .red : .primary)
+                        .foregroundStyle(progress.isOverBudget ? Theme.Colors.destructive : .primary)
                 }
                 HStack {
                     Text("Limit")
                     Spacer()
-                    Text(progress.limit, format: .currency(code: "USD"))
+                    Text(progress.limit, format: .currency(code: viewModel.currency))
                 }
                 HStack {
                     Text("Remaining")
                     Spacer()
-                    Text(progress.remaining, format: .currency(code: "USD"))
-                        .foregroundStyle(progress.remaining < 0 ? .red : .green)
+                    Text(progress.remaining, format: .currency(code: viewModel.currency))
+                        .foregroundStyle(progress.remaining < 0 ? Theme.Colors.destructive : Theme.Colors.positive)
                 }
                 ProgressView(value: min(progress.percentUsed, 1.0))
-                    .tint(progress.isOverBudget ? .red : .accentColor)
-                    .padding(.vertical, 4)
+                    .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                    .padding(.vertical, Theme.Spacing.compact)
+            }
+
+            if spendingData.contains(where: { $0.spent > 0 }) {
+                Section("Spending History") {
+                    Chart(spendingData) { point in
+                        BarMark(
+                            x: .value("Month", point.month, unit: .month),
+                            y: .value("Spent", NSDecimalNumber(decimal: point.spent).doubleValue)
+                        )
+                        .foregroundStyle(Theme.Charts.spendingBar)
+                    }
+                    .frame(minHeight: Theme.Charts.minHeight)
+                    .padding(.horizontal, Theme.Spacing.cardPadding)
+                }
             }
 
             Section("Category") {
@@ -41,8 +59,12 @@ struct BudgetDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Delete Budget", role: .destructive) {
                     try? viewModel.delete(budget)
+                    dismiss()
                 }
             }
+        }
+        .onAppear {
+            spendingData = viewModel.monthlySpendingHistory(for: budget.category)
         }
     }
 }

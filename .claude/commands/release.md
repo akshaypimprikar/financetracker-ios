@@ -95,5 +95,8 @@ gh release create v<version> \
   --notes "$(git log <last-tag>..v<version> --oneline)"
 ```
 
+### 8. Trigger pipeline review
+Run `/pipeline-review` as a background task to capture any pipeline improvements surfaced during this release cycle. It will send a push notification when findings are ready.
+
 ## Done when
-PR merged to `main`, `main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed.
+PR merged to `main`, `main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.

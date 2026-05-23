@@ -31,7 +31,8 @@ struct BudgetListView: View {
                             BudgetDetailView(budget: budget, progress: progress,
                                              viewModel: viewModel)
                         } label: {
-                            BudgetRow(budget: budget, progress: progress)
+                            BudgetRow(budget: budget, progress: progress,
+                                      currency: viewModel.currency)
                         }
                     }
                     .onDelete { indexSet in
@@ -60,23 +61,24 @@ struct BudgetListView: View {
 private struct BudgetRow: View {
     let budget: Budget
     let progress: BudgetProgress
+    let currency: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.rowSpacing) {
             HStack {
                 Label(budget.category.name, systemImage: budget.category.icon)
                     .font(.subheadline.bold())
                 Spacer()
-                Text(progress.spent, format: .currency(code: "USD"))
+                Text(progress.spent, format: .currency(code: currency))
                     .bold()
-                    .foregroundStyle(progress.isOverBudget ? .red : .primary)
-                Text("/ \(progress.limit.formatted(.currency(code: "USD")))")
-                    .font(.caption)
+                    .foregroundStyle(progress.isOverBudget ? Theme.Colors.destructive : .primary)
+                Text("/ \(progress.limit.formatted(.currency(code: currency)))")
+                    .font(Theme.Typography.rowSubtitle)
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: min(progress.percentUsed, 1.0))
-                .tint(progress.isOverBudget ? .red : .accentColor)
+                .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, Theme.Spacing.compact)
     }
 }

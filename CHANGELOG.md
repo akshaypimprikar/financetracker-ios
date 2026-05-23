@@ -4,6 +4,33 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
+## [Unreleased]
+
+---
+
+## [1.1.0] — 2026-05-23
+
+### Added
+- **Charts** — running balance line chart on Account detail; month-over-month spending bar chart on Budget detail; both gated on data presence
+- **Theme token system** — `Colors.swift`, `Spacing.swift`, `Typography.swift` with semantic tokens; all existing views refactored to use tokens
+- **`Theme/Charts.swift`** — chart visualisation tokens: `balanceLine`, `balanceAreaFill`, `spendingBar`, `gridLine`, `minHeight`, `lineStrokeWidth`
+- **`docs/design-system.md`** — canonical token reference and component pattern guide, including Data Visualisation section
+- **Theme unit tests** — 15 tests covering all color and spacing token values
+- **`/design` agent** — bootstrap and extend modes; establishes `Theme/` token system before UI features; enforced via `/spec` and `/review`
+- **PR checks CI** — GitHub Actions workflow with coverage enforcement (fail <60%, warn <80%) and path-filtered triggers
+- **UI tests CI** — separate workflow blocking PRs on `UITestChartsTests` failures; `pull_request` trigger added so broken tests can no longer reach `develop`
+- **Coverage enforcement** — `xccov` check reports per-file line coverage
+- **Pre-push git hook** — blocks direct pushes to `develop`/`main` and already-merged PR branches
+- **Pipeline tooling** — `/gates`, `/pipeline-review`, `/status` commands; CHANGELOG rule in `/bugfix`; cross-repo shell safety rule in CLAUDE.md
+
+### Fixed
+- **Correctness** — `BalanceService` anchor offset; `CSVImportService` negative amounts and date-only hash; `BudgetViewModel` duplicate detection; `TransactionRepository` transfer fetch; `BudgetRepository` sort order
+- **Chart UI tests** — corrected accessibility identifiers, removed wrong NavigationStack navigation assumption, skipped redundant Picker interaction in budget test
+- **All UI tests** — increased timeouts from 3s to 10s and added navigation bar existence checks before button taps; 3s was consistently too short for CI runners
+- **UX** — rendering and interaction correctness across ViewModels and Views
+
+---
+
 ## [1.0.0] — 2026-05-11
 
 ### Added
