@@ -6,6 +6,9 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **Chart UI tests** — corrected accessibility identifiers (`add-*-confirm`, `*-field`), removed wrong navigation assumption (tab switch preserves `AccountDetailView` in `NavigationStack`), skipped redundant Picker interaction in budget test (`onAppear` auto-selects first category)
+
 ### Added
 - **`/design` agent** — bootstrap and extend modes; establishes `FinanceTracker/Theme/` token system before UI features are built; enforced via `/spec` (Design section) and `/review` (design compliance checklist)
 - **Theme token system** — `Colors.swift`, `Spacing.swift`, `Typography.swift` with semantic tokens; all existing views refactored to use tokens
