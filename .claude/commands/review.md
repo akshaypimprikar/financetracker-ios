@@ -33,6 +33,7 @@ Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 - [ ] All new Repository implementations have integration tests using in-memory `ModelContainer`
 - [ ] Test coverage ≥80% on new code
 - [ ] Tests use `import Testing` with `@Suite`/`@Test`/`#expect()` — not XCTest
+- [ ] UI test selectors match production code — for every `app.buttons["X"]`, `app.textFields["X"]`, `app.staticTexts["X"]` in `*UITests/*.swift`, a matching `.accessibilityIdentifier("X")` must exist in a production view file. Run: `grep -hro 'app\.\(buttons\|textFields\|staticTexts\)\["[^"]*"\]' FinanceTrackerUITests/*.swift | sort -u` then verify each against `grep -r 'accessibilityIdentifier' FinanceTracker/Views/`
 
 **Build & Coverage:**
 - [ ] Full test suite passes (run from git root): `xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'`
