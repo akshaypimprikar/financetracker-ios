@@ -98,4 +98,4 @@ EOF
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 ## Done when
-All 5 gates pass, PR is open, and the PR URL is returned to the user.
+All 7 gates pass, PR is open, and the PR URL is returned to the user.
