@@ -1,6 +1,12 @@
 name: UI Tests
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [develop, main]
+    paths:
+      - 'FinanceTracker/**'
+      - 'FinanceTrackerUITests/**'
   push:
     branches: [develop, main]
     paths:
@@ -8,7 +14,7 @@ on:
       - 'FinanceTrackerUITests/**'
 
 concurrency:
-  group: ui-tests-${{ github.ref }}
+  group: ui-tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
