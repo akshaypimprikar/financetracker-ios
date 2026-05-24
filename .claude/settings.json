@@ -23,7 +23,6 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Edit(~/.claude/skills/ios-build-verify/**)",
-      "Bash(mkdir -p /Users/akshaypimprikar/.claude/skills/ios-coverage)",
       "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")",
       "Bash(git cherry-pick *)",
       "Bash(chmod +x /Users/akshaypimprikar/Desktop/FinanceTracker/.githooks/pre-push)",
@@ -36,9 +35,8 @@
       "Write(/Users/akshaypimprikar/Desktop/FinanceTracker/docs/pipeline-review/*)",
       "Bash(git tag *)",
       "Bash(git merge main --no-ff -m ' *)",
-      "Bash(GITFLOW_RELEASE_MERGE=1 git push origin develop)",
       "Bash(git branch *)",
-      "Bash(GITFLOW_RELEASE_MERGE=1 git push origin --delete release/1.1.0)"
+      "Bash(GITFLOW_RELEASE_MERGE=1 git *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
