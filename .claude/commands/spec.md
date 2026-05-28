@@ -88,4 +88,15 @@ If the feature idea implies multiple independent subsystems, say so and suggest 
 Branch `spec/<feature-name>` off `develop`. Save spec to `docs/superpowers/specs/YYYY-MM-DD-<feature-name>.md` and commit. Open PR to `develop`.
 
 ## Done when
-The user reviews the spec and says it's approved. Then hand off to the Planner Agent (`/plan`).
+The user reviews the spec and says it's approved.
+
+Before handing off to `/plan`, append to `.claude/context/decisions.md`:
+
+```
+## YYYY-MM-DD — <Feature Name>
+**Approaches considered:** <brief list of approaches from step 3>
+**Chosen:** <approach name>
+**Reason:** <one sentence — the rationale that drove the decision>
+```
+
+Then hand off to the Planner Agent (`/plan`).

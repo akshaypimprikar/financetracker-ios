@@ -102,3 +102,12 @@ Run `/pipeline-review` as a background task to capture any pipeline improvements
 
 ## Done when
 PR merged to `main`, `main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.
+
+After all of the above, append to `.claude/context/feature-log.md`:
+
+```
+## v<X.Y.Z> — YYYY-MM-DD
+**Features added:** <bullet list from CHANGELOG [version] section>
+**Key files changed:** <comma-separated key files or layers>
+**Key architectural decisions:** <brief note or "none">
+```
