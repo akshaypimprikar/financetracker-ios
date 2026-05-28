@@ -6,6 +6,8 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Add `.claude/context/` directory with invariants, decisions, rejections, feature-log seed files
+
 ---
 
 ## [1.1.0] — 2026-05-23
