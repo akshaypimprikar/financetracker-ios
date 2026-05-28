@@ -9,6 +9,8 @@ Invoked after the user approves a plan. The plan path is passed as the argument 
 
 Before starting any task:
 - Read `CLAUDE.md` — build commands, architecture rules
+- Read `.claude/context/invariants.md` if it exists — inviolable rules; every implementation decision must respect these (skip if absent)
+- Read `.claude/context/rejections.md` if it exists — past review violations; do not repeat these patterns (skip if absent)
 - Read the plan document in full
 - Confirm you are on a `feature/<name>` branch off `develop` (create it if not)
 
@@ -20,7 +22,7 @@ Before starting any task:
 - Run the full test suite (including UI tests) after every task — do not proceed if tests fail. Use the "Full test suite" command below; never add `-skip-testing` or `-only-testing` flags.
 - Never edit `project.pbxproj` — files auto-compile via `PBXFileSystemSynchronizedRootGroup`
 
-## Build commands (all run from git root `/Users/akshaypimprikar/Desktop/FinanceTracker/`)
+## Build commands (all run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`)
 
 ```bash
 # Full test suite

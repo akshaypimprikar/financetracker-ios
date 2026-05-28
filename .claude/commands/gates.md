@@ -7,7 +7,9 @@ Invoked at the end of every `/feature` session before `gh pr create` (e.g. `/gat
 
 ## Process
 
-All commands run from git root `/Users/akshaypimprikar/Desktop/FinanceTracker/`.
+All commands run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`.
+
+Read `.claude/context/invariants.md` if it exists — skip silently if absent. Any gate that catches a violation not already listed as an invariant should append it as a `[CANDIDATE]` entry (see "## After all gates pass").
 
 Run every gate in order. If any gate fails, stop, report what must be fixed, and do NOT open the PR.
 

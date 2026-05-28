@@ -9,6 +9,10 @@ Invoked when a PR is opened against `develop` (or `main` for hotfixes/releases).
 
 Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 
+Also read the following files if they exist — skip silently if absent:
+- `.claude/context/invariants.md` — project invariants; these supplement CLAUDE.md rules
+- `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
+
 ### Architecture compliance checks (all must pass)
 
 **Layer separation:**
