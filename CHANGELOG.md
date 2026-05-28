@@ -6,6 +6,8 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Skip Gates 1 (build) and 2 (test suite) when no Swift files changed — mirrors existing Gate 6/7 conditional pattern
+
 ---
 
 ## [1.1.0] — 2026-05-23
