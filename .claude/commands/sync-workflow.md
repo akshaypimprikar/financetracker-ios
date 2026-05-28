@@ -9,10 +9,10 @@ Run manually after any change to CLAUDE.md, branch strategy, build commands, or 
 
 ### 1. Read the source of truth
 - Read `CLAUDE.md` from FinanceTracker — branch strategy, build commands, simulator name, architecture rules
-- Read all files in `/Users/akshaypimprikar/Desktop/FinanceTracker/.claude/commands/` — the project-specific versions
+- Read all files in `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/commands/` — the project-specific versions
 
 ### 2. Read the template
-- Read all files in `/Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/`
+- Read all files in `/Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow/.claude/commands/`
 
 ### 3. Compare and update
 Check for drift in these areas (keep `<AppName>` placeholders — ios-agent-workflow is a template):
@@ -32,11 +32,11 @@ Edit only the lines that differ. Do not copy FinanceTracker-specific paths (e.g.
 ### 5. Open a PR — never push directly to main
 ```bash
 # Create a branch, commit, push, open PR
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow checkout develop && git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow pull
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow checkout -b sync/<YYYY-MM-DD>
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow add .claude/commands/
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow commit -m "chore: sync commands from FinanceTracker — <brief summary>"
-git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow push -u origin sync/<YYYY-MM-DD>
+git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow checkout develop && git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow pull
+git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow checkout -b sync/<YYYY-MM-DD>
+git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow add .claude/commands/
+git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow commit -m "chore: sync commands from FinanceTracker — <brief summary>"
+git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow push -u origin sync/<YYYY-MM-DD>
 gh pr create --repo akshaypimprikar/ios-agent-workflow \
   --title "chore: sync commands from FinanceTracker — <brief summary>" \
   --body "## Changes\n<bullet list of what changed and why>\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
