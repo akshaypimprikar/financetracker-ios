@@ -26,7 +26,9 @@ If any check fails, stop and report what must be fixed.
 
 ## Process
 
-All commands run from git root `/Users/akshaypimprikar/Desktop/FinanceTracker/`.
+All commands run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`.
+
+Read `.claude/context/feature-log.md` if it exists — skip silently if absent. Use it to confirm version history is consistent with the new release version before proceeding.
 
 ### 1. Create the release branch off develop
 ```bash
@@ -100,3 +102,12 @@ Run `/pipeline-review` as a background task to capture any pipeline improvements
 
 ## Done when
 PR merged to `main`, `main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.
+
+After all of the above, append to `.claude/context/feature-log.md`:
+
+```
+## v<X.Y.Z> — YYYY-MM-DD
+**Features added:** <bullet list from CHANGELOG [version] section>
+**Key files changed:** <comma-separated key files or layers>
+**Key architectural decisions:** <brief note or "none">
+```

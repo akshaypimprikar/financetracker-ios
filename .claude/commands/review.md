@@ -9,6 +9,10 @@ Invoked when a PR is opened against `develop` (or `main` for hotfixes/releases).
 
 Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 
+Also read the following files if they exist — skip silently if absent:
+- `.claude/context/invariants.md` — project invariants; these supplement CLAUDE.md rules
+- `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
+
 ### Architecture compliance checks (all must pass)
 
 **Layer separation:**
@@ -64,4 +68,15 @@ Final verdict:
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Done when
+If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/context/rejections.md` before closing the review:
+
+```
+## YYYY-MM-DD — PR#<N> — <Violation Type>
+**What was wrong:** <description>
+**Rule violated:** <exact rule from invariants.md or CLAUDE.md>
+**File:** <path:line if known>
+```
+
+Skip this step if the verdict is APPROVED with no issues.
+
 All issues resolved (if any) and PR approved. Merge to `develop` (or `main` for hotfixes/releases).

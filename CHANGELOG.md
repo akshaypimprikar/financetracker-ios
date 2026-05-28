@@ -6,6 +6,10 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Add `.claude/context/` directory with invariants, decisions, rejections, feature-log seed files
+- Wire context read preambles into all 8 agent command files (spec, plan, feature, review, gates, bugfix, release, test)
+- Wire context write postambles into /spec (decisions.md), /review (rejections.md), /gates (invariants.md candidates), /release (feature-log.md)
+
 ---
 
 ## [1.1.0] — 2026-05-23
