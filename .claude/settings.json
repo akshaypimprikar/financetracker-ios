@@ -16,8 +16,8 @@
       "Bash(git pull *)",
       "Bash(mkdir -p *)",
       "Bash(xcodebuild *)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker *)",
-      "Bash(git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow *)",
       "Skill(schedule)",
       "Skill(schedule:*)",
       "Skill(update-config)",
@@ -25,21 +25,21 @@
       "Edit(~/.claude/skills/ios-build-verify/**)",
       "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")",
       "Bash(git cherry-pick *)",
-      "Bash(chmod +x /Users/akshaypimprikar/Desktop/FinanceTracker/.githooks/pre-push)",
+      "Bash(chmod +x /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.githooks/pre-push)",
       "Bash(git config core.hooksPath *)",
       "Bash(.githooks/pre-push)",
       "Bash(BRANCH=develop bash .githooks/pre-push)",
       "Bash(gh run *)",
       "Bash(grep -v \"^\\\\s*$\")",
       "Bash(claude auth *)",
-      "Write(/Users/akshaypimprikar/Desktop/FinanceTracker/docs/pipeline-review/*)",
+      "Write(/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/docs/pipeline-review/*)",
       "Bash(git tag *)",
       "Bash(git merge main --no-ff -m ' *)",
       "Bash(git branch *)",
       "Bash(GITFLOW_RELEASE_MERGE=1 git *)"
     ],
     "additionalDirectories": [
-      "/Users/akshaypimprikar/Desktop/ios-agent-workflow",
+      "/Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow",
       "/Users/akshaypimprikar/.claude/skills"
     ]
   },
@@ -60,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "REVIEW_DIR='/Users/akshaypimprikar/Desktop/FinanceTracker/docs/pipeline-review'; UNADDRESSED=$(grep -rl 'addressed: false' \"$REVIEW_DIR\"/*.md 2>/dev/null); if [ -n \"$UNADDRESSED\" ]; then COUNT=$(echo \"$UNADDRESSED\" | wc -l | tr -d ' '); LATEST=$(echo \"$UNADDRESSED\" | sort | tail -1 | xargs basename 2>/dev/null); jq -n --arg count \"$COUNT\" --arg file \"$LATEST\" '{\"systemMessage\": \"PIPELINE REVIEW ALERT: \\($count) unaddressed pipeline review report(s) exist in docs/pipeline-review/. Latest: \\($file). Before starting any planned work, ask the user whether they want to address these findings first.\"}'; fi 2>/dev/null || true"
+            "command": "REVIEW_DIR='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/docs/pipeline-review'; UNADDRESSED=$(grep -rl 'addressed: false' \"$REVIEW_DIR\"/*.md 2>/dev/null); if [ -n \"$UNADDRESSED\" ]; then COUNT=$(echo \"$UNADDRESSED\" | wc -l | tr -d ' '); LATEST=$(echo \"$UNADDRESSED\" | sort | tail -1 | xargs basename 2>/dev/null); jq -n --arg count \"$COUNT\" --arg file \"$LATEST\" '{\"systemMessage\": \"PIPELINE REVIEW ALERT: \\($count) unaddressed pipeline review report(s) exist in docs/pipeline-review/. Latest: \\($file). Before starting any planned work, ask the user whether they want to address these findings first.\"}'; fi 2>/dev/null || true"
           }
         ]
       }

@@ -20,7 +20,7 @@ Current valid skills:
 Flag any skill name used in a command file that does not appear on this list. Severity: **Critical**.
 
 ### 2. Template drift (ios-agent-workflow)
-Compare each file in `/Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
+Compare each file in `/Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
 - App-specific content (hardcoded file paths, model names, protocol names) that should use `<AppName>` / `<Model>` / `<RepositoryProtocol>` placeholders — **High**
 - Command files that exist in FinanceTracker but have no template equivalent — **Medium**
 - Logic improvements in FinanceTracker commands not yet back-ported to the template — **Low**
@@ -30,7 +30,7 @@ Count lines in `CLAUDE.md`. Target: ≤50 lines.
 If over budget, list the specific sections that could be trimmed. Severity: **Medium** if 51–60 lines, **High** if >60 lines.
 
 ### 4. Memory staleness
-Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-FinanceTracker/memory/`.
+Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/memory/`.
 Flag any memory that:
 - References a branch, PR, or task that no longer exists in `git log` or `gh pr list`
 - Describes a failure mode that has since been fixed in the command files (the fix is the source of truth)

@@ -32,7 +32,7 @@ Remove stale files and their index entries. Report what was removed.
 
 ### 3. Settings.json allow list (target: broad patterns only)
 Read `.claude/settings.json`. Flag any `Bash(...)` entries that are:
-- Specific file paths (e.g., `git add path/to/specific/file.swift`) — replace with `Bash(git -C /Users/akshaypimprikar/Desktop/FinanceTracker *)`
+- Specific file paths (e.g., `git add path/to/specific/file.swift`) — replace with `Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker *)`
 - Pointing to paths that no longer exist
 - Duplicated by an existing broad pattern
 
