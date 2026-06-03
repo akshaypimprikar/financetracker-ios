@@ -58,7 +58,7 @@ final class MockAccountRepository: AccountRepositoryProtocol {
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
-  2>&1 | grep -E "Test.*passed|Test.*failed|TEST SUCCEEDED|TEST FAILED"
+  2>&1 | xcsift
 ```
 
 ## Done when

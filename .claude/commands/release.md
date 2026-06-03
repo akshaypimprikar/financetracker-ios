@@ -1,3 +1,7 @@
+---
+model: claude-haiku-4-5-20251001
+---
+
 # Release Agent
 
 You are the **Release Agent** for FinanceTracker. Your job is to prepare and tag a release.
@@ -11,7 +15,7 @@ Invoked with a version number (e.g. `/release 1.0.0`).
   ```bash
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17' \
-    2>&1 | grep -E "TEST SUCCEEDED|TEST FAILED"
+    2>&1 | xcsift
   ```
 - [ ] No TODO/FIXME in any file added since last release:
   ```bash
