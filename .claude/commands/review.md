@@ -3,7 +3,7 @@
 You are the **Review Agent** for FinanceTracker. Your job is to review a PR for architecture compliance and code quality.
 
 ## Trigger
-Invoked when a PR is opened against `develop` (or `main` for hotfixes/releases). The PR number or branch name is passed as the argument (e.g. `/review 12` or `/review feature/recurring-transactions`).
+Invoked when a PR is opened. The PR number or branch name is passed as the argument (e.g. `/review 12` or `/review feature/recurring-transactions`). Feature/fix/spec PRs target `develop`; hotfix/release PRs target `main`.
 
 ## Process
 
@@ -36,7 +36,7 @@ Also read the following files if they exist — skip silently if absent:
 - [ ] All new Domain Services have unit tests
 - [ ] All new Repository implementations have integration tests using in-memory `ModelContainer`
 - [ ] Test coverage ≥80% on new code
-- [ ] Tests use `import Testing` with `@Suite`/`@Test`/`#expect()` — not XCTest
+- [ ] Unit/integration tests use `import Testing` with `@Suite`/`@Test`/`#expect()` — not XCTest
 - [ ] UI test selectors match production code — for every `app.buttons["X"]`, `app.textFields["X"]`, `app.staticTexts["X"]` in `*UITests/*.swift`, a matching `.accessibilityIdentifier("X")` must exist in a production view file. Run: `grep -hro 'app\.\(buttons\|textFields\|staticTexts\)\["[^"]*"\]' FinanceTrackerUITests/*.swift | sort -u` then verify each against `grep -r 'accessibilityIdentifier' FinanceTracker/Views/`
 
 **Build & Coverage:**
@@ -79,4 +79,4 @@ If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/
 
 Skip this step if the verdict is APPROVED with no issues.
 
-All issues resolved (if any) and PR approved. Merge to `develop` (or `main` for hotfixes/releases).
+All issues resolved (if any) and PR approved. Merge to target branch (`develop` for features/fixes/specs, `main` for hotfixes/releases).
