@@ -14,6 +14,11 @@ final class UITestCategoryFlowTests: UITestBase {
 
         app.buttons["add-category-confirm"].tap()
 
+        // Synchronize on sheet dismissal before asserting list contents
+        let sheetNavBar = app.navigationBars["New Category"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: sheetNavBar)
+        waitForExpectations(timeout: 10)
+
         XCTAssertTrue(app.staticTexts["Transport"].waitForExistence(timeout: 10))
     }
 }
