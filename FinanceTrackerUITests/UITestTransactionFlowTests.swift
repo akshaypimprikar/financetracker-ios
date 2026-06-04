@@ -9,11 +9,11 @@ final class UITestTransactionFlowTests: UITestBase {
 
     func testAddTransactionAppearsInList() {
         app.tabBars.firstMatch.buttons["Transactions"].tap()
-        XCTAssertTrue(app.navigationBars["Transactions"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Transactions"].waitForExistence(timeout: timeout))
         app.buttons["add-transaction-button"].tap()
 
         let payeeField = app.textFields["transaction-payee-field"]
-        XCTAssertTrue(payeeField.waitForExistence(timeout: 10))
+        XCTAssertTrue(payeeField.waitForExistence(timeout: timeout))
         payeeField.tap()
         payeeField.typeText("Coffee Shop")
 
@@ -23,18 +23,18 @@ final class UITestTransactionFlowTests: UITestBase {
 
         app.buttons["add-transaction-confirm"].tap()
 
-        XCTAssertTrue(app.staticTexts["Coffee Shop"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Coffee Shop"].waitForExistence(timeout: timeout))
     }
 
     private func createAccount(name: String) {
         app.tabBars.firstMatch.buttons["Accounts"].tap()
-        XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: timeout))
         app.buttons["add-account-button"].tap()
         let nameField = app.textFields["account-name-field"]
-        guard nameField.waitForExistence(timeout: 10) else { return }
+        guard nameField.waitForExistence(timeout: timeout) else { return }
         nameField.tap()
         nameField.typeText(name)
         app.buttons["add-account-confirm"].tap()
-        _ = app.staticTexts[name].waitForExistence(timeout: 10)
+        _ = app.staticTexts[name].waitForExistence(timeout: timeout)
     }
 }

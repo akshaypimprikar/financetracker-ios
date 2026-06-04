@@ -2,6 +2,7 @@ import XCTest
 
 class UITestBase: XCTestCase {
     var app: XCUIApplication!
+    let timeout: TimeInterval = 30
 
     override func setUpWithError() throws {
         continueAfterFailure = false

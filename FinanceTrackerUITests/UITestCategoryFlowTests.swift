@@ -4,11 +4,11 @@ final class UITestCategoryFlowTests: UITestBase {
 
     func testAddCategoryAppearsInSettingsList() {
         app.tabBars.firstMatch.buttons["Settings"].tap()
-        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: timeout))
         app.buttons["add-category-button"].tap()
 
         let nameField = app.textFields["category-name-field"]
-        XCTAssertTrue(nameField.waitForExistence(timeout: 10))
+        XCTAssertTrue(nameField.waitForExistence(timeout: timeout))
         nameField.tap()
         nameField.typeText("Transport")
 
@@ -17,8 +17,8 @@ final class UITestCategoryFlowTests: UITestBase {
         // Synchronize on sheet dismissal before asserting list contents
         let sheetNavBar = app.navigationBars["New Category"]
         expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: sheetNavBar)
-        waitForExpectations(timeout: 10)
+        waitForExpectations(timeout: timeout)
 
-        XCTAssertTrue(app.staticTexts["Transport"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Transport"].waitForExistence(timeout: timeout))
     }
 }
