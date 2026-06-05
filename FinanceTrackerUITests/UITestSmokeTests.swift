@@ -13,6 +13,7 @@ final class UITestSmokeTests: UITestBase {
 
     func testAllTabsAreNavigable() {
         let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: timeout))
 
         tabBar.buttons["Accounts"].tap()
         XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: timeout))

@@ -12,7 +12,11 @@ final class UITestCategoryFlowTests: UITestBase {
         nameField.tap()
         nameField.typeText("Transport")
 
-        app.buttons["add-category-confirm"].tap()
+        // Wait for SwiftUI to re-evaluate the disabled modifier before tapping
+        let confirmButton = app.buttons["add-category-confirm"]
+        expectation(for: NSPredicate(format: "enabled == true"), evaluatedWith: confirmButton)
+        waitForExpectations(timeout: timeout)
+        confirmButton.tap()
 
         // Synchronize on sheet dismissal before asserting list contents
         let sheetNavBar = app.navigationBars["New Category"]
