@@ -20,8 +20,7 @@ final class UITestTransactionFlowTests: UITestBase {
         let amountField = app.textFields["transaction-amount-field"]
         amountField.tap()
         amountField.typeText("12.50")
-
-        app.buttons["add-transaction-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-transaction-confirm"])
 
         XCTAssertTrue(app.staticTexts["Coffee Shop"].waitForExistence(timeout: timeout))
     }
@@ -34,7 +33,7 @@ final class UITestTransactionFlowTests: UITestBase {
         guard nameField.waitForExistence(timeout: timeout) else { return }
         nameField.tap()
         nameField.typeText(name)
-        app.buttons["add-account-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-account-confirm"])
         _ = app.staticTexts[name].waitForExistence(timeout: timeout)
     }
 }

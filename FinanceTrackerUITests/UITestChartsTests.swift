@@ -14,7 +14,7 @@ final class UITestChartsTests: UITestBase {
         XCTAssertTrue(nameField.waitForExistence(timeout: timeout))
         nameField.tap()
         nameField.typeText("Chart Test Account")
-        app.buttons["add-account-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-account-confirm"])
 
         // Navigate into the account
         XCTAssertTrue(app.cells.staticTexts["Chart Test Account"].waitForExistence(timeout: timeout))
@@ -34,8 +34,7 @@ final class UITestChartsTests: UITestBase {
         let payeeField = app.textFields["transaction-payee-field"]
         payeeField.tap()
         payeeField.typeText("Coffee")
-
-        app.buttons["add-transaction-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-transaction-confirm"])
 
         // Switch back to Accounts tab — NavigationStack preserves AccountDetailView,
         // onAppear fires again and reloads with the new transaction data.
@@ -59,7 +58,7 @@ final class UITestChartsTests: UITestBase {
         XCTAssertTrue(categoryNameField.waitForExistence(timeout: timeout))
         categoryNameField.tap()
         categoryNameField.typeText("Charts Food")
-        app.buttons["add-category-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-category-confirm"])
 
         // Create a budget — onAppear auto-selects the first unbudgeted category,
         // so skip the Picker interaction and go straight to the limit field.
@@ -71,7 +70,7 @@ final class UITestChartsTests: UITestBase {
         XCTAssertTrue(limitField.waitForExistence(timeout: timeout))
         limitField.tap()
         limitField.typeText("200")
-        app.buttons["add-budget-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-budget-confirm"])
 
         // Navigate into the budget detail
         XCTAssertTrue(app.cells.staticTexts["Charts Food"].waitForExistence(timeout: timeout))

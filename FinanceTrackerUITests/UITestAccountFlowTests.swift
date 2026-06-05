@@ -11,8 +11,7 @@ final class UITestAccountFlowTests: UITestBase {
         XCTAssertTrue(nameField.waitForExistence(timeout: timeout))
         nameField.tap()
         nameField.typeText("Test Checking")
-
-        app.buttons["add-account-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-account-confirm"])
 
         XCTAssertTrue(app.staticTexts["Test Checking"].waitForExistence(timeout: timeout))
     }

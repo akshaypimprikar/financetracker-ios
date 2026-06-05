@@ -16,8 +16,7 @@ final class UITestBudgetFlowTests: UITestBase {
         XCTAssertTrue(limitField.waitForExistence(timeout: timeout))
         limitField.tap()
         limitField.typeText("500")
-
-        app.buttons["add-budget-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-budget-confirm"])
 
         XCTAssertTrue(app.staticTexts["Groceries"].waitForExistence(timeout: timeout))
     }
@@ -30,7 +29,7 @@ final class UITestBudgetFlowTests: UITestBase {
         guard nameField.waitForExistence(timeout: timeout) else { return }
         nameField.tap()
         nameField.typeText(name)
-        app.buttons["add-category-confirm"].tap()
+        tapWhenEnabled(app.buttons["add-category-confirm"])
         _ = app.staticTexts[name].waitForExistence(timeout: timeout)
     }
 }
