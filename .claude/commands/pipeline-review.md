@@ -19,8 +19,8 @@ Current valid skills:
 
 Flag any skill name used in a command file that does not appear on this list. Severity: **Critical**.
 
-### 2. Template drift (ios-agent-workflow)
-Compare each file in `/Users/akshaypimprikar/Desktop/Claude/ios-agent-workflow/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
+### 2. Template drift (pragma)
+Compare each file in `/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
 - App-specific content (hardcoded file paths, model names, protocol names) that should use `<AppName>` / `<Model>` / `<RepositoryProtocol>` placeholders — **High**
 - Command files that exist in FinanceTracker but have no template equivalent — **Medium**
 - Logic improvements in FinanceTracker commands not yet back-ported to the template — **Low**
