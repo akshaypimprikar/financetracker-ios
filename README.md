@@ -1,11 +1,11 @@
 # FinanceTracker
 
-> A production iOS 26.4 personal finance app — and the reference implementation for [ios-agent-workflow](https://github.com/akshaypimprikar/ios-agent-workflow), a multi-agent Claude Code pipeline that takes every feature from idea to merged PR with two approvals.
+> A production iOS 26.4 personal finance app — and the reference implementation for [Pragma](https://github.com/akshaypimprikar/pragma), a multi-agent Claude Code pipeline that takes every feature from idea to merged PR with two approvals.
 
 [![CI](https://github.com/akshaypimprikar/financetracker-ios/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/akshaypimprikar/financetracker-ios/actions/workflows/pr-checks.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS_26.4-black?logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-6-FA7343?logo=swift&logoColor=white)](https://swift.org)
-[![Claude Code](https://img.shields.io/badge/Claude_Code-powered-5A67D8?logo=anthropic&logoColor=white)](https://github.com/akshaypimprikar/ios-agent-workflow)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-powered-5A67D8?logo=anthropic&logoColor=white)](https://github.com/akshaypimprikar/pragma)
 
 **[Pipeline](#pipeline) · [Architecture](#architecture) · [Features](#features) · [Getting Started](#getting-started) · [Build & Test](#build--test)**
 
@@ -35,7 +35,9 @@ flowchart TD
     classDef dim   fill:#161b22,stroke:#30363d,color:#8b949e
 ```
 
-The nine commands powering this pipeline are open-sourced at [ios-agent-workflow](https://github.com/akshaypimprikar/ios-agent-workflow) — copy them into any iOS project.
+You approve twice per feature: after the spec and after the plan. Everything else runs autonomously until you hit merge.
+
+Nine slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets. The commands are open-sourced as a reusable scaffold at [Pragma](https://github.com/akshaypimprikar/pragma).
 
 ---
 
@@ -78,7 +80,7 @@ SwiftData Repositories — concrete implementations, swappable
 | UI | SwiftUI |
 | Persistence | SwiftData |
 | Testing | Swift Testing (`@Suite`/`@Test`/`#expect`) + XCUITest |
-| AI tooling | [Claude Code](https://github.com/akshaypimprikar/ios-agent-workflow) with custom slash commands |
+| AI tooling | [Claude Code](https://github.com/akshaypimprikar/pragma) with custom slash commands |
 
 ---
 
