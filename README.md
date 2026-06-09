@@ -23,7 +23,7 @@ Idea
 
 You approve twice per feature: after the spec and after the plan. Everything else runs autonomously until you hit merge.
 
-Nine slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets.
+Nine slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets. The commands are open-sourced as a reusable scaffold at [ios-agent-workflow](https://github.com/akshaypimprikar/ios-agent-workflow).
 
 ---
 
