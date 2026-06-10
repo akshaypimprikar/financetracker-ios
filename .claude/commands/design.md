@@ -114,4 +114,4 @@ Tokens approved, Theme/ files created, design-system.md updated, PR open.
 - [ ] `README.md` updated if agent count or repo structure changed
 - [ ] `CHANGELOG.md` `[Unreleased]` section updated
 - [ ] `CLAUDE.md` pipeline note updated if new agent or branch type added
-- [ ] Run `/sync-workflow` to propagate command changes to `ios-agent-workflow`
+- [ ] Run `/sync-workflow` to propagate command changes to `pragma`

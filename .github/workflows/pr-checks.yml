@@ -9,7 +9,6 @@ on:
       - 'FinanceTrackerTests/**'
       - 'FinanceTrackerUITests/**'
       - 'scripts/**'
-      - '.github/workflows/**'
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}

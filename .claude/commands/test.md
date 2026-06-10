@@ -12,6 +12,8 @@ Test files pushed to the feature branch.
 
 Read `CLAUDE.md` first for build commands, simulator name, and test framework details.
 
+Also read `.claude/context/invariants.md` if it exists — skip silently if absent. Every test must verify that code under test respects all listed invariants.
+
 ### Test framework
 - **Unit tests and integration tests:** Apple `Testing` framework — `import Testing`, `@Suite`, `@Test`, `#expect()`, `#require()`
 - **UI tests:** `XCTest`
@@ -52,11 +54,11 @@ final class MockAccountRepository: AccountRepositoryProtocol {
 }
 ```
 
-### Build command (run from git root `/Users/akshaypimprikar/Desktop/FinanceTracker/`)
+### Build command (run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`)
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
-  2>&1 | grep -E "Test.*passed|Test.*failed|TEST SUCCEEDED|TEST FAILED"
+  2>&1 | xcsift
 ```
 
 ## Done when

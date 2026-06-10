@@ -1,27 +1,43 @@
 #!/bin/bash
 # Enforces gitflow rules before any push.
-# Blocks: direct pushes to develop/main, pushes to branches with merged PRs.
+# Blocks: direct pushes to develop/main branches, pushes to branches with merged PRs.
+# Tag pushes and authorized release back-merges (GITFLOW_RELEASE_MERGE=1) are allowed.
 
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-PROTECTED_BRANCHES=("develop" "main")
+# Allow authorized gitflow operations (e.g. release back-merge to develop)
+if [ "${GITFLOW_RELEASE_MERGE}" = "1" ]; then
+    exit 0
+fi
 
-# Block direct pushes to protected branches
-for PROTECTED in "${PROTECTED_BRANCHES[@]}"; do
-    if [ "$BRANCH" = "$PROTECTED" ]; then
-        echo "ERROR: Direct push to '$BRANCH' is not allowed."
-        echo "Create a branch off '$BRANCH' and open a PR instead."
-        exit 1
+PROTECTED_BRANCHES=("refs/heads/develop" "refs/heads/main")
+
+# Read the refs being pushed from stdin (format: <local ref> <local sha> <remote ref> <remote sha>)
+while read local_ref local_sha remote_ref remote_sha; do
+    # Allow tag pushes unconditionally
+    if [[ "$remote_ref" == refs/tags/* ]]; then
+        continue
+    fi
+
+    # Block direct pushes to protected branches
+    for PROTECTED in "${PROTECTED_BRANCHES[@]}"; do
+        if [ "$remote_ref" = "$PROTECTED" ]; then
+            BRANCH_NAME="${remote_ref#refs/heads/}"
+            echo "ERROR: Direct push to '$BRANCH_NAME' is not allowed."
+            echo "Create a branch off '$BRANCH_NAME' and open a PR instead."
+            echo "For release back-merges use: GITFLOW_RELEASE_MERGE=1 git push origin $BRANCH_NAME"
+            exit 1
+        fi
+    done
+
+    # Block pushes to branches whose PR is already merged
+    if command -v gh &>/dev/null; then
+        BRANCH_NAME="${remote_ref#refs/heads/}"
+        MERGED_PR=$(gh pr list --head "$BRANCH_NAME" --state merged --json number --jq '.[0].number' 2>/dev/null)
+        if [ -n "$MERGED_PR" ]; then
+            echo "ERROR: PR #$MERGED_PR for branch '$BRANCH_NAME' is already merged."
+            echo "Create a new branch: git checkout -b <new-branch-name>"
+            exit 1
+        fi
     fi
 done
-
-# Block pushes to branches whose PR is already merged
-if command -v gh &>/dev/null; then
-    MERGED_PR=$(gh pr list --head "$BRANCH" --state merged --json number --jq '.[0].number' 2>/dev/null)
-    if [ -n "$MERGED_PR" ]; then
-        echo "ERROR: PR #$MERGED_PR for branch '$BRANCH' is already merged."
-        echo "Create a new branch: git checkout -b <new-branch-name>"
-        exit 1
-    fi
-fi
 
 exit 0

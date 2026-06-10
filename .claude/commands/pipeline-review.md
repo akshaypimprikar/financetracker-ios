@@ -15,12 +15,12 @@ Run this entire audit in the background. Save findings and send a push notificat
 Check every file in `.claude/commands/` for references to skills that are not in the current registry.
 
 Current valid skills:
-`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`
+`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`, `run`, `verify`, `status`
 
 Flag any skill name used in a command file that does not appear on this list. Severity: **Critical**.
 
-### 2. Template drift (ios-agent-workflow)
-Compare each file in `/Users/akshaypimprikar/Desktop/ios-agent-workflow/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
+### 2. Template drift (pragma)
+Compare each file in `/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/` against its counterpart in `.claude/commands/`. Flag:
 - App-specific content (hardcoded file paths, model names, protocol names) that should use `<AppName>` / `<Model>` / `<RepositoryProtocol>` placeholders — **High**
 - Command files that exist in FinanceTracker but have no template equivalent — **Medium**
 - Logic improvements in FinanceTracker commands not yet back-ported to the template — **Low**
@@ -30,7 +30,7 @@ Count lines in `CLAUDE.md`. Target: ≤50 lines.
 If over budget, list the specific sections that could be trimmed. Severity: **Medium** if 51–60 lines, **High** if >60 lines.
 
 ### 4. Memory staleness
-Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-FinanceTracker/memory/`.
+Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/memory/`.
 Flag any memory that:
 - References a branch, PR, or task that no longer exists in `git log` or `gh pr list`
 - Describes a failure mode that has since been fixed in the command files (the fix is the source of truth)

@@ -4,7 +4,7 @@ FinanceTracker — iOS 26.4 personal finance app (SwiftUI + SwiftData). Users tr
 
 ## Build & Test
 
-All commands run from `/Users/akshaypimprikar/Desktop/FinanceTracker/` (git root, contains `FinanceTracker.xcodeproj`).
+All commands run from `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/` (git root, contains `FinanceTracker.xcodeproj`).
 
 ```bash
 # Build
@@ -47,4 +47,4 @@ UI features: run `/design` before `/spec` if the feature introduces a visual pat
 
 **PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
 
-**Cross-repo rule:** never use `cd` for ios-agent-workflow operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/ios-agent-workflow <cmd>` and `gh pr create --repo akshaypimprikar/ios-agent-workflow`.
+**Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma`.

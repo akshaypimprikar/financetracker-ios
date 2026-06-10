@@ -6,6 +6,12 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Wrap all `@Model` types in `SchemaV1: VersionedSchema` with a no-op `FinanceTrackerMigrationPlan` to prevent silent data corruption on future model changes
+- Add `.claude/context/` directory with invariants, decisions, rejections, feature-log seed files
+- Wire context read preambles into all 8 agent command files (spec, plan, feature, review, gates, bugfix, release, test)
+- Wire context write postambles into /spec (decisions.md), /review (rejections.md), /gates (invariants.md candidates), /release (feature-log.md)
+- Skip Gates 1 (build) and 2 (test suite) when no Swift files changed — mirrors existing Gate 6/7 conditional pattern
+
 ---
 
 ## [1.1.0] — 2026-05-23
