@@ -2,7 +2,7 @@
 
 > A production iOS 26.4 personal finance app — and the reference implementation for [Pragma](https://github.com/akshaypimprikar/pragma), a multi-agent Claude Code pipeline that takes every feature from idea to merged PR with two approvals.
 
-[![CI](https://github.com/akshaypimprikar/financetracker-ios/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/akshaypimprikar/financetracker-ios/actions/workflows/pr-checks.yml)
+[![CI](https://github.com/akshaypimprikar/personal-finance-tracker/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/akshaypimprikar/personal-finance-tracker/actions/workflows/pr-checks.yml)
 [![Platform](https://img.shields.io/badge/platform-iOS_26.4-black?logo=apple&logoColor=white)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-6-FA7343?logo=swift&logoColor=white)](https://swift.org)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-powered-5A67D8?logo=anthropic&logoColor=white)](https://github.com/akshaypimprikar/pragma)
