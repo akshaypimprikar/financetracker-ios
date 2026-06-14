@@ -6,6 +6,7 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Add `/goal` usage tips to `/gates` and `/test` — manual autonomous fix-loop for failing build/test gates, with a deterministic-condition warning
 - Wrap all `@Model` types in `SchemaV1: VersionedSchema` with a no-op `FinanceTrackerMigrationPlan` to prevent silent data corruption on future model changes
 - Add `.claude/context/` directory with invariants, decisions, rejections, feature-log seed files
 - Wire context read preambles into all 8 agent command files (spec, plan, feature, review, gates, bugfix, release, test)
