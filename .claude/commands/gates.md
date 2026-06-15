@@ -102,6 +102,13 @@ Gates:
 
 Fix any failures before continuing.
 
+## Tip — autonomous gate-fixing loop
+If Gate 1 or Gate 2 fails and needs iterative fixes, the user can run (as a separate top-level command, not from within this agent):
+```
+/goal "build succeeds, all XCTests pass, coverage above 60%"
+```
+Claude will iterate on fixes and re-run the build/test commands until the condition holds. Keep the condition deterministic and verifiable — "build succeeds, all XCTests pass" is checkable from command output; "implement the feature correctly" is not and risks Claude satisfying the literal wording without a real fix.
+
 ## After all gates pass — open the PR
 
 ### Write candidate invariants (conditional)
