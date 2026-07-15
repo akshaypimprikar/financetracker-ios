@@ -31,13 +31,22 @@ actor TransactionImportActor: TransactionImportWriting {
 
     /// A single CSV import always targets one account, but `save(chunk:accountID:)`
     /// runs once per chunk — cache the resolved account so a 10k-row import doesn't
-    /// re-fetch the same account 30+ times. Delegates to the existing
-    /// SwiftDataAccountRepository fetch-by-id logic rather than duplicating it.
+    /// re-fetch the same account 30+ times.
+    ///
+    /// Fetches directly on this actor's own `modelContext` rather than delegating to
+    /// `SwiftDataAccountRepository` — that repository is implicitly `@MainActor`-isolated
+    /// (inferred from `AccountRepositoryProtocol` conformance under
+    /// `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`), so calling it from this actor would
+    /// be a cross-actor-isolation violation. Confirmed by compiler warning when tried.
     private func resolveAccount(id: UUID) throws -> Account {
         if let cachedAccount, cachedAccount.id == id {
             return cachedAccount.account
         }
-        guard let account = try SwiftDataAccountRepository(context: modelContext).fetch(id: id) else {
+        var descriptor = FetchDescriptor<Account>(
+            predicate: #Predicate { $0.id == id }
+        )
+        descriptor.fetchLimit = 1
+        guard let account = try modelContext.fetch(descriptor).first else {
             throw TransactionImportError.accountNotFound
         }
         cachedAccount = (id, account)
