@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
 
-struct ParsedTransaction {
+struct ParsedTransaction: Sendable {
     let date: Date
     let amount: Decimal
     let payee: String
