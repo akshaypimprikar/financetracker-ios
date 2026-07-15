@@ -244,7 +244,17 @@
       "Bash(sips -Z 552 tech-lead-notices.png --out /tmp/tech-lead-notices-feedscale.png)",
       "Bash(sips -Z 350 tech-lead-notices.png --out /tmp/tech-lead-notices-mobile.png)",
       "WebFetch(domain:buffer.com)",
-      "WebFetch(domain:sproutsocial.com)"
+      "WebFetch(domain:sproutsocial.com)",
+      "Bash(git fetch *)",
+      "Bash(grep -vE \"^\\\\*|  develop$|  main$\")",
+      "Bash(python3 -c \"import json; json.load\\(open\\('.claude/settings.json'\\)\\)\")",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma status --short --branch)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma branch -vv)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma checkout develop)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma pull origin develop --ff-only)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma branch -d sync/2026-07-04 chore/pipeline-tooling-update fix/financetracker-repo-link)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma fetch origin --prune)",
+      "Bash(echo \"exit: $?\")"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
