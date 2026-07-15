@@ -102,12 +102,17 @@ Gates:
 
 Fix any failures before continuing.
 
-## Tip — autonomous gate-fixing loop
-If Gate 1 or Gate 2 fails and needs iterative fixes, the user can run (as a separate top-level command, not from within this agent):
+## Autonomous gate-fixing loop
+If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/goal "build succeeds, all XCTests pass, coverage above 60%"
+/goal "all 7 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean"
 ```
-Claude will iterate on fixes and re-run the build/test commands until the condition holds. Keep the condition deterministic and verifiable — "build succeeds, all XCTests pass" is checkable from command output; "implement the feature correctly" is not and risks Claude satisfying the literal wording without a real fix.
+Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
+
+To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
+```
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 7 gates pass.
+```
 
 ## After all gates pass — open the PR
 
