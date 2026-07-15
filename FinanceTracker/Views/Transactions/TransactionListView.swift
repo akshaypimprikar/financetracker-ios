@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct TransactionListView: View {
     @Bindable var viewModel: TransactionViewModel

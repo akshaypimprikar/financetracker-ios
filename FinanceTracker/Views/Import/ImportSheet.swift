@@ -106,7 +106,7 @@ struct ImportSheet: View {
                         payeeIndex: payeeColIndex,
                         hasHeader: hasHeader
                     )
-                    try? viewModel.applyMapping(mapping)
+                    Task { try? await viewModel.applyMapping(mapping) }
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -161,8 +161,12 @@ struct ImportSheet: View {
 
             Section {
                 Button("Import \(viewModel.pendingTransactions.count) Transactions") {
-                    try? viewModel.confirmImport()
-                    dismiss()
+                    // startImport() is synchronous — it owns its own internal Task,
+                    // no wrapper needed here. Progress bar, cancel button, and
+                    // dismiss-on-completion land in the next commit (accessibility
+                    // identifiers + UI polish) — this minimal change only keeps the
+                    // build compiling against the new async ImportViewModel API.
+                    viewModel.startImport()
                 }
                 .frame(maxWidth: .infinity)
                 .disabled(viewModel.pendingTransactions.isEmpty ||
