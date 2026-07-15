@@ -17,6 +17,10 @@ final class ImportViewModel {
     private(set) var isImporting = false
     private(set) var importError: Error?
     var selectedAccount: Account?
+    /// Explicit completion signal for the View to dismiss on — not inferred from
+    /// `step`, since `step` returning to `.filePicker` is also the initial state
+    /// and would overload a future "start over" affordance with silent auto-dismiss.
+    var onImportCompleted: (() -> Void)?
 
     private let accountRepo: any AccountRepositoryProtocol
     private let importRecordRepo: any ImportRecordRepositoryProtocol
@@ -97,6 +101,7 @@ final class ImportViewModel {
                 let record = ImportRecord(filename: filename, transactionCount: items.count)
                 try importRecordRepo.save(record)
                 reset()
+                onImportCompleted?()
             } catch {
                 // Some chunks may already be persisted (cancellation or a mid-run
                 // failure both land here). Clear pendingTransactions rather than

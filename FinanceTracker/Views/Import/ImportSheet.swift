@@ -24,9 +24,11 @@ struct ImportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.cancelImport()
                         viewModel.reset()
                         dismiss()
                     }
+                    .accessibilityIdentifier("import-cancel-toolbar-button")
                 }
             }
         }
@@ -39,6 +41,12 @@ struct ImportSheet: View {
             defer { url.stopAccessingSecurityScopedResource() }
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
             viewModel.loadCSV(text)
+        }
+        .onAppear {
+            viewModel.onImportCompleted = { dismiss() }
+        }
+        .onDisappear {
+            viewModel.cancelImport()
         }
     }
 
@@ -68,6 +76,7 @@ struct ImportSheet: View {
             Button("Choose File") { isPickingFile = true }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .accessibilityIdentifier("import-choose-file-button")
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -109,6 +118,7 @@ struct ImportSheet: View {
                     Task { try? await viewModel.applyMapping(mapping) }
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityIdentifier("import-parse-preview-button")
             }
         }
     }
@@ -160,17 +170,26 @@ struct ImportSheet: View {
             }
 
             Section {
-                Button("Import \(viewModel.pendingTransactions.count) Transactions") {
-                    // startImport() is synchronous — it owns its own internal Task,
-                    // no wrapper needed here. Progress bar, cancel button, and
-                    // dismiss-on-completion land in the next commit (accessibility
-                    // identifiers + UI polish) — this minimal change only keeps the
-                    // build compiling against the new async ImportViewModel API.
-                    viewModel.startImport()
+                if viewModel.isImporting {
+                    VStack(spacing: Theme.Spacing.sheetSpacing) {
+                        ProgressView(value: viewModel.progress)
+                            .tint(Theme.Colors.primaryInteractive)
+                            .accessibilityIdentifier("import-progress-bar")
+                        Button("Cancel Import") {
+                            viewModel.cancelImport()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("import-cancel-button")
+                    }
+                } else {
+                    Button("Import \(viewModel.pendingTransactions.count) Transactions") {
+                        viewModel.startImport()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .disabled(viewModel.pendingTransactions.isEmpty ||
+                              viewModel.selectedAccount == nil)
+                    .accessibilityIdentifier("import-confirm-button")
                 }
-                .frame(maxWidth: .infinity)
-                .disabled(viewModel.pendingTransactions.isEmpty ||
-                          viewModel.selectedAccount == nil)
             }
         }
     }
