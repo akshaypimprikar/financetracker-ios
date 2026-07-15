@@ -16,6 +16,7 @@ All notable changes to FinanceTracker are documented here.
 - Add `TransactionImportActor` (`@ModelActor`) and `TransactionImportWriting` protocol for chunked, cancellable CSV import writes, replacing the per-row `existsWithHash` scan and per-row `save()`
 - Migrate `ImportViewModel` to the async `TransactionImportActor` pipeline — `TaskGroup`-driven chunked saves, cancellation, and progress reporting; fixes a data-duplication bug where cancelling or retrying an import could re-send already-persisted rows
 - Add a determinate progress bar and cancel button to `ImportSheet` during CSV import, plus a first UI test for the import entry point
+- Add `/gates` Gate 8 verifying `TransactionImportActor`'s concurrency shape (no `@MainActor` isolation, no `@Model` type crossing its public boundary, exactly one chunked `save()`)
 
 ---
 
