@@ -3,9 +3,10 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var context
+    let importActor: any TransactionImportWriting
 
     var body: some View {
-        FinanceTrackerTabView(modelContext: context)
+        FinanceTrackerTabView(modelContext: context, importWriter: importActor)
     }
 }
 
@@ -17,7 +18,7 @@ struct FinanceTrackerTabView: View {
     @State private var importVM: ImportViewModel
     @State private var categoryVM: CategoryViewModel
 
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, importWriter: any TransactionImportWriting) {
         let accountRepo      = SwiftDataAccountRepository(context: modelContext)
         let transactionRepo  = SwiftDataTransactionRepository(context: modelContext)
         let categoryRepo     = SwiftDataCategoryRepository(context: modelContext)
@@ -44,9 +45,9 @@ struct FinanceTrackerTabView: View {
             categoryRepo: categoryRepo
         ))
         _importVM = State(wrappedValue: ImportViewModel(
-            transactionRepo: transactionRepo,
             accountRepo: accountRepo,
-            importRecordRepo: importRecordRepo
+            importRecordRepo: importRecordRepo,
+            importWriter: importWriter
         ))
         _categoryVM = State(wrappedValue: CategoryViewModel(
             categoryRepo: categoryRepo

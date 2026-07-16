@@ -74,6 +74,17 @@ git diff develop...HEAD --name-only -- '*.swift' | grep -E "CSVImport|Repository
 If any matches, run the `security-review` skill before opening the PR.
 Skip this gate if no sensitive files were modified.
 
+### Gate 8 — CSV import concurrency shape (conditional: TransactionImportActor.swift changed)
+```bash
+git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
+  grep -v "^\s*///\|^\s*//" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift | grep -n "@MainActor"
+  grep -cE "func (existingHashes|save)\(.*\b(Account|Transaction|Category|Budget|ImportRecord)\b" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
+  grep -c "modelContext\.save()" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
+}
+```
+Pass: first grep returns no output (no `@MainActor` outside comments — the actor isn't main-actor-isolated); second grep count is `0` (no `@Model` type — `Account`/`Transaction`/`Category`/`Budget`/`ImportRecord` — appears as a parameter or return type on the protocol-conformance methods, i.e. nothing `@Model`-typed crosses the actor's public boundary; internal caching of a resolved `@Model` instance that never leaves the actor is fine and won't trigger this); third grep count is exactly `1` (one `modelContext.save()` per chunk, never per row).
+Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
+
 ## Gate summary
 
 Report every gate before opening the PR:
@@ -86,6 +97,7 @@ Gates:
 [✗] CHANGELOG — Unreleased section empty (auto-populating from git log...)
 [–] Coverage — skipped (no new files)
 [–] Security — skipped (no sensitive files)
+[–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
 ```
 
 When Gates 1 and 2 are skipped:
@@ -98,6 +110,7 @@ Gates:
 [✓] CHANGELOG
 [–] Coverage — skipped (no Swift files)
 [–] Security — skipped (no Swift files)
+[–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
 ```
 
 Fix any failures before continuing.
@@ -105,13 +118,13 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/goal "all 7 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean"
+/goal "all 8 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct"
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
 To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 7 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 8 gates pass.
 ```
 
 ## After all gates pass — open the PR
@@ -146,4 +159,4 @@ EOF
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 ## Done when
-All 7 gates pass, PR is open, and the PR URL is returned to the user.
+All 8 gates pass, PR is open, and the PR URL is returned to the user.
