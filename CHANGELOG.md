@@ -18,6 +18,7 @@ All notable changes to FinanceTracker are documented here.
 - Migrate `ImportViewModel` to the async `TransactionImportActor` pipeline — `TaskGroup`-driven chunked saves, cancellation, and progress reporting; fixes a data-duplication bug where cancelling or retrying an import could re-send already-persisted rows
 - Add a determinate progress bar and cancel button to `ImportSheet` during CSV import, plus a first UI test for the import entry point
 - Add `/gates` Gate 8 verifying `TransactionImportActor`'s concurrency shape (no `@MainActor` isolation, no `@Model` type crossing its public boundary, exactly one chunked `save()`)
+- Fix CSV import silently losing the audit trail on partial failure, misreporting a fully-successful import as a total failure when only the bookkeeping record save throws, and leaving a silent failure state with no error message — `ImportViewModel` now writes a best-effort `ImportRecord` for whatever partially completed, distinguishes a bookkeeping-only failure from a data failure, surfaces both via an alert in `ImportSheet`, and guards all of it with a generation token so a cancelled-but-still-unwinding import can't clobber a session the user has since started fresh
 
 ---
 

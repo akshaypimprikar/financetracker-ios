@@ -13,6 +13,7 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
     private(set) var savedChunkCount = 0
     private var delayPerChunk: Duration?
     private var failNextSave: Error?
+    private var failAfterSuccesses: Int?
 
     init(existingHashes: Set<String> = []) {
         self._existingHashes = existingHashes
@@ -26,6 +27,15 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
         failNextSave = error
     }
 
+    /// Deterministic partial-failure mode: the first `count` calls (across however
+    /// many concurrent chunk tasks race into this actor — only one call body runs at
+    /// a time since this is an actor) succeed; every call after that throws. Robust
+    /// to TaskGroup scheduling order since the threshold is a running total, not
+    /// "the Nth specific call."
+    func setFailAfter(successfulSaves count: Int) {
+        failAfterSuccesses = count
+    }
+
     func existingHashes() async throws -> Set<String> {
         _existingHashes
     }
@@ -35,12 +45,22 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
             try await Task.sleep(for: delayPerChunk)
         }
         try Task.checkCancellation()
+        if let failAfterSuccesses, savedChunkCount >= failAfterSuccesses {
+            throw TransactionImportError.accountNotFound
+        }
         if let error = failNextSave {
             failNextSave = nil
             throw error
         }
         savedChunkCount += 1
     }
+}
+
+struct FailingImportRecordRepo: ImportRecordRepositoryProtocol {
+    enum RepoError: Error { case saveFailed }
+    func fetchAll() throws -> [ImportRecord] { [] }
+    func save(_ record: ImportRecord) throws { throw RepoError.saveFailed }
+    func delete(_ record: ImportRecord) throws {}
 }
 
 @discardableResult

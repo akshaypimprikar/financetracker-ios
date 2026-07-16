@@ -46,8 +46,40 @@ struct ImportSheet: View {
             viewModel.onImportCompleted = { dismiss() }
         }
         .onDisappear {
+            // Same cleanup as the toolbar Cancel button — swipe-to-dismiss shouldn't
+            // leave step/pendingTransactions stale for the next time this sheet opens.
             viewModel.cancelImport()
+            viewModel.reset()
         }
+        .alert(
+            "Import Problem",
+            isPresented: Binding(
+                get: { viewModel.importFailure != nil },
+                set: { isPresented in
+                    if !isPresented { viewModel.reset() }
+                }
+            ),
+            presenting: viewModel.importFailure
+        ) { _ in
+            Button("OK") { }
+        } message: { failure in
+            Text(failureMessage(for: failure))
+        }
+    }
+
+    private func failureMessage(for failure: ImportFailure) -> String {
+        switch failure {
+        case .partiallyFailed(let count):
+            return count > 0
+                ? "\(pluralized(count)) were imported before an error occurred. The rest were not imported — you can try again."
+                : "The import could not be completed. No transactions were imported."
+        case .recordSaveFailed(let count):
+            return "All \(pluralized(count)) were imported successfully, but the import summary couldn't be saved."
+        }
+    }
+
+    private func pluralized(_ count: Int) -> String {
+        "\(count) transaction\(count == 1 ? "" : "s")"
     }
 
     private var stepTitle: String {

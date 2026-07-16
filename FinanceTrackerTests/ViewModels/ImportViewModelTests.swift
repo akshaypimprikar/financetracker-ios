@@ -101,7 +101,7 @@ struct ImportViewModelTests {
         #expect(savedChunkCount == 3)   // 5 items, chunkSize 2 → chunks of 2, 2, 1
         #expect(vm.step == .filePicker)
         #expect(vm.progress == 0)
-        #expect(vm.importError == nil)
+        #expect(vm.importFailure == nil)
 
         let records = try SwiftDataImportRecordRepository(context: ctx).fetchAll()
         #expect(records.count == 1)
@@ -176,10 +176,59 @@ struct ImportViewModelTests {
         // duplicate transactions in a finance app. Must be cleared, forcing a fresh
         // applyMapping() dedup pass before another import attempt.
         #expect(vm.pendingTransactions.isEmpty)
-        #expect(vm.importError != nil)
+        // A user-initiated cancel is not an error to alert about — importFailure
+        // stays nil, unlike a genuine chunk failure (see the tests below).
+        #expect(vm.importFailure == nil)
     }
 
-    @Test func startImportDoesNotWriteImportRecordWhenAChunkFails() async throws {
+    @Test func staleTaskCompletionDoesNotClobberNewerSession() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let fake = FakeTransactionImportWriting()
+        await fake.setDelayPerChunk(.milliseconds(300))
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            chunkSize: 1
+        )
+        try vm.load()
+        vm.selectedAccount = account
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        // Session A: start a slow import, then cancel it exactly like the toolbar
+        // Cancel button does (cancelImport() + reset()).
+        vm.loadCSV("date,amount,payee\n2026-05-01,10.00,SessionA")
+        try await vm.applyMapping(mapping)
+        vm.startImport(filename: "sessionA.csv")
+        vm.cancelImport()
+        vm.reset()
+
+        // Session B: start a fresh, unrelated session immediately, while session
+        // A's cancelled task is still asleep (300ms delay) and hasn't reached its
+        // catch block yet.
+        vm.loadCSV("date,amount,payee\n2026-05-02,20.00,SessionB")
+        try await vm.applyMapping(mapping)
+
+        #expect(vm.step == .preview)
+        #expect(vm.pendingTransactions.map(\.payee) == ["SessionB"])
+
+        // Let session A's stale task actually unwind and attempt its now-stale
+        // mutations.
+        try await Task.sleep(for: .milliseconds(400))
+
+        // Regression guard: without the generation guard, session A's delayed
+        // catch block would wipe out session B's state set up above.
+        #expect(vm.step == .preview)
+        #expect(vm.pendingTransactions.map(\.payee) == ["SessionB"])
+        #expect(vm.importFailure == nil)
+    }
+
+    @Test func startImportDoesNotWriteImportRecordWhenNoChunkSucceeds() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         let account = Account(name: "Checking", type: .checking)
@@ -204,14 +253,116 @@ struct ImportViewModelTests {
         vm.startImport(filename: "test.csv")
         try await waitUntil { !vm.isImporting }
 
-        // No ImportRecord is written on failure, pendingTransactions is cleared (same
-        // stale-retry protection as the cancellation case above), and the error is
-        // captured on importError even though no UI surfaces it yet this PR — matches
-        // the existing try?-swallowing pattern used elsewhere in this codebase (e.g.
-        // ContentView's .task block), but the ViewModel itself must not lose the error.
+        // No chunk succeeded (single chunk, single row, fails immediately) — no
+        // best-effort ImportRecord is written since there's nothing to record.
+        // pendingTransactions is cleared (stale-retry protection), and the failure
+        // is captured on importFailure with an accurate zero persisted count.
         let records = try SwiftDataImportRecordRepository(context: ctx).fetchAll()
         #expect(records.isEmpty)
         #expect(vm.pendingTransactions.isEmpty)
-        #expect(vm.importError != nil)
+        #expect(vm.importFailure == .partiallyFailed(persistedCount: 0))
+    }
+
+    @Test func startImportWritesPartialAuditRecordWhenSomeChunksSucceedBeforeFailure() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let fake = FakeTransactionImportWriting()
+        // Exactly one chunk succeeds regardless of TaskGroup scheduling order — see
+        // setFailAfter's doc comment. Deterministic without depending on which
+        // specific chunk wins the race to run first.
+        await fake.setFailAfter(successfulSaves: 1)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            chunkSize: 1
+        )
+        try vm.load()
+        vm.selectedAccount = account
+
+        let csv = "date,amount,payee\n" + (1...3).map { "2026-05-0\($0),10.00,Payee\($0)" }.joined(separator: "\n")
+        vm.loadCSV(csv)
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        vm.startImport(filename: "test.csv")
+        try await waitUntil { !vm.isImporting }
+
+        // Regression guard for the "silent partial persist, zero audit trail" bug:
+        // one chunk's worth of transactions is durably in the store with no record
+        // of it, unless a best-effort ImportRecord is written for what landed.
+        let records = try SwiftDataImportRecordRepository(context: ctx).fetchAll()
+        #expect(records.count == 1)
+        #expect(records[0].transactionCount == 1)
+        #expect(vm.pendingTransactions.isEmpty)
+        #expect(vm.importFailure == .partiallyFailed(persistedCount: 1))
+    }
+
+    @Test func startImportReportsRecordSaveFailureSeparatelyFromChunkFailure() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        // Real actor (not the fake) so transactions genuinely land in the store —
+        // this test's whole point is proving the data survives even though the
+        // bookkeeping write fails.
+        let importActor = TransactionImportActor(modelContainer: container)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: FailingImportRecordRepo(),
+            importWriter: importActor
+        )
+        try vm.load()
+        vm.selectedAccount = account
+
+        let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop\n2026-05-02,1200.00,Rent"
+        vm.loadCSV(csv)
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        vm.startImport(filename: "test.csv")
+        try await waitUntil { !vm.isImporting }
+
+        // Regression guard for the "successful import misreported as total failure"
+        // bug: both transactions are genuinely persisted (verified via a fresh fetch,
+        // independent of the ViewModel's own state) even though the ImportRecord
+        // save failed, and the failure is distinguishable from a chunk failure.
+        let persisted = try SwiftDataTransactionRepository(context: ctx).fetchAll()
+        #expect(persisted.count == 2)
+        #expect(vm.importFailure == .recordSaveFailed(persistedCount: 2))
+    }
+
+    @Test func resetClearsImportFailure() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let fake = FakeTransactionImportWriting()
+        await fake.setFailNextSave(with: TransactionImportError.accountNotFound)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake
+        )
+        try vm.load()
+        vm.selectedAccount = account
+        vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        vm.startImport(filename: "test.csv")
+        try await waitUntil { !vm.isImporting }
+        #expect(vm.importFailure != nil)
+
+        vm.reset()
+
+        #expect(vm.importFailure == nil)
     }
 }
