@@ -79,4 +79,4 @@ If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/
 
 Skip this step if the verdict is APPROVED with no issues.
 
-Report the verdict and stop. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging happens only after `/test` and `code-review:code-review` both pass, and only with the user's explicit go-ahead.
+Report the verdict and stop. Do **not** merge the PR here — per CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass **and** the user has approved the PR on GitHub (checked via `gh pr view <N> --json reviewDecision`, not a chat confirmation).
