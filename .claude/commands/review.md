@@ -64,7 +64,7 @@ Also read the following files if they exist — skip silently if absent:
 For each check: ✅ PASS or ❌ FAIL (with file path + line number).
 
 Final verdict:
-- **APPROVED** — all checks pass, ready to merge to `develop` (or `main` for hotfixes/releases)
+- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see CLAUDE.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Done when
@@ -79,4 +79,4 @@ If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/
 
 Skip this step if the verdict is APPROVED with no issues.
 
-All issues resolved (if any) and PR approved. Merge to target branch (`develop` for features/fixes/specs, `main` for hotfixes/releases).
+Report the verdict and stop. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging happens only after `/test` and `code-review:code-review` both pass, and only with the user's explicit go-ahead.

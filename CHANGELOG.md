@@ -6,6 +6,7 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+- Remove auto-merge instruction from `/review`'s "Done when" — it now reports its verdict and stops. Add a CLAUDE.md "Merge rule": a PR merges only after `/review` APPROVED, `/test` passing, and `code-review:code-review` clean, and only with the user's explicit go-ahead
 - Add `/goal` usage tips to `/gates` and `/test` — manual autonomous fix-loop for failing build/test gates, with a deterministic-condition warning
 - Add `/parallel-review` command — runs `/review`'s architecture checklist and `code-review:code-review` in parallel after `/feature`, before `/gates`, so PR-stage `/review` passes on the first try
 - Wrap all `@Model` types in `SchemaV1: VersionedSchema` with a no-op `FinanceTrackerMigrationPlan` to prevent silent data corruption on future model changes

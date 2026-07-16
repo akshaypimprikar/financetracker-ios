@@ -41,10 +41,11 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR → `develop` → `/review` → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/review` (verdict only) → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
 **PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
+**Merge rule:** no command merges a PR automatically. A PR is mergeable only once `/review` returns APPROVED, `/test` passes, and `code-review:code-review` is clean — then the user reviews and merges it themselves. Agents report their verdict and stop.
 
 **Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma`.
