@@ -254,7 +254,28 @@
       "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma pull origin develop --ff-only)",
       "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma branch -d sync/2026-07-04 chore/pipeline-tooling-update fix/financetracker-repo-link)",
       "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/pragma fetch origin --prune)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Skill(simplify)",
+      "Skill(simplify:*)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
+      "Bash(tee /tmp/full-test-task1.log)",
+      "Bash(tee /tmp/clean-build-task2.log)",
+      "Bash(tee /tmp/clean-build-task2b.log)",
+      "Bash(tee /tmp/clean-build-task2c.log)",
+      "Bash(tee /tmp/clean-build-task2d.log)",
+      "Bash(tee /tmp/full-test-task2.log)",
+      "Bash(awk '/Test Suite .ImportViewModelTests. started/,/Test Suite .ImportViewModelTests. \\(passed|failed\\)/' /tmp/full-test-task2.log)",
+      "Bash(xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \\\\ *)",
+      "Bash(tee /tmp/build-task2-final.log)",
+      "Bash(tee /tmp/full-test-task2-final.log)",
+      "Bash(tee /tmp/full-test-task3.log)",
+      "Bash(grep -n \"7 \\\\`/gates\\\\`\\\\|7 gates\" .claude/commands/feature.md)",
+      "Bash(grep -n \"7 gates\\\\|7 \\\\`/gates\\\\`\" .claude/commands/feature.md)",
+      "Bash(grep -n \"gates pass\\\\|8 \\\\`/gates\\\\`\" .claude/commands/feature.md)",
+      "Bash(tee /tmp/full-test-final.log)",
+      "Bash(xcsift)",
+      "Bash(rm -f /tmp/FinanceTracker.xcresult *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
@@ -267,7 +288,8 @@
       "/tmp",
       "/Users/akshaypimprikar/.claude/skills/prompt-master",
       "/Users/akshaypimprikar/.claude/skills/prompt-master/references",
-      "/Users/akshaypimprikar/Desktop/Claude/pragma/scaffold/.github/workflows"
+      "/Users/akshaypimprikar/Desktop/Claude/pragma/scaffold/.github/workflows",
+      "/Users/akshaypimprikar/Library/Developer/Xcode/DerivedData"
     ]
   },
   "hooks": {
