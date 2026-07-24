@@ -56,6 +56,22 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
     }
 }
 
+actor FakeCategorySuggesting: CategorySuggesting {
+    nonisolated let isAvailable: Bool
+    private(set) var suggestCallCount = 0
+    private var suggestionsByPayee: [String: CategorySuggestion]
+
+    init(isAvailable: Bool = true, suggestionsByPayee: [String: CategorySuggestion] = [:]) {
+        self.isAvailable = isAvailable
+        self.suggestionsByPayee = suggestionsByPayee
+    }
+
+    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestion? {
+        suggestCallCount += 1
+        return suggestionsByPayee[payee]
+    }
+}
+
 struct FailingImportRecordRepo: ImportRecordRepositoryProtocol {
     enum RepoError: Error { case saveFailed }
     func fetchAll() throws -> [ImportRecord] { [] }

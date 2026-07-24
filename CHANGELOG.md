@@ -23,6 +23,7 @@ All notable changes to FinanceTracker are documented here.
 - Add optional `categoryID` field to `ParsedTransaction`, defaulted so existing call sites are unaffected — carries a user-accepted category suggestion from CSV import preview through to persistence without entering the `importHash` dedup calculation
 - Add `CategorySuggesting` Domain Service protocol and `CategorySuggestion`/`Confidence` `@Generable` types for on-device payee→category suggestion — `candidates` are passed as a Sendable `CategoryCandidate` DTO (id + name only), not the live `Category` model, so the protocol can safely be conformed to by an actor
 - Add `FoundationModelsCategorySuggester` — the concrete on-device adapter, explicit `SystemLanguageModel` (zero network calls), fails safe to no suggestion on unavailable hardware, model error, or a non-matching category name
+- Add `FakeCategorySuggesting` test fixture — mirrors `FakeTransactionImportWriting`'s actor-based call-tracking pattern for the new suggestion protocol
 
 ---
 
