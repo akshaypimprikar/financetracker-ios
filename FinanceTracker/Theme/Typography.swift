@@ -7,5 +7,6 @@ extension Theme {
         static let rowTitle:      Font = .body
         static let rowSubtitle:   Font = .caption
         static let code:          Font = .caption.monospaced()
+        static let chipLabel:     Font = .caption.weight(.medium)
     }
 }
