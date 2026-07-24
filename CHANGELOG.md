@@ -21,6 +21,7 @@ All notable changes to FinanceTracker are documented here.
 - Fix CSV import silently losing the audit trail on partial failure, misreporting a fully-successful import as a total failure when only the bookkeeping record save throws, and leaving a silent failure state with no error message — `ImportViewModel` now writes a best-effort `ImportRecord` for whatever partially completed, distinguishes a bookkeeping-only failure from a data failure, surfaces both via an alert in `ImportSheet`, and guards all of it with a generation token so a cancelled-but-still-unwinding import can't clobber a session the user has since started fresh
 - Add `Theme/Chips.swift` and a `chipLabel` typography token for the category-suggestion chip pattern (CSV import preview) — confidence shown via sparkle-icon opacity rather than separate icons or colors per level
 - Add optional `categoryID` field to `ParsedTransaction`, defaulted so existing call sites are unaffected — carries a user-accepted category suggestion from CSV import preview through to persistence without entering the `importHash` dedup calculation
+- Add `CategorySuggesting` Domain Service protocol and `CategorySuggestion`/`Confidence` `@Generable` types for on-device payee→category suggestion — `candidates` are passed as a Sendable `CategoryCandidate` DTO (id + name only), not the live `Category` model, so the protocol can safely be conformed to by an actor
 
 ---
 
