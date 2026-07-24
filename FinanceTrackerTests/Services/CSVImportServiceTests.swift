@@ -103,4 +103,11 @@ struct CSVImportServiceTests {
         let hash2 = CSVImportService.importHash(date: lateEvening, amount: 25, payee: "Coffee")
         #expect(hash1 == hash2)
     }
+
+    @Test func parsedTransactionDefaultsCategoryIDToNil() throws {
+        let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop"
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        let results = try CSVImportService().parse(csv: csv, mapping: mapping)
+        #expect(results[0].categoryID == nil)
+    }
 }
