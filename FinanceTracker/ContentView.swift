@@ -47,7 +47,8 @@ struct FinanceTrackerTabView: View {
         _importVM = State(wrappedValue: ImportViewModel(
             accountRepo: accountRepo,
             importRecordRepo: importRecordRepo,
-            importWriter: importWriter
+            importWriter: importWriter,
+            categoryRepo: categoryRepo
         ))
         _categoryVM = State(wrappedValue: CategoryViewModel(
             categoryRepo: categoryRepo

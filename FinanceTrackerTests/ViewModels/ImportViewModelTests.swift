@@ -13,7 +13,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: FakeTransactionImportWriting()
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
 
         let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop"
@@ -30,7 +31,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: FakeTransactionImportWriting()
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
 
         let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop\n2026-05-02,1200.00,Rent"
@@ -55,7 +57,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: FakeTransactionImportWriting(existingHashes: [hash])
+            importWriter: FakeTransactionImportWriting(existingHashes: [hash]),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
 
         let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop\n2026-05-02,50.00,Grocery"
@@ -80,6 +83,7 @@ struct ImportViewModelTests {
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
             importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
             chunkSize: 2
         )
         try vm.load()
@@ -121,6 +125,7 @@ struct ImportViewModelTests {
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
             importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
             chunkSize: 1
         )
         try vm.load()
@@ -153,6 +158,7 @@ struct ImportViewModelTests {
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
             importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
             chunkSize: 1
         )
         try vm.load()
@@ -194,6 +200,7 @@ struct ImportViewModelTests {
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
             importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
             chunkSize: 1
         )
         try vm.load()
@@ -240,7 +247,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: fake
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
         try vm.load()
         vm.selectedAccount = account
@@ -279,6 +287,7 @@ struct ImportViewModelTests {
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
             importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
             chunkSize: 1
         )
         try vm.load()
@@ -316,7 +325,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: FailingImportRecordRepo(),
-            importWriter: importActor
+            importWriter: importActor,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
         try vm.load()
         vm.selectedAccount = account
@@ -350,7 +360,8 @@ struct ImportViewModelTests {
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: fake
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
         try vm.load()
         vm.selectedAccount = account
@@ -364,5 +375,123 @@ struct ImportViewModelTests {
         vm.reset()
 
         #expect(vm.importFailure == nil)
+    }
+
+    @Test func loadSuggestionsPopulatesOneSuggestionPerUniquePayee() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let coffee = Category(name: "Coffee", type: .expense)
+        let shopping = Category(name: "Shopping", type: .expense)
+        ctx.insert(coffee)
+        ctx.insert(shopping)
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting(suggestionsByPayee: [
+            "Starbucks": CategorySuggestion(categoryName: "Coffee", confidence: .high),
+            "Amazon": CategorySuggestion(categoryName: "Shopping", confidence: .medium),
+        ])
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+
+        let csv = "date,amount,payee\n2026-05-01,6.40,Starbucks\n2026-05-02,6.40,Starbucks\n2026-05-03,34.12,Amazon"
+        vm.loadCSV(csv)
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        await vm.loadSuggestions()
+
+        #expect(vm.suggestions.count == 2)   // 2 unique payees, not 3 rows
+        #expect(vm.suggestions["Starbucks"]?.categoryName == "Coffee")
+        #expect(vm.suggestions["Amazon"]?.categoryName == "Shopping")
+        let callCount = await fake.suggestCallCount
+        #expect(callCount == 2)   // one call per unique payee, not per row
+    }
+
+    @Test func loadSuggestionsSkipsWhenSuggesterUnavailable() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Coffee", type: .expense))
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting(isAvailable: false)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,6.40,Starbucks")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        await vm.loadSuggestions()
+
+        #expect(vm.suggestions.isEmpty)
+        let callCount = await fake.suggestCallCount
+        #expect(callCount == 0)   // silent skip — no calls made at all
+    }
+
+    @Test func setCategoryAppliesToAllRowsSharingThatPayee() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Coffee", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,6.40,Starbucks\n2026-05-02,6.40,Starbucks\n2026-05-03,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        vm.setCategory(categoryID: category.id, forPayee: "Starbucks")
+
+        let starbucksRows = vm.pendingTransactions.filter { $0.payee == "Starbucks" }
+        #expect(starbucksRows.allSatisfy { $0.categoryID == category.id })
+        let amazonRow = vm.pendingTransactions.first { $0.payee == "Amazon" }
+        #expect(amazonRow?.categoryID == nil)   // regression guard: other payees untouched
+    }
+
+    @Test func resetClearsStaleSuggestions() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Coffee", type: .expense))
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting(suggestionsByPayee: [
+            "Starbucks": CategorySuggestion(categoryName: "Coffee", confidence: .high)
+        ])
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,6.40,Starbucks")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        await vm.loadSuggestions()
+        #expect(vm.suggestions["Starbucks"] != nil)
+
+        vm.reset()
+
+        // Regression guard: a stale payee->suggestion mapping surviving reset() would
+        // render a leftover chip for a same-named payee in a brand-new session, before
+        // that session's own loadSuggestions() has even run — same stale-session class
+        // of bug the importGeneration mechanism elsewhere in this file guards against.
+        #expect(vm.suggestions.isEmpty)
     }
 }

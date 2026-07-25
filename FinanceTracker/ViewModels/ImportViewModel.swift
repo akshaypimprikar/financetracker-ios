@@ -26,6 +26,8 @@ final class ImportViewModel {
     private(set) var accounts: [Account] = []
     private(set) var progress: Double = 0
     private(set) var importFailure: ImportFailure?
+    private(set) var categories: [Category] = []
+    private(set) var suggestions: [String: CategorySuggestion] = [:]   // keyed by payee
     var isImporting: Bool { importTask != nil }
     var selectedAccount: Account?
     /// Explicit completion signal for the View to dismiss on — not inferred from
@@ -37,6 +39,8 @@ final class ImportViewModel {
     private let importRecordRepo: any ImportRecordRepositoryProtocol
     private let importService: CSVImportService
     private let importWriter: any TransactionImportWriting
+    private let categoryRepo: any CategoryRepositoryProtocol
+    private let categorySuggester: any CategorySuggesting
     private let chunkSize: Int
     private var importTask: Task<Void, Error>?
     /// Bumped by every `startImport()` and `reset()`. A task's completion handlers
@@ -53,12 +57,16 @@ final class ImportViewModel {
         accountRepo: any AccountRepositoryProtocol,
         importRecordRepo: any ImportRecordRepositoryProtocol,
         importWriter: any TransactionImportWriting,
+        categoryRepo: any CategoryRepositoryProtocol,
+        categorySuggester: any CategorySuggesting = FoundationModelsCategorySuggester(),
         importService: CSVImportService = CSVImportService(),
         chunkSize: Int = 300
     ) {
         self.accountRepo = accountRepo
         self.importRecordRepo = importRecordRepo
         self.importWriter = importWriter
+        self.categoryRepo = categoryRepo
+        self.categorySuggester = categorySuggester
         self.importService = importService
         self.chunkSize = chunkSize
     }
@@ -66,6 +74,7 @@ final class ImportViewModel {
     func load() throws {
         accounts = try accountRepo.fetchAll()
         if selectedAccount == nil { selectedAccount = accounts.first }
+        categories = try categoryRepo.fetchAll()
     }
 
     func loadCSV(_ text: String) {
@@ -87,6 +96,23 @@ final class ImportViewModel {
         pendingTransactions = deduped
         skippedCount = parsed.count - deduped.count
         step = .preview
+    }
+
+    func loadSuggestions() async {
+        guard categorySuggester.isAvailable, !categories.isEmpty else { return }
+        let candidates = categories.map { CategoryCandidate(id: $0.id, name: $0.name) }
+        let uniquePayees = Set(pendingTransactions.map(\.payee))
+        for payee in uniquePayees {
+            if let suggestion = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
+                suggestions[payee] = suggestion
+            }
+        }
+    }
+
+    func setCategory(categoryID: UUID, forPayee payee: String) {
+        for index in pendingTransactions.indices where pendingTransactions[index].payee == payee {
+            pendingTransactions[index].categoryID = categoryID
+        }
     }
 
     func startImport(filename: String = "import.csv") {
@@ -178,6 +204,7 @@ final class ImportViewModel {
         pendingTransactions = []
         skippedCount = 0
         progress = 0
+        suggestions = [:]
     }
 }
 
