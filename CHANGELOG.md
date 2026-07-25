@@ -25,6 +25,7 @@ All notable changes to FinanceTracker are documented here.
 - Add `FoundationModelsCategorySuggester` — the concrete on-device adapter, explicit `SystemLanguageModel` (zero network calls), fails safe to no suggestion on unavailable hardware, model error, or a non-matching category name
 - Add `FakeCategorySuggesting` test fixture — mirrors `FakeTransactionImportWriting`'s actor-based call-tracking pattern for the new suggestion protocol
 - Wire `CategorySuggesting` into `ImportViewModel` — `loadSuggestions()` (one call per unique payee, not per row) and `setCategory(categoryID:forPayee:)` (applies to every pending row sharing that payee); `reset()` now clears stale per-session suggestions, not just `pendingTransactions`
+- `TransactionImportActor.save` resolves `ParsedTransaction.categoryID` to a `Category` and attaches it to each new `Transaction`; a stale/unresolvable id degrades to an uncategorized transaction rather than failing the chunk, and misses are cached alongside hits so a repeated stale id isn't re-fetched per row
 
 ---
 

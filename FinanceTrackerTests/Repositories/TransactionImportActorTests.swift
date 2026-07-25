@@ -61,4 +61,53 @@ struct TransactionImportActorTests {
             try await actor.save(chunk: chunk, accountID: UUID())
         }
     }
+
+    @Test func saveAttachesCategoryWhenCategoryIDResolves() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        let category = Category(name: "Coffee", type: .expense)
+        ctx.insert(account)
+        ctx.insert(category)
+        try ctx.save()
+
+        let actor = TransactionImportActor(modelContainer: container)
+        let chunk = [ParsedTransaction(date: .now, amount: 6.40, payee: "Starbucks", importHash: "h1", categoryID: category.id)]
+        try await actor.save(chunk: chunk, accountID: account.id)
+
+        let saved = try ctx.fetch(FetchDescriptor<Transaction>())
+        #expect(saved.count == 1)
+        #expect(saved[0].category?.id == category.id)
+    }
+
+    @Test func saveLeavesCategoryNilWhenCategoryIDIsNil() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let actor = TransactionImportActor(modelContainer: container)
+        let chunk = [ParsedTransaction(date: .now, amount: 6.40, payee: "Starbucks", importHash: "h1")]
+        try await actor.save(chunk: chunk, accountID: account.id)
+
+        let saved = try ctx.fetch(FetchDescriptor<Transaction>())
+        #expect(saved[0].category == nil)
+    }
+
+    @Test func saveLeavesCategoryNilWhenCategoryIDDoesNotResolve() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let actor = TransactionImportActor(modelContainer: container)
+        let chunk = [ParsedTransaction(date: .now, amount: 6.40, payee: "Starbucks", importHash: "h1", categoryID: UUID())]
+        try await actor.save(chunk: chunk, accountID: account.id)   // must not throw
+
+        let saved = try ctx.fetch(FetchDescriptor<Transaction>())
+        #expect(saved.count == 1)
+        #expect(saved[0].category == nil)   // fails safe, not a hard failure
+    }
 }
