@@ -82,6 +82,67 @@ struct ImportSheet: View {
         "\(count) transaction\(count == 1 ? "" : "s")"
     }
 
+    @ViewBuilder
+    private func categoryChip(for tx: ParsedTransaction) -> some View {
+        if let (text, sparkleOpacity) = chipContent(for: tx) {
+            categoryMenu(for: tx) {
+                chipLabel(text: text, sparkleOpacity: sparkleOpacity)
+            }
+            .accessibilityIdentifier("import-category-chip-\(tx.importHash)")
+        }
+    }
+
+    private func chipContent(for tx: ParsedTransaction) -> (text: String, sparkleOpacity: Double?)? {
+        if let categoryID = tx.categoryID,
+           let category = viewModel.categories.first(where: { $0.id == categoryID }) {
+            return (category.name, nil)
+        }
+        if let suggestion = viewModel.suggestions[tx.payee] {
+            return (suggestion.categoryName, opacity(for: suggestion.confidence))
+        }
+        return nil
+    }
+
+    private func chipLabel(text: String, sparkleOpacity: Double?) -> some View {
+        HStack(spacing: Theme.Spacing.tight) {
+            if let sparkleOpacity {
+                Image(systemName: "sparkle")
+                    .opacity(sparkleOpacity)
+            }
+            Text(text)
+                .font(Theme.Typography.chipLabel)
+        }
+        .padding(.horizontal, Theme.Spacing.contentSpacing)
+        .padding(.vertical, Theme.Spacing.compact)
+        .background(Theme.Chips.suggestionBackground)
+        .foregroundStyle(Theme.Colors.primaryInteractive)
+        .clipShape(Capsule())
+    }
+
+    @ViewBuilder
+    private func categoryMenu<Label: View>(
+        for tx: ParsedTransaction,
+        @ViewBuilder label: () -> Label
+    ) -> some View {
+        Menu {
+            ForEach(viewModel.categories) { category in
+                Button(category.name) {
+                    viewModel.setCategory(categoryID: category.id, forPayee: tx.payee)
+                }
+            }
+        } label: {
+            label()
+        }
+    }
+
+    private func opacity(for confidence: CategorySuggestion.Confidence) -> Double {
+        switch confidence {
+        case .high:   Theme.Chips.confidenceHigh
+        case .medium: Theme.Chips.confidenceMedium
+        case .low:    Theme.Chips.confidenceLow
+        }
+    }
+
     private var stepTitle: String {
         switch viewModel.step {
         case .filePicker:    "Import CSV"
@@ -147,7 +208,10 @@ struct ImportSheet: View {
                         payeeIndex: payeeColIndex,
                         hasHeader: hasHeader
                     )
-                    Task { try? await viewModel.applyMapping(mapping) }
+                    Task {
+                        try? await viewModel.applyMapping(mapping)
+                        await viewModel.loadSuggestions()
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityIdentifier("import-parse-preview-button")
@@ -195,7 +259,10 @@ struct ImportSheet: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(tx.amount, format: .currency(code: viewModel.selectedAccount?.currency ?? Locale.current.currency?.identifier ?? "USD"))
+                            VStack(alignment: .trailing, spacing: Theme.Spacing.tight) {
+                                categoryChip(for: tx)
+                                Text(tx.amount, format: .currency(code: viewModel.selectedAccount?.currency ?? Locale.current.currency?.identifier ?? "USD"))
+                            }
                         }
                     }
                 }
