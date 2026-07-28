@@ -27,6 +27,7 @@ All notable changes to FinanceTracker are documented here.
 - Wire `CategorySuggesting` into `ImportViewModel` — `loadSuggestions()` (one call per unique payee, not per row) and `setCategory(categoryID:forPayee:)` (applies to every pending row sharing that payee); `reset()` now clears stale per-session suggestions, not just `pendingTransactions`
 - `TransactionImportActor.save` resolves `ParsedTransaction.categoryID` to a `Category` and attaches it to each new `Transaction`; a stale/unresolvable id degrades to an uncategorized transaction rather than failing the chunk, and misses are cached alongside hits so a repeated stale id isn't re-fetched per row
 - Render the category suggestion chip in `ImportSheet`'s preview step — sparkle-opacity-by-confidence when unconfirmed, plain capsule once the user has picked a category via the chip's `Menu`; accepting the model's suggestion and overriding it are the same tap, no separate accept affordance
+- Add `CategoryNameMatching` — order-independent, connector-word-insensitive category name matching (token-set equality, not a similarity threshold) shared by the AI-suggestion match check, AI-create dedup, and manual category creation
 
 ---
 
