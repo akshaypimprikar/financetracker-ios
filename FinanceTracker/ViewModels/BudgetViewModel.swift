@@ -17,19 +17,29 @@ final class BudgetViewModel {
     private let budgetRepo: any BudgetRepositoryProtocol
     private let transactionRepo: any TransactionRepositoryProtocol
     private let categoryRepo: any CategoryRepositoryProtocol
+    private let categorySuggester: any CategorySuggesting
     private let budgetCalcService: BudgetCalculationService
 
     init(
         budgetRepo: any BudgetRepositoryProtocol,
         transactionRepo: any TransactionRepositoryProtocol,
         categoryRepo: any CategoryRepositoryProtocol,
+        categorySuggester: any CategorySuggesting = FoundationModelsCategorySuggester(),
         budgetCalcService: BudgetCalculationService = BudgetCalculationService()
     ) {
         self.budgetRepo = budgetRepo
         self.transactionRepo = transactionRepo
         self.categoryRepo = categoryRepo
+        self.categorySuggester = categorySuggester
         self.budgetCalcService = budgetCalcService
     }
+
+    var suggestionsAvailable: Bool { categorySuggester.isAvailable }
+
+    /// Whether the "Add Budget" flow has anything to show: either an unbudgeted category
+    /// to pick, or (on hardware without Apple Intelligence) a manual "Add Category" fallback.
+    /// Only when neither exists is there truly nothing the sheet can do.
+    var canOpenAddBudget: Bool { !unbudgetedCategories.isEmpty || !suggestionsAvailable }
 
     func load() throws {
         categories = try categoryRepo.fetchAll()
@@ -46,6 +56,8 @@ final class BudgetViewModel {
             }
             return (budget, budgetCalcService.progress(budget: budget, transactions: txs))
         }
+        let budgetedIDs = Set(budgets.map { $0.0.category.id })
+        unbudgetedCategories = categories.filter { !budgetedIDs.contains($0.id) }
     }
 
     enum BudgetError: Error {
@@ -68,10 +80,7 @@ final class BudgetViewModel {
         try load()
     }
 
-    var unbudgetedCategories: [Category] {
-        let budgetedIDs = Set(budgets.map { $0.0.category.id })
-        return categories.filter { !budgetedIDs.contains($0.id) }
-    }
+    private(set) var unbudgetedCategories: [Category] = []
 
     static let defaultSpendingHistoryMonths = 12
     var spendingHistoryMonths: Int = BudgetViewModel.defaultSpendingHistoryMonths

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BudgetListView: View {
     @Bindable var viewModel: BudgetViewModel
+    @Bindable var categoryVM: CategoryViewModel
     @State private var isPresentingAdd = false
 
     var body: some View {
@@ -47,12 +48,12 @@ struct BudgetListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
-                    .disabled(viewModel.unbudgetedCategories.isEmpty)
+                    .disabled(!viewModel.canOpenAddBudget)
                     .accessibilityIdentifier("add-budget-button")
             }
         }
         .sheet(isPresented: $isPresentingAdd) {
-            AddBudgetSheet(viewModel: viewModel)
+            AddBudgetSheet(viewModel: viewModel, categoryVM: categoryVM)
         }
         .onAppear { try? viewModel.load() }
     }
