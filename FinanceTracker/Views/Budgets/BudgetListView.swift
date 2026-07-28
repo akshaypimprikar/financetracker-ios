@@ -48,7 +48,6 @@ struct BudgetListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
-                    .disabled(!viewModel.canOpenAddBudget)
                     .accessibilityIdentifier("add-budget-button")
             }
         }

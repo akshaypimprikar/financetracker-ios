@@ -197,37 +197,4 @@ struct BudgetViewModelTests {
         )
         #expect(!unavailable.suggestionsAvailable)
     }
-
-    @Test func canOpenAddBudgetIsFalseOnlyWhenNoUnbudgetedCategoriesAndSuggestionsAvailable() throws {
-        let container = try makeContainer()
-        let ctx = ModelContext(container)
-        let category = Category(name: "Food", type: .expense)
-        let budget = Budget(monthlyLimit: 500, month: startOfMay2026(), category: category)
-        ctx.insert(category); ctx.insert(budget)
-        try ctx.save()
-
-        // No unbudgeted categories + suggestions available (AI path is the only route,
-        // and it's not reachable from this sheet) -> nothing to do here.
-        let blocked = BudgetViewModel(
-            budgetRepo: SwiftDataBudgetRepository(context: ctx),
-            transactionRepo: SwiftDataTransactionRepository(context: ctx),
-            categoryRepo: SwiftDataCategoryRepository(context: ctx),
-            categorySuggester: FakeCategorySuggesting(isAvailable: true)
-        )
-        blocked.selectedMonth = startOfMay2026()
-        try blocked.load()
-        #expect(!blocked.canOpenAddBudget)
-
-        // No unbudgeted categories, but suggestions unavailable -> manual "Add Category"
-        // fallback is still reachable, so the sheet should open.
-        let fallbackAvailable = BudgetViewModel(
-            budgetRepo: SwiftDataBudgetRepository(context: ctx),
-            transactionRepo: SwiftDataTransactionRepository(context: ctx),
-            categoryRepo: SwiftDataCategoryRepository(context: ctx),
-            categorySuggester: FakeCategorySuggesting(isAvailable: false)
-        )
-        fallbackAvailable.selectedMonth = startOfMay2026()
-        try fallbackAvailable.load()
-        #expect(fallbackAvailable.canOpenAddBudget)
-    }
 }

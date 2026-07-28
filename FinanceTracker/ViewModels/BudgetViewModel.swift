@@ -36,11 +36,6 @@ final class BudgetViewModel {
 
     var suggestionsAvailable: Bool { categorySuggester.isAvailable }
 
-    /// Whether the "Add Budget" flow has anything to show: either an unbudgeted category
-    /// to pick, or (on hardware without Apple Intelligence) a manual "Add Category" fallback.
-    /// Only when neither exists is there truly nothing the sheet can do.
-    var canOpenAddBudget: Bool { !unbudgetedCategories.isEmpty || !suggestionsAvailable }
-
     func load() throws {
         categories = try categoryRepo.fetchAll()
         let cal = Calendar.current
