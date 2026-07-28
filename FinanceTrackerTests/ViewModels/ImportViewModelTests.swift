@@ -523,11 +523,15 @@ struct ImportViewModelTests {
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
         try await vm.applyMapping(mapping)
 
-        try vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+        vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
 
-        #expect(vm.categories.map(\.name).sorted() == ["Coffee", "Shopping"])
+        // Staged, not yet persisted — createAndAssignCategory must not write to the
+        // store until the import actually completes.
+        #expect(vm.categories.map(\.name) == ["Coffee"])
+        #expect(vm.pendingNewCategories.map(\.name) == ["Shopping"])
+        #expect(vm.allCategories.map(\.name).sorted() == ["Coffee", "Shopping"])
         let amazonRow = vm.pendingTransactions.first { $0.payee == "Amazon" }
-        let created = vm.categories.first { $0.name == "Shopping" }
+        let created = vm.allCategories.first { $0.name == "Shopping" }
         #expect(amazonRow?.categoryID == created?.id)
     }
 
@@ -549,10 +553,12 @@ struct ImportViewModelTests {
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
         try await vm.applyMapping(mapping)
 
-        try vm.createAndAssignCategory(named: "  travel  ", forPayee: "Delta Airlines")
+        vm.createAndAssignCategory(named: "  travel  ", forPayee: "Delta Airlines")
 
-        // Reused the existing "Travel" category instead of inserting a duplicate.
+        // Reused the existing "Travel" category instead of inserting a duplicate —
+        // nothing new even staged as pending.
         #expect(vm.categories.count == 1)
+        #expect(vm.pendingNewCategories.isEmpty)
         let row = vm.pendingTransactions.first { $0.payee == "Delta Airlines" }
         #expect(row?.categoryID == travel.id)
     }
@@ -573,9 +579,10 @@ struct ImportViewModelTests {
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
         try await vm.applyMapping(mapping)
 
-        try vm.createAndAssignCategory(named: "   ", forPayee: "Amazon")
+        vm.createAndAssignCategory(named: "   ", forPayee: "Amazon")
 
         #expect(vm.categories.isEmpty)
+        #expect(vm.pendingNewCategories.isEmpty)
         let amazonRow = vm.pendingTransactions.first { $0.payee == "Amazon" }
         #expect(amazonRow?.categoryID == nil)
     }
@@ -609,13 +616,68 @@ struct ImportViewModelTests {
         await vm.loadSuggestions()
         #expect(vm.suggestions["Target"]?.matchedCategoryID == nil)
 
-        try vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+        vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
 
         // Target's cached suggestion now points at the category Amazon's create just
         // made — computed by re-checking cached names, not a second model call.
-        let created = vm.categories.first { $0.name == "Shopping" }
+        let created = vm.pendingNewCategories.first { $0.name == "Shopping" }
         #expect(vm.suggestions["Target"]?.matchedCategoryID == created?.id)
         let callCount = await fake.suggestCallCount
         #expect(callCount == 2)   // still just the original per-payee calls
+    }
+
+    @Test func resetDiscardsUnpersistedPendingCategories() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+        #expect(!vm.pendingNewCategories.isEmpty)
+
+        vm.reset()
+
+        #expect(vm.pendingNewCategories.isEmpty)
+        // Regression guard: cancelling out of preview without importing must never
+        // leave an orphan category with zero transactions sitting in the store.
+        let persisted = try SwiftDataCategoryRepository(context: ctx).fetchAll()
+        #expect(persisted.isEmpty)
+    }
+
+    @Test func startImportPersistsPendingCategoriesBeforeWritingTransactions() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.selectedAccount = account
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+
+        vm.startImport(filename: "test.csv")
+        try await waitUntil { !vm.isImporting }
+
+        #expect(vm.importFailure == nil)
+        let persisted = try SwiftDataCategoryRepository(context: ctx).fetchAll()
+        #expect(persisted.map(\.name) == ["Shopping"])
     }
 }

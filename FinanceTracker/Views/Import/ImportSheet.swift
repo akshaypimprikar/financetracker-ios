@@ -93,7 +93,7 @@ struct ImportSheet: View {
 
     private func chipState(for tx: ParsedTransaction) -> ChipState? {
         if let categoryID = tx.categoryID,
-           let category = viewModel.categories.first(where: { $0.id == categoryID }) {
+           let category = viewModel.allCategories.first(where: { $0.id == categoryID }) {
             return .confirmed(categoryName: category.name)
         }
         if let result = viewModel.suggestions[tx.payee] {
@@ -155,12 +155,12 @@ struct ImportSheet: View {
         Menu {
             if let proposedName {
                 Button {
-                    try? viewModel.createAndAssignCategory(named: proposedName, forPayee: tx.payee)
+                    viewModel.createAndAssignCategory(named: proposedName, forPayee: tx.payee)
                 } label: {
                     Label("Create '\(proposedName)'", systemImage: "plus")
                 }
             }
-            ForEach(viewModel.categories) { category in
+            ForEach(viewModel.allCategories) { category in
                 Button {
                     viewModel.setCategory(categoryID: category.id, forPayee: tx.payee)
                 } label: {

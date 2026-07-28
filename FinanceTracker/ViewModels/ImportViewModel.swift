@@ -27,7 +27,17 @@ final class ImportViewModel {
     private(set) var progress: Double = 0
     private(set) var importFailure: ImportFailure?
     private(set) var categories: [Category] = []
+    /// Categories created via `createAndAssignCategory` during this preview session but
+    /// not yet persisted — only written to `categoryRepo` if `startImport()` actually
+    /// succeeds, so cancelling the sheet without importing never leaves an orphan
+    /// category with zero transactions sitting in the store.
+    private(set) var pendingNewCategories: [Category] = []
     private(set) var suggestions: [String: CategorySuggestionResult] = [:]   // keyed by payee
+    /// Existing + this-session's not-yet-persisted categories — the full set a chip's
+    /// `Menu` or a confirmed-chip lookup should consider, since a category the user just
+    /// tapped "Create" on must behave like any other pickable category immediately,
+    /// even before it's actually saved.
+    var allCategories: [Category] { categories + pendingNewCategories }
     var isImporting: Bool { importTask != nil }
     var selectedAccount: Account?
     /// Explicit completion signal for the View to dismiss on — not inferred from
@@ -126,17 +136,20 @@ final class ImportViewModel {
     /// string comparison, not a new model call — it exists because loadSuggestions()
     /// computes suggestions for a whole CSV in one batch, before the user has tapped
     /// anything, so two payees can independently propose the same new category name.
-    func createAndAssignCategory(named name: String, forPayee payee: String) throws {
+    ///
+    /// A newly created category is NOT persisted here — only staged in
+    /// `pendingNewCategories` — so cancelling out of preview without importing never
+    /// leaves a real, unused category behind. `startImport()` persists it for real.
+    func createAndAssignCategory(named name: String, forPayee payee: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         let category: Category
-        if let existing = categories.first(where: { CategoryNameMatching.isNearDuplicate($0.name, trimmed) }) {
+        if let existing = allCategories.first(where: { CategoryNameMatching.isNearDuplicate($0.name, trimmed) }) {
             category = existing
         } else {
             category = Category(name: trimmed, type: .expense)
-            try categoryRepo.save(category)
-            categories.append(category)
+            pendingNewCategories.append(category)
         }
         setCategory(categoryID: category.id, forPayee: payee)
         rematchPendingSuggestions(against: category)
@@ -164,6 +177,24 @@ final class ImportViewModel {
 
         importTask = Task {
             defer { importTask = nil }
+
+            // Persist this session's staged categories before any chunk writes a
+            // transaction referencing one by id — TransactionImportActor resolves
+            // categoryID against the store directly, so an unsaved category would
+            // otherwise silently resolve to nil (transaction saved uncategorized).
+            do {
+                for category in pendingNewCategories {
+                    try categoryRepo.save(category)
+                }
+            } catch {
+                guard generation == self.importGeneration else { return }
+                clearCurrentAttempt()
+                importFailure = .partiallyFailed(persistedCount: 0)
+                return
+            }
+            categories.append(contentsOf: pendingNewCategories)
+            pendingNewCategories = []
+
             let chunks = items.chunked(into: chunkSize)
             var completed = 0
 
@@ -239,6 +270,7 @@ final class ImportViewModel {
         skippedCount = 0
         progress = 0
         suggestions = [:]
+        pendingNewCategories = []
     }
 }
 
