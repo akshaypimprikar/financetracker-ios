@@ -59,16 +59,16 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
 actor FakeCategorySuggesting: CategorySuggesting {
     nonisolated let isAvailable: Bool
     private(set) var suggestCallCount = 0
-    private var suggestionsByPayee: [String: CategorySuggestion]
+    private var resultsByPayee: [String: CategorySuggestionResult]
 
-    init(isAvailable: Bool = true, suggestionsByPayee: [String: CategorySuggestion] = [:]) {
+    init(isAvailable: Bool = true, resultsByPayee: [String: CategorySuggestionResult] = [:]) {
         self.isAvailable = isAvailable
-        self.suggestionsByPayee = suggestionsByPayee
+        self.resultsByPayee = resultsByPayee
     }
 
-    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestion? {
+    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
         suggestCallCount += 1
-        return suggestionsByPayee[payee]
+        return resultsByPayee[payee]
     }
 }
 

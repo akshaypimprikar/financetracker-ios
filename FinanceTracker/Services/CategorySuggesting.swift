@@ -18,11 +18,13 @@ protocol CategorySuggesting: Sendable {
     /// Checked once per import session (preview step), not per row.
     var isAvailable: Bool { get }
 
-    /// Suggests a category for one payee from the given candidates.
-    /// Returns nil if unavailable, if the model errors, or if its chosen
-    /// categoryName doesn't case-insensitively match any candidate name
-    /// (fails safe — no suggestion is always a valid outcome).
-    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestion?
+    /// Suggests a category for one payee from the given candidates. Returns nil if
+    /// unavailable, if the model errors, or if its raw suggestion is the literal
+    /// "Uncategorized" fallback (no plausible match, not even a proposal). Otherwise
+    /// always returns a result — matchedCategoryID is nil when the suggested name
+    /// doesn't near-duplicate-match any candidate, meaning "propose creating this,"
+    /// not "no suggestion."
+    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult?
 }
 
 @Generable
@@ -37,4 +39,15 @@ struct CategorySuggestion: Sendable {
     enum Confidence: String, Sendable {
         case high, medium, low
     }
+}
+
+/// Domain-level wrapper pairing the model's raw @Generable output with the post-hoc
+/// near-duplicate match determination against the caller's actual candidates. Kept
+/// separate from CategorySuggestion (rather than adding matchedCategoryID directly to
+/// that struct) since CategorySuggestion's schema is macro-synthesized from @Guide
+/// properties — mixing in a plain post-hoc field there is unverified against how that
+/// synthesis actually works.
+struct CategorySuggestionResult: Sendable {
+    let suggestion: CategorySuggestion
+    let matchedCategoryID: UUID?
 }

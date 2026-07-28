@@ -44,6 +44,10 @@ struct ImportSheet: View {
         }
         .onAppear {
             viewModel.onImportCompleted = { dismiss() }
+            // Re-fetch categories/accounts every time this sheet opens, not just once
+            // at app launch — otherwise a category added in Settings (or by a prior
+            // import session) wouldn't show up here until an app relaunch.
+            try? viewModel.load()
         }
         .onDisappear {
             // Same cleanup as the toolbar Cancel button — swipe-to-dismiss shouldn't
@@ -82,25 +86,47 @@ struct ImportSheet: View {
         "\(count) transaction\(count == 1 ? "" : "s")"
     }
 
+    private enum ChipState {
+        case confirmed(categoryName: String)
+        case suggested(text: String, sparkleOpacity: Double, matchedCategoryID: UUID?)
+    }
+
+    private func chipState(for tx: ParsedTransaction) -> ChipState? {
+        if let categoryID = tx.categoryID,
+           let category = viewModel.categories.first(where: { $0.id == categoryID }) {
+            return .confirmed(categoryName: category.name)
+        }
+        if let result = viewModel.suggestions[tx.payee] {
+            return .suggested(
+                text: result.suggestion.categoryName,
+                sparkleOpacity: opacity(for: result.suggestion.confidence),
+                matchedCategoryID: result.matchedCategoryID
+            )
+        }
+        return nil
+    }
+
     @ViewBuilder
     private func categoryChip(for tx: ParsedTransaction) -> some View {
-        if let (text, sparkleOpacity) = chipContent(for: tx) {
-            categoryMenu(for: tx) {
-                chipLabel(text: text, sparkleOpacity: sparkleOpacity)
+        if let state = chipState(for: tx) {
+            Group {
+                switch state {
+                case .confirmed(let name):
+                    categoryMenu(for: tx, highlighted: nil, proposedName: nil) {
+                        chipLabel(text: name, sparkleOpacity: nil)
+                    }
+                case .suggested(let text, let sparkleOpacity, let matchedID):
+                    categoryMenu(
+                        for: tx,
+                        highlighted: matchedID.map { (id: $0, opacity: sparkleOpacity) },
+                        proposedName: matchedID == nil ? text : nil
+                    ) {
+                        chipLabel(text: text, sparkleOpacity: sparkleOpacity)
+                    }
+                }
             }
             .accessibilityIdentifier("import-category-chip-\(tx.importHash)")
         }
-    }
-
-    private func chipContent(for tx: ParsedTransaction) -> (text: String, sparkleOpacity: Double?)? {
-        if let categoryID = tx.categoryID,
-           let category = viewModel.categories.first(where: { $0.id == categoryID }) {
-            return (category.name, nil)
-        }
-        if let suggestion = viewModel.suggestions[tx.payee] {
-            return (suggestion.categoryName, opacity(for: suggestion.confidence))
-        }
-        return nil
     }
 
     private func chipLabel(text: String, sparkleOpacity: Double?) -> some View {
@@ -120,18 +146,44 @@ struct ImportSheet: View {
     }
 
     @ViewBuilder
-    private func categoryMenu<Label: View>(
+    private func categoryMenu<Content: View>(
         for tx: ParsedTransaction,
-        @ViewBuilder label: () -> Label
+        highlighted: (id: UUID, opacity: Double)?,
+        proposedName: String?,
+        @ViewBuilder label: () -> Content
     ) -> some View {
         Menu {
+            if let proposedName {
+                Button {
+                    try? viewModel.createAndAssignCategory(named: proposedName, forPayee: tx.payee)
+                } label: {
+                    Label("Create '\(proposedName)'", systemImage: "plus")
+                }
+            }
             ForEach(viewModel.categories) { category in
-                Button(category.name) {
+                Button {
                     viewModel.setCategory(categoryID: category.id, forPayee: tx.payee)
+                } label: {
+                    categoryMenuRowLabel(
+                        category: category,
+                        sparkleOpacity: category.id == highlighted?.id ? highlighted?.opacity : nil
+                    )
                 }
             }
         } label: {
             label()
+        }
+    }
+
+    @ViewBuilder
+    private func categoryMenuRowLabel(category: Category, sparkleOpacity: Double?) -> some View {
+        if let sparkleOpacity {
+            HStack(spacing: Theme.Spacing.tight) {
+                Image(systemName: "sparkle").opacity(sparkleOpacity)
+                Text(category.name)
+            }
+        } else {
+            Text(category.name)
         }
     }
 

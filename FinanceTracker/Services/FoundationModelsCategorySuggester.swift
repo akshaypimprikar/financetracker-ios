@@ -10,8 +10,8 @@ struct FoundationModelsCategorySuggester: CategorySuggesting {
         SystemLanguageModel.default.availability == .available
     }
 
-    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestion? {
-        guard isAvailable, !candidates.isEmpty else { return nil }
+    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
+        guard isAvailable else { return nil }
 
         let categoryNames = candidates.map(\.name).joined(separator: ", ")
         let session = LanguageModelSession(model: SystemLanguageModel.default) {
@@ -30,11 +30,13 @@ struct FoundationModelsCategorySuggester: CategorySuggesting {
         }
 
         let suggestion = response.content
-        guard candidates.contains(where: {
-            $0.name.caseInsensitiveCompare(suggestion.categoryName) == .orderedSame
-        }) else {
+        guard suggestion.categoryName.caseInsensitiveCompare("Uncategorized") != .orderedSame else {
             return nil
         }
-        return suggestion
+
+        let matchedCategoryID = candidates.first(where: {
+            CategoryNameMatching.isNearDuplicate($0.name, suggestion.categoryName)
+        })?.id
+        return CategorySuggestionResult(suggestion: suggestion, matchedCategoryID: matchedCategoryID)
     }
 }

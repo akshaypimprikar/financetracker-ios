@@ -27,7 +27,7 @@ final class ImportViewModel {
     private(set) var progress: Double = 0
     private(set) var importFailure: ImportFailure?
     private(set) var categories: [Category] = []
-    private(set) var suggestions: [String: CategorySuggestion] = [:]   // keyed by payee
+    private(set) var suggestions: [String: CategorySuggestionResult] = [:]   // keyed by payee
     var isImporting: Bool { importTask != nil }
     var selectedAccount: Account?
     /// Explicit completion signal for the View to dismiss on — not inferred from
@@ -99,12 +99,16 @@ final class ImportViewModel {
     }
 
     func loadSuggestions() async {
-        guard categorySuggester.isAvailable, !categories.isEmpty else { return }
+        // No !categories.isEmpty guard here — a brand-new user's first CSV import
+        // routinely has zero existing categories, and the model must still be able
+        // to propose a brand-new one rather than going silent. That's now the
+        // primary path (no default categories are ever seeded), not an edge case.
+        guard categorySuggester.isAvailable else { return }
         let candidates = categories.map { CategoryCandidate(id: $0.id, name: $0.name) }
         let uniquePayees = Set(pendingTransactions.map(\.payee))
         for payee in uniquePayees {
-            if let suggestion = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
-                suggestions[payee] = suggestion
+            if let result = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
+                suggestions[payee] = result
             }
         }
     }
@@ -112,6 +116,36 @@ final class ImportViewModel {
     func setCategory(categoryID: UUID, forPayee payee: String) {
         for index in pendingTransactions.indices where pendingTransactions[index].payee == payee {
             pendingTransactions[index].categoryID = categoryID
+        }
+    }
+
+    /// Creates a category from the model's proposed name (or reuses an existing
+    /// near-duplicate instead of inserting a second one — see CategoryNameMatching),
+    /// assigns it to this payee's rows, then re-checks every other still-unconfirmed
+    /// cached suggestion against the updated category list. The rematch is cheap pure
+    /// string comparison, not a new model call — it exists because loadSuggestions()
+    /// computes suggestions for a whole CSV in one batch, before the user has tapped
+    /// anything, so two payees can independently propose the same new category name.
+    func createAndAssignCategory(named name: String, forPayee payee: String) throws {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let category: Category
+        if let existing = categories.first(where: { CategoryNameMatching.isNearDuplicate($0.name, trimmed) }) {
+            category = existing
+        } else {
+            category = Category(name: trimmed, type: .expense)
+            try categoryRepo.save(category)
+            categories.append(category)
+        }
+        setCategory(categoryID: category.id, forPayee: payee)
+        rematchPendingSuggestions(against: category)
+    }
+
+    private func rematchPendingSuggestions(against category: Category) {
+        for (payee, result) in suggestions where result.matchedCategoryID == nil {
+            guard CategoryNameMatching.isNearDuplicate(category.name, result.suggestion.categoryName) else { continue }
+            suggestions[payee] = CategorySuggestionResult(suggestion: result.suggestion, matchedCategoryID: category.id)
         }
     }
 

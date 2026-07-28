@@ -386,9 +386,15 @@ struct ImportViewModelTests {
         ctx.insert(shopping)
         try ctx.save()
 
-        let fake = FakeCategorySuggesting(suggestionsByPayee: [
-            "Starbucks": CategorySuggestion(categoryName: "Coffee", confidence: .high),
-            "Amazon": CategorySuggestion(categoryName: "Shopping", confidence: .medium),
+        let fake = FakeCategorySuggesting(resultsByPayee: [
+            "Starbucks": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Coffee", confidence: .high),
+                matchedCategoryID: coffee.id
+            ),
+            "Amazon": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Shopping", confidence: .medium),
+                matchedCategoryID: shopping.id
+            ),
         ])
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
@@ -406,8 +412,9 @@ struct ImportViewModelTests {
         await vm.loadSuggestions()
 
         #expect(vm.suggestions.count == 2)   // 2 unique payees, not 3 rows
-        #expect(vm.suggestions["Starbucks"]?.categoryName == "Coffee")
-        #expect(vm.suggestions["Amazon"]?.categoryName == "Shopping")
+        #expect(vm.suggestions["Starbucks"]?.suggestion.categoryName == "Coffee")
+        #expect(vm.suggestions["Starbucks"]?.matchedCategoryID == coffee.id)
+        #expect(vm.suggestions["Amazon"]?.suggestion.categoryName == "Shopping")
         let callCount = await fake.suggestCallCount
         #expect(callCount == 2)   // one call per unique payee, not per row
     }
@@ -466,11 +473,15 @@ struct ImportViewModelTests {
     @Test func resetClearsStaleSuggestions() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
-        ctx.insert(Category(name: "Coffee", type: .expense))
+        let coffee = Category(name: "Coffee", type: .expense)
+        ctx.insert(coffee)
         try ctx.save()
 
-        let fake = FakeCategorySuggesting(suggestionsByPayee: [
-            "Starbucks": CategorySuggestion(categoryName: "Coffee", confidence: .high)
+        let fake = FakeCategorySuggesting(resultsByPayee: [
+            "Starbucks": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Coffee", confidence: .high),
+                matchedCategoryID: coffee.id
+            )
         ])
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
@@ -493,5 +504,118 @@ struct ImportViewModelTests {
         // that session's own loadSuggestions() has even run — same stale-session class
         // of bug the importGeneration mechanism elsewhere in this file guards against.
         #expect(vm.suggestions.isEmpty)
+    }
+
+    @Test func createAndAssignCategoryCreatesNewWhenNoNearDuplicate() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Coffee", type: .expense))
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        try vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+
+        #expect(vm.categories.map(\.name).sorted() == ["Coffee", "Shopping"])
+        let amazonRow = vm.pendingTransactions.first { $0.payee == "Amazon" }
+        let created = vm.categories.first { $0.name == "Shopping" }
+        #expect(amazonRow?.categoryID == created?.id)
+    }
+
+    @Test func createAndAssignCategoryReusesExistingNearDuplicate() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let travel = Category(name: "Travel", type: .expense)
+        ctx.insert(travel)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,120.00,Delta Airlines")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        try vm.createAndAssignCategory(named: "  travel  ", forPayee: "Delta Airlines")
+
+        // Reused the existing "Travel" category instead of inserting a duplicate.
+        #expect(vm.categories.count == 1)
+        let row = vm.pendingTransactions.first { $0.payee == "Delta Airlines" }
+        #expect(row?.categoryID == travel.id)
+    }
+
+    @Test func createAndAssignCategoryRejectsBlankName() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        try vm.createAndAssignCategory(named: "   ", forPayee: "Amazon")
+
+        #expect(vm.categories.isEmpty)
+        let amazonRow = vm.pendingTransactions.first { $0.payee == "Amazon" }
+        #expect(amazonRow?.categoryID == nil)
+    }
+
+    @Test func createAndAssignCategoryRematchesOtherPendingSuggestions() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting(resultsByPayee: [
+            "Amazon": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Shopping", confidence: .high),
+                matchedCategoryID: nil
+            ),
+            "Target": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Shopping", confidence: .medium),
+                matchedCategoryID: nil
+            ),
+        ])
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon\n2026-05-02,18.00,Target")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        await vm.loadSuggestions()
+        #expect(vm.suggestions["Target"]?.matchedCategoryID == nil)
+
+        try vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+
+        // Target's cached suggestion now points at the category Amazon's create just
+        // made — computed by re-checking cached names, not a second model call.
+        let created = vm.categories.first { $0.name == "Shopping" }
+        #expect(vm.suggestions["Target"]?.matchedCategoryID == created?.id)
+        let callCount = await fake.suggestCallCount
+        #expect(callCount == 2)   // still just the original per-payee calls
     }
 }
