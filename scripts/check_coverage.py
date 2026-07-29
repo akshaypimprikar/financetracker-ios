@@ -11,6 +11,14 @@ import sys
 FAIL_THRESHOLD = 0.60
 WARN_THRESHOLD = 0.80
 
+# Requires live Apple Intelligence-eligible hardware or an Apple Intelligence-enabled
+# host Mac's Simulator — cannot run in CI. Verified via manual on-device testing
+# instead (see decisions.md 2026-07-21). ImportViewModelTests exercises the
+# surrounding ViewModel logic against FakeCategorySuggesting, which IS covered here.
+HARDWARE_DEPENDENT_EXCEPTIONS = {
+    "FoundationModelsCategorySuggester.swift",
+}
+
 with open(sys.argv[1]) as f:
     report = json.load(f)
 
@@ -26,6 +34,8 @@ for target in report.get("targets", []):
         # UI-only files contain no business logic — tested via UI tests, not unit tests
         if (name.endswith("View.swift") or name.endswith("Sheet.swift") or
                 name.endswith("Row.swift") or name.startswith("Color+")):
+            continue
+        if name in HARDWARE_DEPENDENT_EXCEPTIONS:
             continue
         source_files.append({
             "name": name,
