@@ -59,6 +59,10 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
 actor FakeCategorySuggesting: CategorySuggesting {
     nonisolated let isAvailable: Bool
     private(set) var suggestCallCount = 0
+    /// The candidates the caller passed on the most recent call — lets a test assert
+    /// on what ImportViewModel actually sent (e.g. that Income categories are excluded)
+    /// even though this fake ignores `candidates` when deciding what to return.
+    private(set) var lastReceivedCandidates: [CategoryCandidate] = []
     private var resultsByPayee: [String: CategorySuggestionResult]
     private var delay: Duration?
 
@@ -73,6 +77,7 @@ actor FakeCategorySuggesting: CategorySuggesting {
 
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
         suggestCallCount += 1
+        lastReceivedCandidates = candidates
         if let delay {
             try? await Task.sleep(for: delay)
         }

@@ -419,6 +419,38 @@ struct ImportViewModelTests {
         #expect(callCount == 2)   // one call per unique payee, not per row
     }
 
+    @Test func loadSuggestionsExcludesIncomeCategoriesFromCandidates() async throws {
+        // Regression guard for issue #66: CSV import always creates .debit transactions
+        // (see TransactionImportActor), so an Income category must never be offered as
+        // a suggestion candidate — otherwise a debit transaction could be attached to
+        // an Income-type category with no type check anywhere in the path.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let coffee = Category(name: "Coffee", type: .expense)
+        let salary = Category(name: "Salary", type: .income)
+        ctx.insert(coffee)
+        ctx.insert(salary)
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting()
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,6.40,Starbucks")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        await vm.loadSuggestions()
+
+        let received = await fake.lastReceivedCandidates
+        #expect(received.map(\.name) == ["Coffee"])
+        #expect(received.allSatisfy { $0.type == .expense })
+    }
+
     @Test func loadSuggestionsSkipsWhenSuggesterUnavailable() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
@@ -561,6 +593,37 @@ struct ImportViewModelTests {
         #expect(vm.pendingNewCategories.isEmpty)
         let row = vm.pendingTransactions.first { $0.payee == "Delta Airlines" }
         #expect(row?.categoryID == travel.id)
+    }
+
+    @Test func createAndAssignCategoryDoesNotReuseSameNamedCategoryOfADifferentType() async throws {
+        // Regression guard for issue #66: an existing Income "Travel" (e.g. travel
+        // reimbursement income) must not be reused for an AI-created Expense "Travel" —
+        // createAndAssignCategory only ever creates .expense categories, so dedup must
+        // be scoped to .expense, not match across types.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let incomeTravel = Category(name: "Travel", type: .income)
+        ctx.insert(incomeTravel)
+        try ctx.save()
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,120.00,Delta Airlines")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        vm.createAndAssignCategory(named: "Travel", forPayee: "Delta Airlines")
+
+        // A new Expense "Travel" was staged — the existing Income "Travel" was not reused.
+        #expect(vm.pendingNewCategories.map(\.name) == ["Travel"])
+        #expect(vm.pendingNewCategories.first?.type == .expense)
+        let row = vm.pendingTransactions.first { $0.payee == "Delta Airlines" }
+        #expect(row?.categoryID != incomeTravel.id)
     }
 
     @Test func createAndAssignCategoryRejectsBlankName() async throws {
