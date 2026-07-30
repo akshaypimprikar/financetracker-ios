@@ -119,7 +119,13 @@ final class ImportViewModel {
         // same stale-task guard startImport() uses, needed here because this call
         // isn't wrapped in a tracked/cancellable Task the way startImport()'s is.
         let generation = importGeneration
-        let candidates = categories.map { CategoryCandidate(id: $0.id, name: $0.name) }
+        // CSV import always creates .debit transactions (see TransactionImportActor) —
+        // an Income category is never a valid suggestion for an imported row, so it's
+        // excluded from the candidate list rather than relying solely on the type-scoped
+        // match check downstream to keep it from being wrongly attached.
+        let candidates = categories
+            .filter { $0.type == .expense }
+            .map { CategoryCandidate(id: $0.id, name: $0.name, type: $0.type) }
         let uniquePayees = Set(pendingTransactions.map(\.payee))
         for payee in uniquePayees {
             if let result = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
@@ -151,7 +157,9 @@ final class ImportViewModel {
         guard !trimmed.isEmpty else { return }
 
         let category: Category
-        if let existing = allCategories.first(where: { CategoryNameMatching.isNearDuplicate($0.name, trimmed) }) {
+        if let existing = allCategories.first(where: {
+            CategoryNameMatching.isNearDuplicate($0.name, $0.type, trimmed, .expense)
+        }) {
             category = existing
         } else {
             category = Category(name: trimmed, type: .expense)
@@ -163,7 +171,9 @@ final class ImportViewModel {
 
     private func rematchPendingSuggestions(against category: Category) {
         for (payee, result) in suggestions where result.matchedCategoryID == nil {
-            guard CategoryNameMatching.isNearDuplicate(category.name, result.suggestion.categoryName) else { continue }
+            guard CategoryNameMatching.isNearDuplicate(
+                category.name, category.type, result.suggestion.categoryName, .expense
+            ) else { continue }
             suggestions[payee] = CategorySuggestionResult(suggestion: result.suggestion, matchedCategoryID: category.id)
         }
     }
