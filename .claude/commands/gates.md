@@ -50,7 +50,7 @@ Pass: no output. Fail: list every offending file and line.
 ```bash
 git branch --show-current
 ```
-Pass: branch matches one of `feature/*`, `fix/*`, `hotfix/*`, `release/*`, `spec/*`, `design/*`, `ci/*`.
+Pass: branch matches one of `feature/*`, `fix/*`, `hotfix/*`, `release/*`, `spec/*`, `design/*`, `ci/*`, `chore/*`.
 Fail: `main`, `develop`, or any non-conforming name — stop and ask the user to rename.
 
 ### Gate 5 — CHANGELOG.md has Unreleased entries
@@ -98,7 +98,10 @@ git diff develop...HEAD --name-only -- '*.swift' | grep '/Services/' | xargs gre
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Repositories/Protocols/' | xargs grep -n '^import SwiftData\|^import SwiftUI' 2>/dev/null
 
 # ViewModels must depend on repository protocols, never concrete SwiftData*Repository types
-git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | xargs grep -n 'SwiftData\w*Repository' 2>/dev/null
+# (Tests/ excluded — FinanceTrackerTests/ViewModels/*.swift legitimately constructs concrete
+# SwiftData*Repository instances against an in-memory ModelContainer, per CLAUDE.md's own
+# documented test pattern; that's not a production ViewModel violating the rule.)
+git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | grep -v 'Tests/' | xargs grep -n 'SwiftData\w*Repository' 2>/dev/null
 
 # Views must have no direct SwiftData access (no business logic beyond calling ViewModel methods)
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/' | xargs grep -ln '^import SwiftData' 2>/dev/null
