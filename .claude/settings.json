@@ -26,7 +26,7 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Edit(~/.claude/skills/ios-build-verify/**)",
-      "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} \u2192 {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")",
+      "Bash(python3 -c \"import json,sys; [print\\(f\\\\\"#{p['number']} [{p['state']}] {p['title']} → {p['baseRefName']}\\\\\"\\) for p in json.load\\(sys.stdin\\)]\")",
       "Bash(git cherry-pick *)",
       "Bash(chmod +x /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.githooks/pre-push)",
       "Bash(git config core.hooksPath *)",
@@ -189,7 +189,39 @@
       "Bash(cua-driver launch_app *)",
       "Bash(textutil -convert txt *)",
       "Bash(xcrun xcresulttool *)",
-      "Bash(xcrun xccov *)"
+      "Bash(xcrun xccov *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker diff develop...HEAD --name-only -- '*.swift')",
+      "Bash(osascript -e 'tell application \"System Events\" to get name of first application process whose frontmost is true')",
+      "Bash(osascript -e 'tell application \"Simulator\" to activate')",
+      "Bash(cua-driver drag *)",
+      "Bash(xargs kill)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker branch --show-current)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker commit -m ' *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker push)",
+      "Bash(cat > *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker checkout *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker add *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker push -u origin *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker fetch origin --prune)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker pull origin develop --ff-only)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker branch -d *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker stash pop)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker stash list)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker stash push *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker log --oneline *)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker rebase develop)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker log develop..HEAD --oneline)",
+      "Bash(git -C /Users/akshaypimprikar/Desktop/Claude/FinanceTracker push --force-with-lease)",
+      "Bash(xcodebuild build-for-testing *)",
+      "Bash(system_profiler SPHardwareDataType)",
+      "mcp__XcodeBuildMCP__snapshot_ui",
+      "Bash(pkill -f serve_csv.py)",
+      "Bash(tee /private/tmp/claude-501/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/*)",
+      "Bash(gh run view * --log *)",
+      "Bash(gh issue *)",
+      "Bash(python3 scripts/check_coverage.py *)",
+      "Bash(rm -rf /tmp/debug_ui.xcresult *)",
+      "Bash(rm -rf /tmp/FinanceTracker.xcresult *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
@@ -204,7 +236,8 @@
       "/Users/akshaypimprikar/.claude/skills/prompt-master/references",
       "/Users/akshaypimprikar/Desktop/Claude/pragma/scaffold/.github/workflows",
       "/Users/akshaypimprikar/Library/Developer/Xcode/DerivedData",
-      "/Users/akshaypimprikar/Desktop/Claude/DevBrain"
+      "/Users/akshaypimprikar/Desktop/Claude/DevBrain",
+      "/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands"
     ]
   },
   "hooks": {
@@ -214,7 +247,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified — run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
           }
         ]
       }
