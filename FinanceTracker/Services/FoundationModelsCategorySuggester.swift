@@ -34,8 +34,11 @@ struct FoundationModelsCategorySuggester: CategorySuggesting {
             return nil
         }
 
+        // CSV import always creates .debit transactions (see TransactionImportActor) —
+        // matching is scoped to .expense so an Income category sharing a suggested name
+        // (e.g. "Interest") can never be attached to an imported expense transaction.
         let matchedCategoryID = candidates.first(where: {
-            CategoryNameMatching.isNearDuplicate($0.name, suggestion.categoryName)
+            CategoryNameMatching.isNearDuplicate($0.name, $0.type, suggestion.categoryName, .expense)
         })?.id
         return CategorySuggestionResult(suggestion: suggestion, matchedCategoryID: matchedCategoryID)
     }

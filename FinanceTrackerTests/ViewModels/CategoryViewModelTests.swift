@@ -59,8 +59,8 @@ struct CategoryViewModelTests {
         let vm = CategoryViewModel(categoryRepo: SwiftDataCategoryRepository(context: ctx))
         try vm.load()
 
-        #expect(vm.findNearDuplicate(named: "travel") != nil)
-        #expect(vm.findNearDuplicate(named: "Travel Insurance") == nil)   // regression guard: not a substring match
+        #expect(vm.findNearDuplicate(named: "travel", type: .expense) != nil)
+        #expect(vm.findNearDuplicate(named: "Travel Insurance", type: .expense) == nil)   // regression guard: not a substring match
     }
 
     @Test func findNearDuplicateReturnsNilWhenNoMatch() throws {
@@ -72,6 +72,22 @@ struct CategoryViewModelTests {
         let vm = CategoryViewModel(categoryRepo: SwiftDataCategoryRepository(context: ctx))
         try vm.load()
 
-        #expect(vm.findNearDuplicate(named: "Shopping") == nil)
+        #expect(vm.findNearDuplicate(named: "Shopping", type: .expense) == nil)
+    }
+
+    @Test func findNearDuplicateIgnoresCategoriesOfADifferentType() throws {
+        // Regression guard for issue #66: an Income category named "Rent" (e.g. rental
+        // income) must not block a user from creating a distinct Expense category also
+        // named "Rent" — they're legitimately different categories.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Rent", type: .income))
+        try ctx.save()
+
+        let vm = CategoryViewModel(categoryRepo: SwiftDataCategoryRepository(context: ctx))
+        try vm.load()
+
+        #expect(vm.findNearDuplicate(named: "Rent", type: .expense) == nil)
+        #expect(vm.findNearDuplicate(named: "Rent", type: .income) != nil)
     }
 }
