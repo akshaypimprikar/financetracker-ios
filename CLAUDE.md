@@ -39,9 +39,9 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 ## Agent commands
 
-Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/review` (verdict only) → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/pr-followup` (auto-chains `/review` → `/test`; `code-review:code-review` can't be agent-invoked — run it yourself) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
