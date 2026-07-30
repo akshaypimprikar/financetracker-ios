@@ -11,7 +11,7 @@ struct AddCategorySheet: View {
     private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
     private var nearDuplicate: Category? {
         guard !trimmedName.isEmpty else { return nil }
-        return categoryVM.findNearDuplicate(named: trimmedName)
+        return categoryVM.findNearDuplicate(named: trimmedName, type: type)
     }
     private var canAdd: Bool { !trimmedName.isEmpty && nearDuplicate == nil }
 

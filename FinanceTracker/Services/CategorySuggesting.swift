@@ -10,6 +10,7 @@ import FoundationModels
 struct CategoryCandidate: Sendable {
     let id: UUID
     let name: String
+    let type: CategoryType
 }
 
 /// Domain Service protocol — zero SwiftData imports.
