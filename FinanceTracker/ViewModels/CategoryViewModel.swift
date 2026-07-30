@@ -26,7 +26,7 @@ final class CategoryViewModel {
         try load()
     }
 
-    func findNearDuplicate(named name: String) -> Category? {
-        categories.first { CategoryNameMatching.isNearDuplicate($0.name, name) }
+    func findNearDuplicate(named name: String, type: CategoryType) -> Category? {
+        categories.first { CategoryNameMatching.isNearDuplicate($0.name, $0.type, name, type) }
     }
 }
