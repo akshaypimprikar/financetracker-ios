@@ -23,8 +23,6 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 ## Architecture
 
-MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) → Domain Services → Repository Protocols → SwiftData Repositories → @Model entities.
-
 **Layer rules (enforced):**
 - Views: no business logic, no direct SwiftData access
 - Domain Services: zero SwiftData imports — 100% unit-testable without a simulator
