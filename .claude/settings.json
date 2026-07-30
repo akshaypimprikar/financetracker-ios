@@ -220,7 +220,8 @@
       "Bash(gh run view * --log *)",
       "Bash(gh issue *)",
       "Bash(python3 scripts/check_coverage.py *)",
-      "Bash(rm -rf /tmp/debug_ui.xcresult *)"
+      "Bash(rm -rf /tmp/debug_ui.xcresult *)",
+      "Bash(rm -rf /tmp/FinanceTracker.xcresult *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
