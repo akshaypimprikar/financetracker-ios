@@ -15,12 +15,26 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
     private var failNextSave: Error?
     private var failAfterSuccesses: Int?
 
+    private var chunkStartCount = 0
+    private var chunkStartWaiters: [(threshold: Int, continuation: CheckedContinuation<Void, Never>)] = []
+
     init(existingHashes: Set<String> = []) {
         self._existingHashes = existingHashes
     }
 
     func setDelayPerChunk(_ delay: Duration) {
         delayPerChunk = delay
+    }
+
+    /// Deterministic replacement for a guessed `Task.sleep` race window: suspends
+    /// until at least `count` calls to `save(chunk:accountID:)` have been entered
+    /// (before any artificial delay), so a test can act (e.g. cancel) at a known
+    /// point instead of hoping a wall-clock sleep lands inside the delay window.
+    func waitUntilChunksStarted(_ count: Int) async {
+        if chunkStartCount >= count { return }
+        await withCheckedContinuation { continuation in
+            chunkStartWaiters.append((threshold: count, continuation: continuation))
+        }
     }
 
     func setFailNextSave(with error: Error) {
@@ -41,6 +55,11 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
     }
 
     func save(chunk: [ParsedTransaction], accountID: UUID) async throws {
+        chunkStartCount += 1
+        let ready = chunkStartWaiters.filter { chunkStartCount >= $0.threshold }
+        chunkStartWaiters.removeAll { chunkStartCount >= $0.threshold }
+        for waiter in ready { waiter.continuation.resume() }
+
         if let delayPerChunk {
             try await Task.sleep(for: delayPerChunk)
         }

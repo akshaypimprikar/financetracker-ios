@@ -170,7 +170,7 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        try await Task.sleep(for: .milliseconds(50))   // let chunks start, before any 200ms delay resolves
+        await fake.waitUntilChunksStarted(1)   // deterministic: at least one chunk write is in flight
         vm.cancelImport()
         try await waitUntil { !vm.isImporting }
 
