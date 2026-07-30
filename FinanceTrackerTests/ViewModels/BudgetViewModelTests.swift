@@ -176,4 +176,25 @@ struct BudgetViewModelTests {
         let points = vm.monthlySpendingHistory(for: category)
         #expect(points.allSatisfy { $0.spent == 0.0 })
     }
+
+    @Test func suggestionsAvailableReflectsCategorySuggesterAvailability() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+
+        let available = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: FakeCategorySuggesting(isAvailable: true)
+        )
+        #expect(available.suggestionsAvailable)
+
+        let unavailable = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: FakeCategorySuggesting(isAvailable: false)
+        )
+        #expect(!unavailable.suggestionsAvailable)
+    }
 }

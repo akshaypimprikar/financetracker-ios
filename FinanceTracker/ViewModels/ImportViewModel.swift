@@ -26,6 +26,18 @@ final class ImportViewModel {
     private(set) var accounts: [Account] = []
     private(set) var progress: Double = 0
     private(set) var importFailure: ImportFailure?
+    private(set) var categories: [Category] = []
+    /// Categories created via `createAndAssignCategory` during this preview session but
+    /// not yet persisted — only written to `categoryRepo` if `startImport()` actually
+    /// succeeds, so cancelling the sheet without importing never leaves an orphan
+    /// category with zero transactions sitting in the store.
+    private(set) var pendingNewCategories: [Category] = []
+    private(set) var suggestions: [String: CategorySuggestionResult] = [:]   // keyed by payee
+    /// Existing + this-session's not-yet-persisted categories — the full set a chip's
+    /// `Menu` or a confirmed-chip lookup should consider, since a category the user just
+    /// tapped "Create" on must behave like any other pickable category immediately,
+    /// even before it's actually saved.
+    var allCategories: [Category] { categories + pendingNewCategories }
     var isImporting: Bool { importTask != nil }
     var selectedAccount: Account?
     /// Explicit completion signal for the View to dismiss on — not inferred from
@@ -37,6 +49,8 @@ final class ImportViewModel {
     private let importRecordRepo: any ImportRecordRepositoryProtocol
     private let importService: CSVImportService
     private let importWriter: any TransactionImportWriting
+    private let categoryRepo: any CategoryRepositoryProtocol
+    private let categorySuggester: any CategorySuggesting
     private let chunkSize: Int
     private var importTask: Task<Void, Error>?
     /// Bumped by every `startImport()` and `reset()`. A task's completion handlers
@@ -53,12 +67,16 @@ final class ImportViewModel {
         accountRepo: any AccountRepositoryProtocol,
         importRecordRepo: any ImportRecordRepositoryProtocol,
         importWriter: any TransactionImportWriting,
+        categoryRepo: any CategoryRepositoryProtocol,
+        categorySuggester: any CategorySuggesting = FoundationModelsCategorySuggester(),
         importService: CSVImportService = CSVImportService(),
         chunkSize: Int = 300
     ) {
         self.accountRepo = accountRepo
         self.importRecordRepo = importRecordRepo
         self.importWriter = importWriter
+        self.categoryRepo = categoryRepo
+        self.categorySuggester = categorySuggester
         self.importService = importService
         self.chunkSize = chunkSize
     }
@@ -66,6 +84,7 @@ final class ImportViewModel {
     func load() throws {
         accounts = try accountRepo.fetchAll()
         if selectedAccount == nil { selectedAccount = accounts.first }
+        categories = try categoryRepo.fetchAll()
     }
 
     func loadCSV(_ text: String) {
@@ -89,6 +108,66 @@ final class ImportViewModel {
         step = .preview
     }
 
+    func loadSuggestions() async {
+        // No !categories.isEmpty guard here — a brand-new user's first CSV import
+        // routinely has zero existing categories, and the model must still be able
+        // to propose a brand-new one rather than going silent. That's now the
+        // primary path (no default categories are ever seeded), not an edge case.
+        guard categorySuggester.isAvailable else { return }
+        // Captured so a dismiss-then-reopen (reset() bumps importGeneration) stops
+        // this loop from writing suggestions into a session the user has since left —
+        // same stale-task guard startImport() uses, needed here because this call
+        // isn't wrapped in a tracked/cancellable Task the way startImport()'s is.
+        let generation = importGeneration
+        let candidates = categories.map { CategoryCandidate(id: $0.id, name: $0.name) }
+        let uniquePayees = Set(pendingTransactions.map(\.payee))
+        for payee in uniquePayees {
+            if let result = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
+                guard generation == importGeneration else { return }
+                suggestions[payee] = result
+            }
+        }
+    }
+
+    func setCategory(categoryID: UUID, forPayee payee: String) {
+        for index in pendingTransactions.indices where pendingTransactions[index].payee == payee {
+            pendingTransactions[index].categoryID = categoryID
+        }
+    }
+
+    /// Creates a category from the model's proposed name (or reuses an existing
+    /// near-duplicate instead of inserting a second one — see CategoryNameMatching),
+    /// assigns it to this payee's rows, then re-checks every other still-unconfirmed
+    /// cached suggestion against the updated category list. The rematch is cheap pure
+    /// string comparison, not a new model call — it exists because loadSuggestions()
+    /// computes suggestions for a whole CSV in one batch, before the user has tapped
+    /// anything, so two payees can independently propose the same new category name.
+    ///
+    /// A newly created category is NOT persisted here — only staged in
+    /// `pendingNewCategories` — so cancelling out of preview without importing never
+    /// leaves a real, unused category behind. `startImport()` persists it for real.
+    func createAndAssignCategory(named name: String, forPayee payee: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let category: Category
+        if let existing = allCategories.first(where: { CategoryNameMatching.isNearDuplicate($0.name, trimmed) }) {
+            category = existing
+        } else {
+            category = Category(name: trimmed, type: .expense)
+            pendingNewCategories.append(category)
+        }
+        setCategory(categoryID: category.id, forPayee: payee)
+        rematchPendingSuggestions(against: category)
+    }
+
+    private func rematchPendingSuggestions(against category: Category) {
+        for (payee, result) in suggestions where result.matchedCategoryID == nil {
+            guard CategoryNameMatching.isNearDuplicate(category.name, result.suggestion.categoryName) else { continue }
+            suggestions[payee] = CategorySuggestionResult(suggestion: result.suggestion, matchedCategoryID: category.id)
+        }
+    }
+
     func startImport(filename: String = "import.csv") {
         guard !isImporting, let account = selectedAccount, !pendingTransactions.isEmpty else { return }
         let accountID = account.id
@@ -104,6 +183,34 @@ final class ImportViewModel {
 
         importTask = Task {
             defer { importTask = nil }
+
+            // Persist this session's staged categories before any chunk writes a
+            // transaction referencing one by id — TransactionImportActor resolves
+            // categoryID against the store directly, so an unsaved category would
+            // otherwise silently resolve to nil (transaction saved uncategorized).
+            var savedCategories: [Category] = []
+            do {
+                for category in pendingNewCategories {
+                    try categoryRepo.save(category)
+                    savedCategories.append(category)
+                }
+            } catch {
+                // Roll back whatever did persist before the failure — an all-or-nothing
+                // guarantee for this session's staged categories, matching the same
+                // "no orphan category" invariant a plain cancel already upholds. Without
+                // this, a failure on the Nth of N saves would leave the first N-1 as
+                // real, permanent categories with zero transactions and zero budget.
+                for category in savedCategories {
+                    try? categoryRepo.delete(category)
+                }
+                guard generation == self.importGeneration else { return }
+                clearCurrentAttempt()
+                importFailure = .partiallyFailed(persistedCount: 0)
+                return
+            }
+            categories.append(contentsOf: pendingNewCategories)
+            pendingNewCategories = []
+
             let chunks = items.chunked(into: chunkSize)
             var completed = 0
 
@@ -178,6 +285,8 @@ final class ImportViewModel {
         pendingTransactions = []
         skippedCount = 0
         progress = 0
+        suggestions = [:]
+        pendingNewCategories = []
     }
 }
 

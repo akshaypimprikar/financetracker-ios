@@ -47,7 +47,8 @@ struct FinanceTrackerTabView: View {
         _importVM = State(wrappedValue: ImportViewModel(
             accountRepo: accountRepo,
             importRecordRepo: importRecordRepo,
-            importWriter: importWriter
+            importWriter: importWriter,
+            categoryRepo: categoryRepo
         ))
         _categoryVM = State(wrappedValue: CategoryViewModel(
             categoryRepo: categoryRepo
@@ -67,7 +68,7 @@ struct FinanceTrackerTabView: View {
             .tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down") }
 
             NavigationStack {
-                BudgetListView(viewModel: budgetVM)
+                BudgetListView(viewModel: budgetVM, categoryVM: categoryVM)
             }
             .tabItem { Label("Budgets", systemImage: "target") }
 

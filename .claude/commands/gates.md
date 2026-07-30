@@ -85,16 +85,54 @@ git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportAct
 Pass: first grep returns no output (no `@MainActor` outside comments — the actor isn't main-actor-isolated); second grep count is `0` (no `@Model` type — `Account`/`Transaction`/`Category`/`Budget`/`ImportRecord` — appears as a parameter or return type on the protocol-conformance methods, i.e. nothing `@Model`-typed crosses the actor's public boundary; internal caching of a resolved `@Model` instance that never leaves the actor is fine and won't trigger this); third grep count is exactly `1` (one `modelContext.save()` per chunk, never per row).
 Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
-### Gate 9 — Layer-rule compliance (CLAUDE.md-enforced architectural rules)
+### Gate 9 — Architecture & layer-rule compliance (CLAUDE.md-enforced rules)
+This is the single authoritative check for all layer-separation, type-safety, and
+pattern rules — `/review` trusts this gate rather than re-running these checks
+post-PR. If any command below produces output, that's a violation to fix here,
+before opening the PR.
 ```bash
 # Domain Services must have zero SwiftData imports
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Services/' | xargs grep -ln '^import SwiftData' 2>/dev/null
 
+# Repository Protocols must import Foundation only — no SwiftData, no SwiftUI
+git diff develop...HEAD --name-only -- '*.swift' | grep '/Repositories/Protocols/' | xargs grep -n '^import SwiftData\|^import SwiftUI' 2>/dev/null
+
+# ViewModels must depend on repository protocols, never concrete SwiftData*Repository types
+git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | xargs grep -n 'SwiftData\w*Repository' 2>/dev/null
+
+# Views must have no direct SwiftData access (no business logic beyond calling ViewModel methods)
+git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/' | xargs grep -ln '^import SwiftData' 2>/dev/null
+
 # Money values must be Decimal, never Double
 git diff develop...HEAD --name-only -- '*.swift' | xargs grep -nE '\b(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*:\s*Double\b' 2>/dev/null
+
+# No try! or as! in changed production code (Tests/UITests excluded)
+git diff develop...HEAD --name-only -- '*.swift' | grep -v 'Tests/' | xargs grep -nE '\btry!|as!' 2>/dev/null
+
+# Unit/integration tests must use the Testing framework, never XCTest
+git diff develop...HEAD --name-only -- 'FinanceTrackerTests/*.swift' | xargs grep -l 'XCTestCase\|import XCTest' 2>/dev/null
+
+# UI test selectors must match a real accessibilityIdentifier in production views
+grep -hro 'app\.\(buttons\|textFields\|staticTexts\)\["[^"]*"\]' FinanceTrackerUITests/*.swift 2>/dev/null | sort -u
+# — then cross-check each literal against: grep -r 'accessibilityIdentifier' FinanceTracker/Views/
+
+# New @Model types must be `final class` with a UUID id
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Models/' | xargs grep -L 'final class' 2>/dev/null
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Models/' | xargs grep -L 'var id: UUID\|let id: UUID' 2>/dev/null
+
+# @Relationship declarations must specify deleteRule
+git diff develop...HEAD --name-only -- '*.swift' | grep '/Models/' | xargs grep -n '@Relationship' 2>/dev/null | grep -v 'deleteRule'
+
+# New Domain Services must have no stored mutable state — no `var` stored properties.
+# Excludes computed properties (bodies opening with `{` or protocol `{ get }` requirements),
+# which the naive pattern alone can't distinguish from genuinely stored `var`s.
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Services/' | xargs grep -nE '^\s*(private\s+)?var\s+\w+\s*[:=]' 2>/dev/null | grep -v '{\s*$' | grep -v '{ get'
+
+# Transaction.importHash must remain present if Transaction.swift changed (invariants.md #2)
+git diff develop...HEAD --name-only -- '*.swift' | grep -q 'Models/Transaction.swift' && grep -L 'importHash' FinanceTracker/Models/Transaction.swift
 ```
-Pass: both commands return no output.
-Fail: list every offending file and line — a Domain Service importing SwiftData, or a money-shaped field typed `Double` instead of `Decimal`. These are the two rules from CLAUDE.md's "Layer rules (enforced)" section; catching them here (pre-PR) instead of at `/review` (post-PR) is the whole point of this gate.
+Pass: every command returns no output (the UI-selector listing is cross-checked by hand/agent against `FinanceTracker/Views/` — flag any selector with no matching `accessibilityIdentifier`; the `@Model`/`deleteRule` checks only fire when Models/ files are actually touched).
+Fail: list every offending file and line, grouped by which rule it violates.
 
 ## Gate summary
 
@@ -109,7 +147,7 @@ Gates:
 [–] Coverage — skipped (no new files)
 [–] Security — skipped (no sensitive files)
 [–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
-[✓] Layer-rule compliance
+[✓] Architecture & layer-rule compliance
 ```
 
 When Gates 1 and 2 are skipped:
@@ -123,7 +161,7 @@ Gates:
 [–] Coverage — skipped (no Swift files)
 [–] Security — skipped (no Swift files)
 [–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
-[✓] Layer-rule compliance
+[✓] Architecture & layer-rule compliance
 ```
 
 Fix any failures before continuing.
@@ -131,13 +169,13 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/goal "all 9 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, layer-rule compliance clean"
+/goal "all 9 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean"
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
 To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 8 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 9 gates pass.
 ```
 
 ## After all gates pass — open the PR
@@ -151,6 +189,9 @@ If any gate caught a violation pattern that is NOT already listed in `.claude/co
 
 Do not promote it to a numbered invariant — that is a human decision made during the next `/pipeline-review`.
 
+Include the actual Gate summary output (from above) in the PR body under its own
+section — `/review` reads this instead of re-running the same checks itself.
+
 ```bash
 gh pr create \
   --title "<type>(<scope>): <description>" \
@@ -158,6 +199,9 @@ gh pr create \
   --body "$(cat <<'EOF'
 ## Summary
 - <bullet per task from the plan>
+
+## Gates
+<paste the actual Gate summary block from this run — commit SHA it was run against, plus each gate's ✓/✗/– status>
 
 ## Test plan
 - [ ] Full test suite passes (TEST SUCCEEDED)

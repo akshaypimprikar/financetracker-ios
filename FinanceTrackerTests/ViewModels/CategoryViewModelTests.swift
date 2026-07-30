@@ -49,4 +49,29 @@ struct CategoryViewModelTests {
 
         #expect(vm.categories.isEmpty)
     }
+
+    @Test func findNearDuplicateMatchesCaseAndConnectorInsensitively() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Travel", type: .expense))
+        try ctx.save()
+
+        let vm = CategoryViewModel(categoryRepo: SwiftDataCategoryRepository(context: ctx))
+        try vm.load()
+
+        #expect(vm.findNearDuplicate(named: "travel") != nil)
+        #expect(vm.findNearDuplicate(named: "Travel Insurance") == nil)   // regression guard: not a substring match
+    }
+
+    @Test func findNearDuplicateReturnsNilWhenNoMatch() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        ctx.insert(Category(name: "Travel", type: .expense))
+        try ctx.save()
+
+        let vm = CategoryViewModel(categoryRepo: SwiftDataCategoryRepository(context: ctx))
+        try vm.load()
+
+        #expect(vm.findNearDuplicate(named: "Shopping") == nil)
+    }
 }

@@ -6,6 +6,7 @@ struct ParsedTransaction: Sendable {
     let amount: Decimal
     let payee: String
     let importHash: String
+    var categoryID: UUID? = nil   // mutable, defaulted; never affects importHash
 }
 
 struct ColumnMapping {

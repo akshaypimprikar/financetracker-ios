@@ -2,12 +2,9 @@ import XCTest
 
 final class UITestBudgetFlowTests: UITestBase {
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
-        createCategory(name: "Groceries")
-    }
-
     func testAddBudgetAppearsInList() {
+        createCategory(name: "Groceries")
+
         app.tabBars.firstMatch.buttons["Budgets"].tap()
         XCTAssertTrue(app.navigationBars["Budgets"].waitForExistence(timeout: timeout))
         app.buttons["add-budget-button"].tap()

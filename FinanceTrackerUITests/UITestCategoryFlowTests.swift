@@ -38,4 +38,29 @@ final class UITestCategoryFlowTests: UITestBase {
             "Transport should appear in the Settings category list"
         )
     }
+
+    func testDuplicateCategoryNameShowsWarningAndBlocksAdd() {
+        app.tabBars.firstMatch.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: timeout))
+        app.buttons["add-category-button"].tap()
+
+        let nameField = app.textFields["category-name-field"]
+        XCTAssertTrue(nameField.waitForExistence(timeout: timeout))
+        nameField.tap()
+        nameField.typeText("Travel")
+        tapWhenEnabled(app.buttons["add-category-confirm"])
+
+        let sheetNavBar = app.navigationBars["New Category"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: sheetNavBar)
+        waitForExpectations(timeout: timeout)
+
+        app.buttons["add-category-button"].tap()
+        let secondNameField = app.textFields["category-name-field"]
+        XCTAssertTrue(secondNameField.waitForExistence(timeout: timeout))
+        secondNameField.tap()
+        secondNameField.typeText("travel")   // case-insensitive near-duplicate of "Travel"
+
+        XCTAssertTrue(app.staticTexts["category-duplicate-warning"].waitForExistence(timeout: timeout))
+        XCTAssertFalse(app.buttons["add-category-confirm"].isEnabled)
+    }
 }
