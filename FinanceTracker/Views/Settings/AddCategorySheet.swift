@@ -46,7 +46,7 @@ struct AddCategorySheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") {
                         guard canAdd else { return }
-                        try? categoryVM.add(name: name, icon: icon,
+                        try? categoryVM.add(name: trimmedName, icon: icon,
                                             colorHex: "#888888", type: type)
                         dismiss()
                     }

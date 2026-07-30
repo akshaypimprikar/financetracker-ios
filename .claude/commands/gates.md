@@ -115,8 +115,23 @@ git diff develop...HEAD --name-only -- 'FinanceTrackerTests/*.swift' | xargs gre
 # UI test selectors must match a real accessibilityIdentifier in production views
 grep -hro 'app\.\(buttons\|textFields\|staticTexts\)\["[^"]*"\]' FinanceTrackerUITests/*.swift 2>/dev/null | sort -u
 # — then cross-check each literal against: grep -r 'accessibilityIdentifier' FinanceTracker/Views/
+
+# New @Model types must be `final class` with a UUID id
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Models/' | xargs grep -L 'final class' 2>/dev/null
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Models/' | xargs grep -L 'var id: UUID\|let id: UUID' 2>/dev/null
+
+# @Relationship declarations must specify deleteRule
+git diff develop...HEAD --name-only -- '*.swift' | grep '/Models/' | xargs grep -n '@Relationship' 2>/dev/null | grep -v 'deleteRule'
+
+# New Domain Services must have no stored mutable state — no `var` stored properties.
+# Excludes computed properties (bodies opening with `{` or protocol `{ get }` requirements),
+# which the naive pattern alone can't distinguish from genuinely stored `var`s.
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | grep '/Services/' | xargs grep -nE '^\s*(private\s+)?var\s+\w+\s*[:=]' 2>/dev/null | grep -v '{\s*$' | grep -v '{ get'
+
+# Transaction.importHash must remain present if Transaction.swift changed (invariants.md #2)
+git diff develop...HEAD --name-only -- '*.swift' | grep -q 'Models/Transaction.swift' && grep -L 'importHash' FinanceTracker/Models/Transaction.swift
 ```
-Pass: every command returns no output (the UI-selector listing is cross-checked by hand/agent against `FinanceTracker/Views/` — flag any selector with no matching `accessibilityIdentifier`).
+Pass: every command returns no output (the UI-selector listing is cross-checked by hand/agent against `FinanceTracker/Views/` — flag any selector with no matching `accessibilityIdentifier`; the `@Model`/`deleteRule` checks only fire when Models/ files are actually touched).
 Fail: list every offending file and line, grouped by which rule it violates.
 
 ## Gate summary

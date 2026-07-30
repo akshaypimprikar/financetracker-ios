@@ -60,14 +60,22 @@ actor FakeCategorySuggesting: CategorySuggesting {
     nonisolated let isAvailable: Bool
     private(set) var suggestCallCount = 0
     private var resultsByPayee: [String: CategorySuggestionResult]
+    private var delay: Duration?
 
     init(isAvailable: Bool = true, resultsByPayee: [String: CategorySuggestionResult] = [:]) {
         self.isAvailable = isAvailable
         self.resultsByPayee = resultsByPayee
     }
 
+    func setDelay(_ delay: Duration) {
+        self.delay = delay
+    }
+
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
         suggestCallCount += 1
+        if let delay {
+            try? await Task.sleep(for: delay)
+        }
         return resultsByPayee[payee]
     }
 }
@@ -77,6 +85,30 @@ struct FailingImportRecordRepo: ImportRecordRepositoryProtocol {
     func fetchAll() throws -> [ImportRecord] { [] }
     func save(_ record: ImportRecord) throws { throw RepoError.saveFailed }
     func delete(_ record: ImportRecord) throws {}
+}
+
+/// Wraps a real CategoryRepositoryProtocol but throws on save() after `failAfter`
+/// successful saves — used to test rollback behavior when a batch of saves fails partway.
+final class FailAfterNSavesCategoryRepo: CategoryRepositoryProtocol {
+    enum RepoError: Error { case saveFailed }
+    private let wrapped: any CategoryRepositoryProtocol
+    private let failAfter: Int
+    private(set) var saveCount = 0
+
+    init(wrapping wrapped: any CategoryRepositoryProtocol, failAfter: Int) {
+        self.wrapped = wrapped
+        self.failAfter = failAfter
+    }
+
+    func fetchAll() throws -> [FinanceTracker.Category] { try wrapped.fetchAll() }
+    func fetch(id: UUID) throws -> FinanceTracker.Category? { try wrapped.fetch(id: id) }
+    func delete(_ category: FinanceTracker.Category) throws { try wrapped.delete(category) }
+
+    func save(_ category: FinanceTracker.Category) throws {
+        saveCount += 1
+        guard saveCount <= failAfter else { throw RepoError.saveFailed }
+        try wrapped.save(category)
+    }
 }
 
 @discardableResult

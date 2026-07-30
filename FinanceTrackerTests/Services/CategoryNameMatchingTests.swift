@@ -35,4 +35,12 @@ struct CategoryNameMatchingTests {
     @Test func unrelatedNamesDoNotMatch() {
         #expect(!CategoryNameMatching.isNearDuplicate("Groceries", "Transport"))
     }
+
+    @Test func connectorOnlyNamesDoNotMatchEachOther() {
+        // Regression guard: "The" and "For" both normalize to an empty token set
+        // (every token is a connector word) — without an explicit empty-set guard,
+        // Set equality would treat any two such names as duplicates of each other.
+        #expect(!CategoryNameMatching.isNearDuplicate("The", "For"))
+        #expect(!CategoryNameMatching.isNearDuplicate("And", "A"))
+    }
 }

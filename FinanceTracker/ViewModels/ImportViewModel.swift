@@ -114,10 +114,16 @@ final class ImportViewModel {
         // to propose a brand-new one rather than going silent. That's now the
         // primary path (no default categories are ever seeded), not an edge case.
         guard categorySuggester.isAvailable else { return }
+        // Captured so a dismiss-then-reopen (reset() bumps importGeneration) stops
+        // this loop from writing suggestions into a session the user has since left —
+        // same stale-task guard startImport() uses, needed here because this call
+        // isn't wrapped in a tracked/cancellable Task the way startImport()'s is.
+        let generation = importGeneration
         let candidates = categories.map { CategoryCandidate(id: $0.id, name: $0.name) }
         let uniquePayees = Set(pendingTransactions.map(\.payee))
         for payee in uniquePayees {
             if let result = await categorySuggester.suggestCategory(payee: payee, candidates: candidates) {
+                guard generation == importGeneration else { return }
                 suggestions[payee] = result
             }
         }
@@ -182,11 +188,21 @@ final class ImportViewModel {
             // transaction referencing one by id — TransactionImportActor resolves
             // categoryID against the store directly, so an unsaved category would
             // otherwise silently resolve to nil (transaction saved uncategorized).
+            var savedCategories: [Category] = []
             do {
                 for category in pendingNewCategories {
                     try categoryRepo.save(category)
+                    savedCategories.append(category)
                 }
             } catch {
+                // Roll back whatever did persist before the failure — an all-or-nothing
+                // guarantee for this session's staged categories, matching the same
+                // "no orphan category" invariant a plain cancel already upholds. Without
+                // this, a failure on the Nth of N saves would leave the first N-1 as
+                // real, permanent categories with zero transactions and zero budget.
+                for category in savedCategories {
+                    try? categoryRepo.delete(category)
+                }
                 guard generation == self.importGeneration else { return }
                 clearCurrentAttempt()
                 importFailure = .partiallyFailed(persistedCount: 0)

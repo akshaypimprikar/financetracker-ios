@@ -11,7 +11,12 @@ enum CategoryNameMatching {
     private static let connectors: Set<String> = ["and", "the", "of", "for", "a", "an"]
 
     static func isNearDuplicate(_ lhs: String, _ rhs: String) -> Bool {
-        normalizedTokens(lhs) == normalizedTokens(rhs)
+        let lhsTokens = normalizedTokens(lhs)
+        // A name made entirely of connector words (e.g. "The", "For") normalizes to an
+        // empty set — without this guard, any two such names would compare equal to
+        // each other via Set equality, treating unrelated names as duplicates.
+        guard !lhsTokens.isEmpty else { return false }
+        return lhsTokens == normalizedTokens(rhs)
     }
 
     private static func normalizedTokens(_ name: String) -> Set<String> {

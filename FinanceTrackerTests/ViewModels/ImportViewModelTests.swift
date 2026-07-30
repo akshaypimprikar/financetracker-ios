@@ -680,4 +680,74 @@ struct ImportViewModelTests {
         let persisted = try SwiftDataCategoryRepository(context: ctx).fetchAll()
         #expect(persisted.map(\.name) == ["Shopping"])
     }
+
+    @Test func startImportRollsBackAlreadySavedCategoriesWhenALaterSaveFails() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let failingCategoryRepo = FailAfterNSavesCategoryRepo(
+            wrapping: SwiftDataCategoryRepository(context: ctx),
+            failAfter: 1
+        )
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: failingCategoryRepo
+        )
+        try vm.load()
+        vm.selectedAccount = account
+        vm.loadCSV("date,amount,payee\n2026-05-01,10.00,Amazon\n2026-05-02,20.00,Target")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+        vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
+        vm.createAndAssignCategory(named: "Electronics", forPayee: "Target")
+
+        vm.startImport(filename: "test.csv")
+        try await waitUntil { !vm.isImporting }
+
+        #expect(vm.importFailure != nil)
+        // Regression guard: "Shopping" saved successfully before "Electronics" failed —
+        // it must be rolled back, not left behind as a permanent, unused category.
+        let persisted = try SwiftDataCategoryRepository(context: ctx).fetchAll()
+        #expect(persisted.isEmpty)
+    }
+
+    @Test func loadSuggestionsStopsWritingAfterResetBumpsGeneration() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        try ctx.save()
+
+        let fake = FakeCategorySuggesting(resultsByPayee: [
+            "Amazon": CategorySuggestionResult(
+                suggestion: CategorySuggestion(categoryName: "Shopping", confidence: .high),
+                matchedCategoryID: nil
+            )
+        ])
+        await fake.setDelay(.milliseconds(200))
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx),
+            categorySuggester: fake
+        )
+        try vm.load()
+        vm.loadCSV("date,amount,payee\n2026-05-01,34.12,Amazon")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+        try await vm.applyMapping(mapping)
+
+        let loadTask = Task { await vm.loadSuggestions() }
+        try await Task.sleep(for: .milliseconds(50))   // let the call start, before its 200ms delay resolves
+        vm.reset()   // bumps importGeneration — simulates the user dismissing the sheet
+        await loadTask.value
+
+        // Regression guard: the suggestion result that resolved after reset() must not
+        // land in a session the user has since left — same class of bug the
+        // importGeneration mechanism guards against for startImport() elsewhere.
+        #expect(vm.suggestions.isEmpty)
+    }
 }
