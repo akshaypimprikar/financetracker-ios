@@ -25,4 +25,8 @@ final class CategoryViewModel {
         try categoryRepo.delete(category)
         try load()
     }
+
+    func findNearDuplicate(named name: String, type: CategoryType) -> Category? {
+        categories.first { CategoryNameMatching.isNearDuplicate($0.name, $0.type, name, type) }
+    }
 }

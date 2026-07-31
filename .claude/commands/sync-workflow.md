@@ -25,9 +25,14 @@ Check for drift in these areas (keep `<AppName>` placeholders — pragma is a te
 | Test framework (`import Testing` vs XCTest) | FinanceTracker CLAUDE.md |
 | Pre-flight check commands in `/release` | FinanceTracker `/release` command |
 | Architecture rules checklist in `/review` | FinanceTracker `/review` command |
+| New gates in `/gates` — **only if generalizable** | FinanceTracker `/gates` command |
 
 ### 4. Apply updates
 Edit only the lines that differ. Do not copy FinanceTracker-specific paths (e.g. `/Users/akshaypimprikar/...`) into the template.
+
+For new gates in FinanceTracker's `/gates`, judge each one individually — do not copy-paste:
+- **Generalizable** (checks a pattern any iOS MVVM+Repository project would want — e.g. a layer-rule compliance gate): port it as a *templated* gate with `<placeholder>` values, matching the style of Gates 1/2/7. Do not hardcode FinanceTracker's literal grep patterns (money field names, `Services/` path, etc.) into the template.
+- **App-specific** (checks something only FinanceTracker's domain has — e.g. the CSV import concurrency-shape gate tied to `TransactionImportActor.swift`): leave it out of pragma entirely. It has no equivalent in a template repo.
 
 ### 5. Open a PR — never push directly to main
 ```bash

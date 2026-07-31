@@ -6,11 +6,27 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
-- Wrap all `@Model` types in `SchemaV1: VersionedSchema` with a no-op `FinanceTrackerMigrationPlan` to prevent silent data corruption on future model changes
-- Add `.claude/context/` directory with invariants, decisions, rejections, feature-log seed files
-- Wire context read preambles into all 8 agent command files (spec, plan, feature, review, gates, bugfix, release, test)
-- Wire context write postambles into /spec (decisions.md), /review (rejections.md), /gates (invariants.md candidates), /release (feature-log.md)
-- Skip Gates 1 (build) and 2 (test suite) when no Swift files changed — mirrors existing Gate 6/7 conditional pattern
+---
+
+## [1.2.0] — 2026-07-31
+
+### Added
+- **On-device CSV category suggestions** — `CategorySuggesting` Domain Service protocol and `FoundationModelsCategorySuggester` (on-device Apple Intelligence, zero network calls, fails safe when unavailable); suggestion chips in `ImportSheet` with sparkle-opacity-by-confidence, one-tap category creation via `ImportViewModel.createAndAssignCategory`, and a `CategoryNameMatching` token-set matcher shared by suggestion-matching, AI-create dedup, and manual category creation (`AddCategorySheet` near-duplicate warning, `CategoryViewModel.findNearDuplicate`)
+- **`TransactionImportActor`** — `@ModelActor`-based chunked, cancellable CSV import writes replacing the old per-row scan/save; determinate progress bar and cancel button in `ImportSheet`; a generation-tokened `ImportRecord` audit trail that survives partial failures instead of silently dropping them
+- **Versioned SwiftData schema** — all `@Model` types wrapped in `SchemaV1: VersionedSchema` with a no-op `FinanceTrackerMigrationPlan`, preventing silent data corruption on future model changes
+- **Budget empty-state, device-aware** — `AddBudgetSheet` offers CSV-import-only messaging when on-device suggestions are available, a manual "Add Category" fallback when they aren't
+- **`Theme/Chips.swift`** — `chipLabel` typography token for the category-suggestion chip pattern
+- **Persistent memory layer** — `.claude/context/` (invariants, decisions, rejections, feature-log) wired as read/write pre/postambles into all 8 agent commands
+- **Pipeline commands** — `/parallel-review` (runs `/review`'s architecture checklist and `code-review:code-review` in parallel before `/gates`); `/pr-followup` (auto-chains `/review` then `/test` after a PR opens); `/goal` usage tips on `/gates`/`/test`
+- **`/gates`** — Gate 8 (`TransactionImportActor` concurrency-shape check) and Gate 9 (architecture-compliance/Patterns checklist, ported from `/review`); skips Gates 1–2 (build/test) when no Swift files changed
+
+### Fixed
+- **CSV import correctness** — category-seeding partial-failure rollback (no more orphaned categories), suggestion-loading generation guard (no stale writes into a fresh session), connector-word-only name false-matching, untrimmed category name persistence, new categories staged until import actually completes (no more orphaned unused categories on cancel), `ImportSheet` re-loading categories/accounts on every appear
+- **`CategoryNameMatching` type-blindness** — Income and Expense categories sharing a name (e.g. "Rent") are no longer cross-matched or cross-suggested, since CSV import only ever creates `.debit` transactions
+- **`BudgetListView`** — toolbar Add button was disabled exactly when its own empty-state message needed to be shown, making the message unreachable
+- **`/gates` false positives** — missing `chore/*` branch-naming pattern; ViewModels-concrete-repo check flagging legitimate in-memory test fixtures under `Tests/`
+- **CI flakiness** — disabled parallel simulator testing for the UI Tests job (clone contention on shared `macos-26` runners); replaced a timing-guess in the import-cancellation test with a deterministic chunk-start signal
+- **Pipeline docs** — removed stale auto-merge instruction from `/review` (added a CLAUDE.md merge rule instead, since GitHub blocks self-approval); corrected `/parallel-review` docs that claimed an automated `code-review:code-review` invocation the skill's `disable-model-invocation` flag makes impossible
 
 ---
 

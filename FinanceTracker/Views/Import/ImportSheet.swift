@@ -24,9 +24,11 @@ struct ImportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
+                        viewModel.cancelImport()
                         viewModel.reset()
                         dismiss()
                     }
+                    .accessibilityIdentifier("import-cancel-toolbar-button")
                 }
             }
         }
@@ -39,6 +41,157 @@ struct ImportSheet: View {
             defer { url.stopAccessingSecurityScopedResource() }
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { return }
             viewModel.loadCSV(text)
+        }
+        .onAppear {
+            viewModel.onImportCompleted = { dismiss() }
+            // Re-fetch categories/accounts every time this sheet opens, not just once
+            // at app launch — otherwise a category added in Settings (or by a prior
+            // import session) wouldn't show up here until an app relaunch.
+            try? viewModel.load()
+        }
+        .onDisappear {
+            // Same cleanup as the toolbar Cancel button — swipe-to-dismiss shouldn't
+            // leave step/pendingTransactions stale for the next time this sheet opens.
+            viewModel.cancelImport()
+            viewModel.reset()
+        }
+        .alert(
+            "Import Problem",
+            isPresented: Binding(
+                get: { viewModel.importFailure != nil },
+                set: { isPresented in
+                    if !isPresented { viewModel.reset() }
+                }
+            ),
+            presenting: viewModel.importFailure
+        ) { _ in
+            Button("OK") { }
+        } message: { failure in
+            Text(failureMessage(for: failure))
+        }
+    }
+
+    private func failureMessage(for failure: ImportFailure) -> String {
+        switch failure {
+        case .partiallyFailed(let count):
+            return count > 0
+                ? "\(pluralized(count)) were imported before an error occurred. The rest were not imported — you can try again."
+                : "The import could not be completed. No transactions were imported."
+        case .recordSaveFailed(let count):
+            return "All \(pluralized(count)) were imported successfully, but the import summary couldn't be saved."
+        }
+    }
+
+    private func pluralized(_ count: Int) -> String {
+        "\(count) transaction\(count == 1 ? "" : "s")"
+    }
+
+    private enum ChipState {
+        case confirmed(categoryName: String)
+        case suggested(text: String, sparkleOpacity: Double, matchedCategoryID: UUID?)
+    }
+
+    private func chipState(for tx: ParsedTransaction) -> ChipState? {
+        if let categoryID = tx.categoryID,
+           let category = viewModel.allCategories.first(where: { $0.id == categoryID }) {
+            return .confirmed(categoryName: category.name)
+        }
+        if let result = viewModel.suggestions[tx.payee] {
+            return .suggested(
+                text: result.suggestion.categoryName,
+                sparkleOpacity: opacity(for: result.suggestion.confidence),
+                matchedCategoryID: result.matchedCategoryID
+            )
+        }
+        return nil
+    }
+
+    @ViewBuilder
+    private func categoryChip(for tx: ParsedTransaction) -> some View {
+        if let state = chipState(for: tx) {
+            Group {
+                switch state {
+                case .confirmed(let name):
+                    categoryMenu(for: tx, highlighted: nil, proposedName: nil) {
+                        chipLabel(text: name, sparkleOpacity: nil)
+                    }
+                case .suggested(let text, let sparkleOpacity, let matchedID):
+                    categoryMenu(
+                        for: tx,
+                        highlighted: matchedID.map { (id: $0, opacity: sparkleOpacity) },
+                        proposedName: matchedID == nil ? text : nil
+                    ) {
+                        chipLabel(text: text, sparkleOpacity: sparkleOpacity)
+                    }
+                }
+            }
+            .accessibilityIdentifier("import-category-chip-\(tx.importHash)")
+        }
+    }
+
+    private func chipLabel(text: String, sparkleOpacity: Double?) -> some View {
+        HStack(spacing: Theme.Spacing.tight) {
+            if let sparkleOpacity {
+                Image(systemName: "sparkle")
+                    .opacity(sparkleOpacity)
+            }
+            Text(text)
+                .font(Theme.Typography.chipLabel)
+        }
+        .padding(.horizontal, Theme.Spacing.contentSpacing)
+        .padding(.vertical, Theme.Spacing.compact)
+        .background(Theme.Chips.suggestionBackground)
+        .foregroundStyle(Theme.Colors.primaryInteractive)
+        .clipShape(Capsule())
+    }
+
+    @ViewBuilder
+    private func categoryMenu<Content: View>(
+        for tx: ParsedTransaction,
+        highlighted: (id: UUID, opacity: Double)?,
+        proposedName: String?,
+        @ViewBuilder label: () -> Content
+    ) -> some View {
+        Menu {
+            if let proposedName {
+                Button {
+                    viewModel.createAndAssignCategory(named: proposedName, forPayee: tx.payee)
+                } label: {
+                    Label("Create '\(proposedName)'", systemImage: "plus")
+                }
+            }
+            ForEach(viewModel.allCategories) { category in
+                Button {
+                    viewModel.setCategory(categoryID: category.id, forPayee: tx.payee)
+                } label: {
+                    categoryMenuRowLabel(
+                        category: category,
+                        sparkleOpacity: category.id == highlighted?.id ? highlighted?.opacity : nil
+                    )
+                }
+            }
+        } label: {
+            label()
+        }
+    }
+
+    @ViewBuilder
+    private func categoryMenuRowLabel(category: Category, sparkleOpacity: Double?) -> some View {
+        if let sparkleOpacity {
+            HStack(spacing: Theme.Spacing.tight) {
+                Image(systemName: "sparkle").opacity(sparkleOpacity)
+                Text(category.name)
+            }
+        } else {
+            Text(category.name)
+        }
+    }
+
+    private func opacity(for confidence: CategorySuggestion.Confidence) -> Double {
+        switch confidence {
+        case .high:   Theme.Chips.confidenceHigh
+        case .medium: Theme.Chips.confidenceMedium
+        case .low:    Theme.Chips.confidenceLow
         }
     }
 
@@ -68,6 +221,7 @@ struct ImportSheet: View {
             Button("Choose File") { isPickingFile = true }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .accessibilityIdentifier("import-choose-file-button")
             Spacer()
         }
         .frame(maxWidth: .infinity)
@@ -106,9 +260,13 @@ struct ImportSheet: View {
                         payeeIndex: payeeColIndex,
                         hasHeader: hasHeader
                     )
-                    try? viewModel.applyMapping(mapping)
+                    Task {
+                        try? await viewModel.applyMapping(mapping)
+                        await viewModel.loadSuggestions()
+                    }
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityIdentifier("import-parse-preview-button")
             }
         }
     }
@@ -153,20 +311,36 @@ struct ImportSheet: View {
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(tx.amount, format: .currency(code: viewModel.selectedAccount?.currency ?? Locale.current.currency?.identifier ?? "USD"))
+                            VStack(alignment: .trailing, spacing: Theme.Spacing.tight) {
+                                categoryChip(for: tx)
+                                Text(tx.amount, format: .currency(code: viewModel.selectedAccount?.currency ?? Locale.current.currency?.identifier ?? "USD"))
+                            }
                         }
                     }
                 }
             }
 
             Section {
-                Button("Import \(viewModel.pendingTransactions.count) Transactions") {
-                    try? viewModel.confirmImport()
-                    dismiss()
+                if viewModel.isImporting {
+                    VStack(spacing: Theme.Spacing.sheetSpacing) {
+                        ProgressView(value: viewModel.progress)
+                            .tint(Theme.Colors.primaryInteractive)
+                            .accessibilityIdentifier("import-progress-bar")
+                        Button("Cancel Import") {
+                            viewModel.cancelImport()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("import-cancel-button")
+                    }
+                } else {
+                    Button("Import \(viewModel.pendingTransactions.count) Transactions") {
+                        viewModel.startImport()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .disabled(viewModel.pendingTransactions.isEmpty ||
+                              viewModel.selectedAccount == nil)
+                    .accessibilityIdentifier("import-confirm-button")
                 }
-                .frame(maxWidth: .infinity)
-                .disabled(viewModel.pendingTransactions.isEmpty ||
-                          viewModel.selectedAccount == nil)
             }
         }
     }

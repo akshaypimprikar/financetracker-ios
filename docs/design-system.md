@@ -48,6 +48,7 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 | `rowTitle` | `.body` | Primary row text (payee names, account names) |
 | `rowSubtitle` | `.caption` | Secondary metadata (dates, types, labels) |
 | `code` | `.caption.monospaced()` | Technical text (import hashes, CSV preview) |
+| `chipLabel` | `.caption.weight(.medium)` | Category name text inside a suggestion chip |
 
 ---
 
@@ -177,4 +178,57 @@ Chart(categoryTotals) { item in
 }
 .frame(minHeight: Theme.Charts.minHeight)
 .padding(.horizontal, Theme.Spacing.cardPadding)
+```
+
+---
+
+## Suggestion Chips
+
+`Theme.Chips` — `FinanceTracker/Theme/Chips.swift`
+
+### Colors
+
+| Token | Value | Meaning |
+|---|---|---|
+| `suggestionBackground` | `Theme.Colors.primaryInteractive.opacity(0.12)` | Chip capsule background — accent-tinted, deliberately not `positive`/`destructive` since a suggestion isn't a financial-polarity signal |
+
+### Confidence Opacity
+
+A single "sparkle" glyph communicates "this is a model suggestion"; its opacity encodes confidence instead of switching icon or color per level.
+
+| Token | Value | Meaning |
+|---|---|---|
+| `confidenceHigh` | `1.0` | Full-opacity sparkle — high-confidence suggestion |
+| `confidenceMedium` | `0.7` | Reduced-opacity sparkle — medium confidence |
+| `confidenceLow` | `0.4` | Further-reduced-opacity sparkle — low confidence |
+
+### Reused tokens
+
+Chips share these tokens from the existing system — no duplication:
+
+| Token | Source | Use in chips |
+|---|---|---|
+| `Theme.Colors.primaryInteractive` | Colors | Chip icon/text foreground color |
+| `Theme.Spacing.tight` | Spacing | Gap between sparkle icon and label text |
+| `Theme.Spacing.compact` | Spacing | Chip vertical padding |
+| `Theme.Spacing.contentSpacing` | Spacing | Chip horizontal padding |
+| `Theme.Typography.chipLabel` | Typography | Category name text inside the chip |
+
+### Component pattern
+
+#### Category Suggestion Chip (ImportSheet preview step)
+A capsule-shaped trailing accessory on each pending-transaction row in the "Transactions to import" section, showing the model's suggested category. Tapping it opens a `Menu` (populated from `CategoryRepositoryProtocol.fetchAll()`) to override — no new sheet or screen.
+
+```swift
+HStack(spacing: Theme.Spacing.tight) {
+    Image(systemName: "sparkle")
+        .opacity(confidenceOpacity) // Theme.Chips.confidenceHigh / .confidenceMedium / .confidenceLow
+    Text(suggestion.categoryName)
+        .font(Theme.Typography.chipLabel)
+}
+.padding(.horizontal, Theme.Spacing.contentSpacing)
+.padding(.vertical, Theme.Spacing.compact)
+.background(Theme.Chips.suggestionBackground)
+.foregroundStyle(Theme.Colors.primaryInteractive)
+.clipShape(Capsule())
 ```

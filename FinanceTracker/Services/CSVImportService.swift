@@ -1,11 +1,12 @@
 import Foundation
 import CryptoKit
 
-struct ParsedTransaction {
+struct ParsedTransaction: Sendable {
     let date: Date
     let amount: Decimal
     let payee: String
     let importHash: String
+    var categoryID: UUID? = nil   // mutable, defaulted; never affects importHash
 }
 
 struct ColumnMapping {

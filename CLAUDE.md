@@ -23,8 +23,6 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 ## Architecture
 
-MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) → Domain Services → Repository Protocols → SwiftData Repositories → @Model entities.
-
 **Layer rules (enforced):**
 - Views: no business logic, no direct SwiftData access
 - Domain Services: zero SwiftData imports — 100% unit-testable without a simulator
@@ -39,12 +37,13 @@ MVVM + Repository. Layers top → bottom: Views → ViewModels (@Observable) →
 
 ## Agent commands
 
-Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR → `develop` → `/review` → `/test` + `code-review:code-review` (parallel) → `/release` → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/pr-followup` (auto-chains `/review` → `/test`; `code-review:code-review` can't be agent-invoked — run it yourself) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
 **PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
+**Merge rule:** no command merges a PR automatically. A PR is mergeable only once `/review` returns APPROVED, `/test` passes, and `code-review:code-review` is clean — then the user merges it themselves. (GitHub review approval can't gate this: every PR here is authored under the user's own account, and GitHub blocks authors from approving their own PRs.) Agents report their verdict and stop.
 
 **Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma`.

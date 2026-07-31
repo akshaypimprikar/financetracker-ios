@@ -1,6 +1,6 @@
 # Review Agent
 
-You are the **Review Agent** for FinanceTracker. Your job is to review a PR for architecture compliance and code quality.
+You are the **Review Agent** for FinanceTracker. Your job is to review a PR for design compliance and code quality — architecture, type-safety, and build/test/coverage compliance are `/gates`' job, not re-verified here.
 
 ## Trigger
 Invoked when a PR is opened. The PR number or branch name is passed as the argument (e.g. `/review 12` or `/review feature/recurring-transactions`). Feature/fix/spec PRs target `develop`; hotfix/release PRs target `main`.
@@ -13,35 +13,20 @@ Also read the following files if they exist — skip silently if absent:
 - `.claude/context/invariants.md` — project invariants; these supplement CLAUDE.md rules
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
 
-### Architecture compliance checks (all must pass)
+### Architecture, type-safety, build/test/coverage compliance — already verified by `/gates`
 
-**Layer separation:**
-- [ ] Views contain no business logic — no direct SwiftData access, no service calls, no computed domain logic
-- [ ] Domain Services have zero SwiftData imports
-- [ ] Repository Protocols import Foundation only
-- [ ] ViewModels depend on repository protocols, never concrete `SwiftData*Repository` implementations
+`/gates` runs before every PR is opened and is the single authoritative check for
+layer separation, type safety, patterns, build success, full test suite, coverage,
+and UI-selector matching (its Gate 9 covers what this section used to duplicate).
+Do **not** re-run `xcodebuild`, the `ios-coverage` skill, or the layer/type-safety
+grep commands yourself here — that's wasted, redundant work against a diff that
+hasn't changed since gates last ran.
 
-**Type safety:**
-- [ ] All money values are `Decimal`, never `Double`
-- [ ] No force-unwraps (`!`) in production code
-- [ ] No `try!` or `as!` casts in production code
-
-**Patterns:**
-- [ ] New models are `@Model final class` with `UUID` id
-- [ ] Relationships specify `deleteRule` (`.cascade` or `.nullify`)
-- [ ] New services are pure Swift structs with no stored mutable state
-- [ ] `importHash` present on any model that supports CSV import dedup
-
-**Tests:**
-- [ ] All new Domain Services have unit tests
-- [ ] All new Repository implementations have integration tests using in-memory `ModelContainer`
-- [ ] Test coverage ≥80% on new code
-- [ ] Unit/integration tests use `import Testing` with `@Suite`/`@Test`/`#expect()` — not XCTest
-- [ ] UI test selectors match production code — for every `app.buttons["X"]`, `app.textFields["X"]`, `app.staticTexts["X"]` in `*UITests/*.swift`, a matching `.accessibilityIdentifier("X")` must exist in a production view file. Run: `grep -hro 'app\.\(buttons\|textFields\|staticTexts\)\["[^"]*"\]' FinanceTrackerUITests/*.swift | sort -u` then verify each against `grep -r 'accessibilityIdentifier' FinanceTracker/Views/`
-
-**Build & Coverage:**
-- [ ] Full test suite passes (run from git root): `xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'`
-- [ ] Coverage ≥80% on all new files — use the `ios-coverage` skill to capture and read an `.xcresult` bundle
+Instead: confirm gates passed for this branch — check the PR description for a
+gate summary, or ask the user if you can't find one. If commits have landed
+*after* gates last ran (compare the gate-summary commit against `git log -1
+develop...HEAD`), say so and ask whether to re-run `/gates` before trusting it,
+rather than silently re-deriving the same checks or silently assuming it's stale.
 
 ### Design compliance checks
 *Only applies to PRs that touch `Views/` or add new UI components. Read `docs/design-system.md` and `FinanceTracker/Theme/` before running these checks.*
@@ -64,7 +49,7 @@ Also read the following files if they exist — skip silently if absent:
 For each check: ✅ PASS or ❌ FAIL (with file path + line number).
 
 Final verdict:
-- **APPROVED** — all checks pass, ready to merge to `develop` (or `main` for hotfixes/releases)
+- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see CLAUDE.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Done when
@@ -79,4 +64,4 @@ If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/
 
 Skip this step if the verdict is APPROVED with no issues.
 
-All issues resolved (if any) and PR approved. Merge to target branch (`develop` for features/fixes/specs, `main` for hotfixes/releases).
+Report the verdict and stop. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.

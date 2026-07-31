@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct TransactionListView: View {
     @Bindable var viewModel: TransactionViewModel
@@ -43,6 +44,7 @@ struct TransactionListView: View {
                 Button("Import", systemImage: "square.and.arrow.down") {
                     isPresentingImport = true
                 }
+                .accessibilityIdentifier("import-transactions-button")
                 Button("Add", systemImage: "plus") { isPresentingAdd = true }
                     .accessibilityIdentifier("add-transaction-button")
             }

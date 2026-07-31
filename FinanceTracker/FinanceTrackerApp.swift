@@ -32,9 +32,15 @@ struct FinanceTrackerApp: App {
         }
     }()
 
+    let importActor: TransactionImportActor
+
+    init() {
+        importActor = TransactionImportActor(modelContainer: sharedModelContainer)
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(importActor: importActor)
         }
         .modelContainer(sharedModelContainer)
     }
