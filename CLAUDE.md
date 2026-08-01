@@ -37,7 +37,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 ## Agent commands
 
-Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review` `/status` `/parallel-review` `/trim-context`
 
 Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/pr-followup` (auto-chains `/review` → `/test`; `code-review:code-review` can't be agent-invoked — run it yourself) → `/release` → `main`
 
