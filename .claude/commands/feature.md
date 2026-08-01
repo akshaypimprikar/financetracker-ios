@@ -45,13 +45,13 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green, and all 8 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` run in parallel.
+All tasks complete, full test suite green, and all 9 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` runs (`code-review:code-review` is manual — it can't be agent-invoked).
 
 To drive the entire feature-to-gates cycle autonomously:
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 8 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 9 gates pass.
 ```
 Or target only gate-fixing after tasks are done:
 ```
-/goal "all 8 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated"
+/loop Fix failing gates. Stop when all 9 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated.
 ```

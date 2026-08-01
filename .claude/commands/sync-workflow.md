@@ -45,10 +45,16 @@ git -C /Users/akshaypimprikar/Desktop/Claude/pragma push -u origin sync/<YYYY-MM
 gh pr create --repo akshaypimprikar/pragma \
   --title "chore: sync commands from FinanceTracker — <brief summary>" \
   --body "## Changes\n<bullet list of what changed and why>\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
-  --base develop
+  --base develop \
+  --head sync/<YYYY-MM-DD>
 ```
 
 If nothing changed, do not create a branch or PR — report "no changes needed" instead.
+
+**Verify before trusting the PR:** `--repo` alone does not fix the head branch — see CLAUDE.md's Cross-repo rule. Always confirm with:
+```bash
+gh pr view <N> --repo akshaypimprikar/pragma --json headRefName,baseRefName,files
+```
 
 ### 6. Report
 List every file changed and what was updated, plus the PR URL. If nothing needed changing, say so explicitly.

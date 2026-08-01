@@ -64,7 +64,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 ## Tip — autonomous test-fixing loop
 If new tests fail after writing them, the user can run (as a separate top-level command, not from within this agent):
 ```
-/goal "all XCTests pass with zero failures"
+/loop Fix failing tests and re-run the suite. Stop when all XCTests pass with zero failures.
 ```
 Claude will iterate on fixes and re-run the suite until all tests pass. Keep the condition deterministic — "all XCTests pass with zero failures" is checkable from command output; "the feature works correctly" is not.
 
