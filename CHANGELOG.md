@@ -8,6 +8,7 @@ All notable changes to FinanceTracker are documented here.
 
 ### Added
 - **README screenshots** — Dashboard, Transactions, Budgets, and Accounts, captured with realistic seeded data via a new `--seedscreenshots` launch argument (`DemoDataSeeder`, in-memory only, never touches a real persisted store) and a `--starttab=<name>` argument for capturing each tab without scripted UI taps
+- **`DemoDataSeederTests`** — the CI coverage gate correctly failed on `DemoDataSeeder.swift` at 0% (no exception carved out for debug tooling); added real tests asserting seeded counts and computed account balances, now at 96.5%
 
 ### Fixed
 - **Pipeline: `/review` now logs pre-review fixes to `rejections.md` and posts its verdict as a real GitHub review** — the file previously only logged this review's own CHANGES REQUESTED violations, but real bugs are typically caught and fixed earlier (via `/code-review` or manual verification) before `/review`'s formal pass runs, so the file never accumulated anything across 75+ PRs despite recurring bug patterns; `/review` also now posts its verdict via `gh pr review --comment` instead of only reporting it in-session, giving it an independent, timestamped trace instead of prose in the same PR it's approving
