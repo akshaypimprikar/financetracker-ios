@@ -151,6 +151,7 @@ Gates:
 [–] Security — skipped (no sensitive files)
 [–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
 [✓] Architecture & layer-rule compliance
+[i] Abstraction bloat — no candidates found
 ```
 
 When Gates 1 and 2 are skipped:
@@ -165,6 +166,7 @@ Gates:
 [–] Security — skipped (no Swift files)
 [–] CSV import concurrency shape — skipped (TransactionImportActor.swift untouched)
 [✓] Architecture & layer-rule compliance
+[i] Abstraction bloat — 1 candidate found (see report)
 ```
 
 Fix any failures before continuing.
@@ -172,14 +174,28 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Stop when all 9 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean.
+/loop Fix failing gates and re-check. Stop when all 10 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean.
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
 To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 9 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 10 gates pass.
 ```
+
+### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
+```bash
+# New protocols introduced on this branch
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -ln "^protocol \|^public protocol " 2>/dev/null
+
+# Duplicated added lines (non-blank, appearing 2+ times across the diff) — copy-paste signal
+git diff develop...HEAD -- '*.swift' | grep -E '^\+[^+]' | sed 's/^\+//' | grep -v '^\s*$' | sort | uniq -d
+```
+For each new protocol found, check its conformance count: `grep -rn ": <ProtocolName>" --include=*.swift .` A protocol with exactly one conforming type, outside the established `<Repository>Protocol`-style pattern (where a single implementation plus a test mock is expected), is a candidate for inlining.
+
+For duplicated lines, flag any run of 3+ consecutive duplicated added lines as a candidate for extraction into a shared helper.
+
+This gate is advisory: list candidates in the gate summary but do not block the PR on them. Final judgment on whether to extract or inline is a human or `/review` call.
 
 ## After all gates pass — open the PR
 
@@ -219,7 +235,7 @@ EOF
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 ## Done when
-All 9 gates pass, PR is open, and the PR URL is returned to the user.
+All 10 gates pass, PR is open, and the PR URL is returned to the user.
 
 ## Tip — chain into review + test
 Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review` then

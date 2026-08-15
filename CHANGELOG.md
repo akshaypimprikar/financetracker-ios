@@ -8,6 +8,10 @@ All notable changes to FinanceTracker are documented here.
 
 ### Added
 - **README screenshots** — Dashboard, Transactions, Budgets, and Accounts, captured with realistic seeded data via a new `--seedscreenshots` launch argument (`DemoDataSeeder`, in-memory only, never touches a real persisted store) and a `--starttab=<name>` argument for capturing each tab without scripted UI taps
+- **`/gates` Gate 10** — restored the generic duplication/abstraction-bloat heuristic that was silently dropped when Gate 8 was replaced with the app-specific CSV import concurrency check; added as a new gate rather than reusing the slot, so it doesn't collide with the app-specific check
+
+### Fixed
+- **`.claude/settings.json`** — removed 20 redundant/dead permission entries (8 pragma `git -C` entries and 2 `GITFLOW_RELEASE_MERGE` entries already covered by broader patterns already in the file, plus 12 session-specific one-off artifacts from past debugging/LinkedIn-drafting sessions)
 - **`DemoDataSeederTests`** — the CI coverage gate correctly failed on `DemoDataSeeder.swift` at 0% (no exception carved out for debug tooling); added real tests asserting seeded counts and computed account balances, now at 96.5%
 
 ### Fixed
