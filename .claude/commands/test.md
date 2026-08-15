@@ -24,7 +24,7 @@ Also read `.claude/context/invariants.md` if it exists — skip silently if abse
 - **Repository implementations** — integration test against an in-memory `ModelContainer`
 - **ViewModels** — unit test with mock repository implementations injected via protocol
 - **UI flows** — cover critical happy paths: add transaction, import CSV, budget alert
-- **Mutations on shared/persisted entities** — a repeat-call/duplicate test and a missing-required-field test per mutation, not just the happy path (see `docs/2026-05-18-correctness-review-postmortem.md`)
+- **Mutations on shared/persisted entities** — a repeat-call/duplicate test and a missing-required-field test per mutation, not just the happy path (see `docs/2026-05-18-correctness-review-postmortem.md` Rule 6 and issue #10)
 - **Target:** ≥80% coverage on all new code
 
 ### Test file locations
