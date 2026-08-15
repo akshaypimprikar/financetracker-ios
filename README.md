@@ -11,6 +11,17 @@
 
 ---
 
+## Screenshots
+
+<p>
+  <img src="docs/screenshots/dashboard.png" width="200" alt="Dashboard — net worth, spending this month, budget progress" />
+  <img src="docs/screenshots/transactions.png" width="200" alt="Transactions — searchable list across accounts" />
+  <img src="docs/screenshots/budgets.png" width="200" alt="Budgets — monthly limits per category with progress tracking" />
+  <img src="docs/screenshots/accounts.png" width="200" alt="Accounts — assets and liabilities, net worth calculation" />
+</p>
+
+---
+
 ## Pipeline
 
 Every feature follows the same path. You approve twice — after `/spec` and after `/plan`. Everything else runs autonomously until merge.
