@@ -16,6 +16,7 @@ Before starting any task:
 
 ## Per-task rules
 - Follow TDD: write failing test first, confirm failure, implement, confirm pass
+- If the task adds or modifies a mutation on a shared/persisted entity (create, update, or delete on an `@Model` type), the failing test written first must cover a repeat-call/duplicate case (e.g. calling the same mutation twice with the same identity) or a missing-required-field case — not just the happy path. `docs/2026-05-18-correctness-review-postmortem.md` found "the guard was not written because the failure mode was not imagined" as a recurring root cause across multiple bugs; TDD's write-test-first sequencing alone does not force imagining the failure mode, only that some test exists — this rule forces the specific gap that postmortem found.
 - After implementation passes tests, run the `simplify` skill on changed files before committing
 - Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent)
 - One commit per task (after simplify pass and CHANGELOG update)

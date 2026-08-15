@@ -6,6 +6,11 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **Pipeline: `/review` now logs pre-review fixes to `rejections.md` and posts its verdict as a real GitHub review** — the file previously only logged this review's own CHANGES REQUESTED violations, but real bugs are typically caught and fixed earlier (via `/code-review` or manual verification) before `/review`'s formal pass runs, so the file never accumulated anything across 75+ PRs despite recurring bug patterns; `/review` also now posts its verdict via `gh pr review --comment` instead of only reporting it in-session, giving it an independent, timestamped trace instead of prose in the same PR it's approving
+- **Pipeline: `/feature` now requires a repeat-call/duplicate or missing-field test for any new mutation on a shared/persisted entity** — closes the gap documented in `docs/2026-05-18-correctness-review-postmortem.md`, where TDD's write-test-first sequencing didn't prevent a missing-negative-path bug because the failure mode was never imagined; `/test`'s coverage targets updated to match
+- **Pipeline: fixed `/test`'s Trigger description contradicting `/pr-followup` and `/feature`** — it previously claimed to run "in parallel with `/review`"; it actually runs after `/review` reports APPROVED
+
 ---
 
 ## [1.2.0] — 2026-07-31
