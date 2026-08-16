@@ -8,6 +8,12 @@
 **File:** `scripts/check_tdd_commit_order.py:29` (now `:35`); `.claude/commands/gates.md:61`
 **Caught by:** code-review:code-review
 
+## 2026-08-16 — PR#85 — feature-log.md entry ambiguous about which gate was ported to pragma
+**What was wrong:** The v1.2.1 entry listed Gate 10 and Gate 11 together, then added a dangling clause "ported as a generic gate to the pragma template repo" with no clear subject. Read as applying to Gate 10, it's backwards: Gate 10 (duplication/abstraction-bloat heuristic) originated in pragma and was restored into FinanceTracker, the opposite direction. Only Gate 11 was actually ported to pragma.
+**Rule violated:** No formal rule — caught pre-review by `code-review:code-review` (scored 75/100 confidence; below the auto-post threshold but confirmed real).
+**File:** `.claude/context/feature-log.md:6`
+**Caught by:** code-review:code-review
+
 ## 2026-08-16 — PR#83 — Gate-check false positive from an unhandled special case
 **What was wrong:** The new `/sync-workflow` gate-numbering checklist assumed gate headings in `gates.md` are sequential starting at 1. It flagged `### Gate 0` (an intentional pre-check both FinanceTracker's and pragma's `gates.md` already exclude from their "N gates" count) as "non-sequential," a false positive on its first real run.
 **Rule violated:** No formal rule — caught pre-review, during dogfooding against pragma PR #42, before this PR was opened.
