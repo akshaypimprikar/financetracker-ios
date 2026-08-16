@@ -38,7 +38,11 @@ For new gates in FinanceTracker's `/gates`, judge each one individually — do n
 Pragma has no `CLAUDE.md` and no equivalent to FinanceTracker's `/review` — this is the
 only check that runs before a sync PR opens. Keep it lightweight: it exists to catch the
 specific ways a *template* repo can drift, not to re-litigate content already reviewed once
-in FinanceTracker. Run against the staged diff, before `git commit`.
+in FinanceTracker. Run against the staged diff, before `git commit` — stage first, since the
+checks below read `git diff --cached`:
+```bash
+git -C /Users/akshaypimprikar/Desktop/Claude/pragma add .claude/commands/
+```
 
 **a. No FinanceTracker-specific literals leaked into template content (advisory — eyeball each hit):**
 ```bash
@@ -59,7 +63,7 @@ the count — the pattern below starts from Gate 1 on purpose, not an oversight.
 awk 'BEGIN{expected=1} {if($1!=expected) print "non-sequential: expected "expected" got "$1; expected=$1+1}' \
   <(grep -oE '^### Gate [1-9][0-9]*' /Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/gates.md | grep -oE '[0-9]+')
 MAX=$(grep -oE '^### Gate [1-9][0-9]*' /Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/gates.md | grep -oE '[0-9]+' | sort -n | tail -1)
-grep -rnE "all [0-9]+ gates" /Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/*.md | grep -v "all $MAX gates"
+grep -rniE "all [0-9]+ gates" /Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands/*.md | grep -viE "all $MAX gates"
 ```
 Pass: the sequential check prints nothing, and the count-reference grep returns no lines
 disagreeing with `$MAX`. Fail: fix the stale number before committing — this is the "10
