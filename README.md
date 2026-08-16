@@ -48,7 +48,7 @@ flowchart TD
 
 You approve twice per feature: after the spec and after the plan. Everything else runs autonomously until you hit merge.
 
-Nine slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets. The commands are open-sourced as a reusable scaffold at [Pragma](https://github.com/akshaypimprikar/pragma).
+15 slash commands in `.claude/commands/` define each agent's behaviour — branch strategy, TDD rules, architecture checks, design token enforcement, commit conventions, and PR targets. The commands are open-sourced as a reusable scaffold at [Pragma](https://github.com/akshaypimprikar/pragma).
 
 ---
 
@@ -139,7 +139,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 FinanceTracker/          — app source (Models, Services, Repositories, ViewModels, Views)
 FinanceTrackerTests/     — unit + integration tests
 FinanceTrackerUITests/   — XCUITest flows (5 core user flows)
-.claude/commands/        — agent definitions (/spec, /plan, /feature, /review, /test, /bugfix, /release, /sync-workflow, /design)
+.claude/commands/        — agent definitions (/spec, /plan, /feature, /gates, /review, /test, /pr-followup, /bugfix, /release, /sync-workflow, /design, /pipeline-review, /status, /parallel-review, /trim-context)
 FinanceTracker/Theme/    — semantic design tokens (Colors, Spacing, Typography)
 docs/design-system.md   — token reference and component patterns
 docs/superpowers/
