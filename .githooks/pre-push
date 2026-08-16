@@ -1,7 +1,8 @@
 #!/bin/bash
 # Enforces gitflow rules before any push.
-# Blocks: direct pushes to develop/main branches, pushes to branches with merged PRs.
-# Tag pushes and authorized release back-merges (GITFLOW_RELEASE_MERGE=1) are allowed.
+# Blocks: direct pushes to develop/main branches (including deletion), pushes to
+# branches with merged PRs. Tag pushes, deleting an already-merged branch, and
+# authorized release back-merges (GITFLOW_RELEASE_MERGE=1) are allowed.
 
 # Allow authorized gitflow operations (e.g. release back-merge to develop)
 if [ "${GITFLOW_RELEASE_MERGE}" = "1" ]; then
@@ -27,6 +28,16 @@ while read local_ref local_sha remote_ref remote_sha; do
             exit 1
         fi
     done
+
+    # A delete push (branch removal) has an all-zero local_sha — git's standard
+    # signal for "this ref is being deleted," never produced by a normal content
+    # push. Deleting an already-merged branch's remote ref is exactly the routine
+    # cleanup the merged-PR check below would otherwise block; skip only that
+    # check, not the protected-branch check above, so deleting develop/main
+    # directly is still blocked.
+    if [[ "$local_sha" =~ ^0+$ ]]; then
+        continue
+    fi
 
     # Block pushes to branches whose PR is already merged
     if command -v gh &>/dev/null; then

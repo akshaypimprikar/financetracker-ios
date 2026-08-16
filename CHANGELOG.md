@@ -6,6 +6,11 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **`/feature`'s TDD instruction referenced a non-invokable skill** — `Skill(test-driven-development)` errors with `Unknown skill` in this environment; the Superpowers plugin flag in `.claude/settings.json` being `true` doesn't mean its skills are actually loadable here, confirmed empirically (no Superpowers skill name has ever appeared in an available-skills listing this repo has seen). Replaced with a self-contained instruction carrying the same substance (the Iron Law, verify-red-for-the-right-reason, the tests-after-prove-nothing argument) directly in `feature.md` instead of depending on an invocation that doesn't work. Same fix ported to pragma's template `feature.md`. Found by the 2026-08-16 pipeline review.
+- **`.githooks/pre-push` blocked deleting an already-merged branch's remote ref** — the merged-PR check had no exemption for delete pushes (all-zero `local_sha`), the way it already exempted tag pushes; routine `git push origin --delete <branch>` cleanup after a merge was incorrectly blocked, forcing a `gh api -X DELETE` workaround. Added the same class of exemption tag pushes already had, scoped so deleting `develop`/`main` directly is still blocked. Found and fixed during the v1.2.1 release, formalized by the 2026-08-16 pipeline review.
+- **`.claude/settings.json`** — removed 6 `WebFetch(domain:...)` entries made redundant by the existing blanket `WebFetch(*)` grant
+
 ---
 
 ## [1.2.1] — 2026-08-16
