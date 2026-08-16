@@ -37,13 +37,13 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 ## Agent commands
 
-Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review`
+Commands in `.claude/commands/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review` `/status` `/parallel-review` `/trim-context`
 
 Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/pr-followup` (auto-chains `/review` → `/test`; `code-review:code-review` can't be agent-invoked — run it yourself) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
 **PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
-**Merge rule:** no command merges a PR automatically. A PR is mergeable only once `/review` returns APPROVED, `/test` passes, and `code-review:code-review` is clean — then the user merges it themselves. (GitHub review approval can't gate this: every PR here is authored under the user's own account, and GitHub blocks authors from approving their own PRs.) Agents report their verdict and stop.
+**Merge rule:** no command merges a PR automatically. A PR targeting `develop` is mergeable only once `/review` returns APPROVED, `/test` passes, and `code-review:code-review` is clean — then the user merges it themselves. (GitHub review approval can't gate this: every PR here is authored under the user's own account, and GitHub blocks authors from approving their own PRs.) `release/*`/`hotfix/*` PRs targeting `main` are exempt from `/review` and `code-review:code-review` — every commit already passed both when it merged into `develop`; `/release`'s pre-flight test run is the only gate needed there. Agents report their verdict and stop.
 
-**Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma`.
+**Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma --head <branch>`. `--repo` alone is not enough: `gh pr create` resolves the head branch from whatever's checked out in the shell's cwd, not from the target repo's state, so an unrelated branch name in cwd (e.g. FinanceTracker's own `develop`) can silently become the head of a pragma PR. Always pass `--head` explicitly, and verify with `gh pr view <N> --repo akshaypimprikar/pragma --json headRefName,baseRefName,files` before trusting the PR is correct.

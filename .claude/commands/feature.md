@@ -15,10 +15,13 @@ Before starting any task:
 - Confirm you are on a `feature/<name>` branch off `develop` (create it if not)
 
 ## Per-task rules
-- Follow TDD: write failing test first, confirm failure, implement, confirm pass
+- Before starting the RED step of each task, run `Skill(test-driven-development)` (installed via the Superpowers plugin, already enabled in this repo's `.claude/settings.json`) — it enforces watching the test fail before implementing, with an explicit anti-rationalization checklist. Do not paraphrase TDD from memory; invoke the skill.
+- If the task adds or modifies a mutation on a shared/persisted entity (create, update, or delete on an `@Model` type), the failing test written first must cover **both** a repeat-call/duplicate case (e.g. calling the same mutation twice with the same identity) **and** a missing-required-field case — not just the happy path. `docs/2026-05-18-correctness-review-postmortem.md` documents both failure shapes: Rule 6 for the repeat-call case ("the guard was not written because the failure mode was not imagined"), and issue #10 for the missing-field case (`AddTransactionSheet.canAdd` didn't check `selectedToAccount != nil` for transfers, so a transfer with no destination could be saved). TDD's write-test-first sequencing alone does not force imagining either failure mode, only that some test exists — this rule forces both specific gaps that postmortem found.
 - After implementation passes tests, run the `simplify` skill on changed files before committing
 - Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent)
-- One commit per task (after simplify pass and CHANGELOG update)
+- **Two commits per task, in this order — not one:**
+  1. **RED commit** — the new/modified test file(s) only, no production code. Commit message must quote the actual failing-test output (the assertion/error line, not just "test written"). Never bundle a test file and the production file it exercises in the same commit — that's the exact pattern that made prior task commits unverifiable (see Gate 11 in `/gates`).
+  2. **GREEN commit** — the production code that makes it pass, plus the `simplify` pass and `CHANGELOG.md` entry. Commit message must quote the passing-test output line.
 - Run the full test suite (including UI tests) after every task — do not proceed if tests fail. Use the "Full test suite" command below; never add `-skip-testing` or `-only-testing` flags.
 - Never edit `project.pbxproj` — files auto-compile via `PBXFileSystemSynchronizedRootGroup`
 
@@ -45,13 +48,13 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green, and all 8 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` run in parallel.
+All tasks complete, full test suite green, and all 11 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` runs (`code-review:code-review` is manual — it can't be agent-invoked).
 
 To drive the entire feature-to-gates cycle autonomously:
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 8 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 11 gates pass.
 ```
 Or target only gate-fixing after tasks are done:
 ```
-/goal "all 8 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated"
+/loop Fix failing gates. Stop when all 11 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```

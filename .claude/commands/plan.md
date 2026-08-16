@@ -22,7 +22,7 @@ The plan must be executable by a subagent with no prior context. Every task need
 - Exact file paths (all source files live under `FinanceTracker/` at the git root)
 - Complete code (no placeholders, no "implement X")
 - Exact xcodebuild commands with expected output
-- TDD structure: write failing test → confirm failure → implement → confirm pass → commit
+- TDD structure: write failing test → confirm failure → commit (RED) → implement → confirm pass → commit (GREEN) — never bundle the test and implementation into one commit; see `/feature`'s per-task rules and `/gates` Gate 11
 
 ## Plan Header (required)
 
@@ -50,4 +50,4 @@ The plan must be executable by a subagent with no prior context. Every task need
 - UI tests: `FinanceTrackerUITests/`
 
 ## Done when
-The user reviews and approves the plan. Then hand off to `/feature`. After the PR is open, `/review` runs first; once it passes, `/test` and `code-review:code-review` run in parallel.
+The user reviews and approves the plan. Then hand off to `/feature`. After the PR is open, `/review` runs first; once it passes, `/test` runs (`code-review:code-review` is manual — it can't be agent-invoked).

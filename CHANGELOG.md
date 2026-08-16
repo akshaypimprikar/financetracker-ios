@@ -8,6 +8,28 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
+## [1.2.1] — 2026-08-16
+
+### Added
+- **README screenshots** — Dashboard, Transactions, Budgets, and Accounts, captured with realistic seeded data via a new `--seedscreenshots` launch argument (`DemoDataSeeder`, in-memory only, never touches a real persisted store) and a `--starttab=<name>` argument for capturing each tab without scripted UI taps
+- **`/gates` Gate 10** — restored the generic duplication/abstraction-bloat heuristic that was silently dropped when Gate 8 was replaced with the app-specific CSV import concurrency check; added as a new gate rather than reusing the slot, so it doesn't collide with the app-specific check
+- **`/gates` Gate 11 — RED-before-GREEN commit order** — `/feature` now commits RED (failing test) and GREEN (implementation) separately, and `scripts/check_tdd_commit_order.py` verifies from git history that the test commit precedes the implementation commit, rather than trusting the agent's self-report. A git-history audit of three merged feature branches found every ViewModel task commit bundled the failing test and its implementation together — the exact failure mode documented in Martin Fowler's "TDD inside the agent loop" and corroborated independently by Simon Willison and testdouble. `/feature` also now invokes the already-installed `test-driven-development` Superpowers skill instead of a one-line paraphrase. Ported to the pragma template repo as a generic gate.
+
+### Fixed
+- **`.claude/settings.json`** — removed 20 redundant/dead permission entries (8 pragma `git -C` entries and 2 `GITFLOW_RELEASE_MERGE` entries already covered by broader patterns already in the file, plus 12 session-specific one-off artifacts from past debugging/LinkedIn-drafting sessions)
+- **`DemoDataSeederTests`** — the CI coverage gate correctly failed on `DemoDataSeeder.swift` at 0% (no exception carved out for debug tooling); added real tests asserting seeded counts and computed account balances, now at 96.5%
+- **Pipeline: `/review` now logs pre-review fixes to `rejections.md` and posts its verdict as a real GitHub review** — the file previously only logged this review's own CHANGES REQUESTED violations, but real bugs are typically caught and fixed earlier (via `/code-review` or manual verification) before `/review`'s formal pass runs, so the file never accumulated anything across 75+ PRs despite recurring bug patterns; `/review` also now posts its verdict via `gh pr review --comment` instead of only reporting it in-session, giving it an independent, timestamped trace instead of prose in the same PR it's approving
+- **Pipeline: `/feature` now requires both a repeat-call/duplicate test and a missing-field test for any new mutation on a shared/persisted entity** — closes the gaps documented in `docs/2026-05-18-correctness-review-postmortem.md` (Rule 6 and issue #10), where TDD's write-test-first sequencing didn't prevent a missing-negative-path bug because the failure mode was never imagined; `/test`'s coverage targets updated to match, and fixed a same-PR inconsistency where `/feature` said "or" while `/test` said "and" for the same rule
+- **Pipeline: fixed `/test`'s Trigger description contradicting `/pr-followup` and `/feature`** — it previously claimed to run "in parallel with `/review`"; it actually runs after `/review` reports APPROVED
+- **Pipeline: `/sync-workflow` now self-reviews before opening a pragma PR** — pragma has no `CLAUDE.md` and no equivalent to `/review`, and every prior sync PR merged with zero GitHub reviews; added a 3-point checklist (no FinanceTracker-specific literals leaked into template content, `<placeholder>` convention held, gate numbering/counts internally consistent) run before committing
+- **`/sync-workflow`'s self-review checklist** — fixed two bugs `code-review:code-review` found on its own first PR: step 5's checks ran against `git diff --cached` before staging happened (staging was in the later step 6), and step 5c's gate-count check was case-sensitive, silently missing the capitalized `All N gates` line in `gates.md`'s "Done when" section — the exact line that's historically gone stale (commits `ddb58f0`, `1137aea`)
+- **`scripts/check_tdd_commit_order.py`** — fixed `git log develop...HEAD` (triple-dot) to `develop..HEAD` (double-dot); for `git log` (unlike `git diff`), triple-dot is symmetric difference and would pull in `develop`-only commits into the branch's commit list once `develop` advances past the fork point, corrupting the RED/GREEN ordering check. Also updated `/gates` Gate 5's CHANGELOG fallback text, which still assumed one commit per task
+
+### Known issues
+- **`UITestImportFlowTests.testImportButtonOpensSheetAndChooseFileLaunchesDocumentPicker` fails locally due to simulator infrastructure, not app code** — the ephemeral test-runner simulator clone fails to launch (`SBMainWorkspace RequestDenied`), unrelated to any change in this release (zero Swift files touched by the PRs that shipped it). Tracked in `Project Actions.md` (This Week, #p1). This release's pre-flight test run was waived past this specific failure with that context confirmed.
+
+---
+
 ## [1.2.0] — 2026-07-31
 
 ### Added

@@ -17,7 +17,7 @@ Also read the following files if they exist — skip silently if absent:
 
 `/gates` runs before every PR is opened and is the single authoritative check for
 layer separation, type safety, patterns, build success, full test suite, coverage,
-and UI-selector matching (its Gate 9 covers what this section used to duplicate).
+and UI-selector matching (its Gate 9 and Gate 10 cover what this section used to duplicate).
 Do **not** re-run `xcodebuild`, the `ios-coverage` skill, or the layer/type-safety
 grep commands yourself here — that's wasted, redundant work against a diff that
 hasn't changed since gates last ran.
@@ -52,16 +52,37 @@ Final verdict:
 - **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see CLAUDE.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
-## Done when
-If the verdict is CHANGES REQUESTED, append one entry per violation to `.claude/context/rejections.md` before closing the review:
+## Logging violations to rejections.md
+
+Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
+
+1. This review's own verdict is CHANGES REQUESTED — log each issue found here.
+2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `/code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
 **What was wrong:** <description>
-**Rule violated:** <exact rule from invariants.md or CLAUDE.md>
+**Rule violated:** <exact rule from invariants.md or CLAUDE.md — or "no formal rule, caught pre-review" if none applies>
 **File:** <path:line if known>
+**Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
 
-Skip this step if the verdict is APPROVED with no issues.
+Skip this step only if there is truly nothing to log — no CHANGES REQUESTED issues from this review *and* no documented pre-review fixes in the PR body.
 
-Report the verdict and stop. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
+## Posting the verdict to GitHub
+
+Reporting the verdict back in this session is not enough — nothing distinguishes it from prose written by the same session that wrote the code, so it isn't independently checkable by anyone auditing the repo from outside. Post it as a real, separate GitHub review object:
+
+```bash
+gh pr review <PR> --comment --body "$(cat <<'EOF'
+## Review Agent verdict: <APPROVED | CHANGES REQUESTED>
+
+<the check-by-check output from Output format above>
+EOF
+)"
+```
+
+Use `--comment`, not `--approve` — GitHub blocks self-approval on PRs authored under your own account, so `--approve` fails here. `--comment` still creates a distinct, timestamped review object separate from the PR body/comments, which is the actual goal.
+
+## Done when
+Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
