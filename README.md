@@ -116,20 +116,20 @@ All commands run from the repo root (where `FinanceTracker.xcodeproj` lives).
 ```bash
 # Build
 xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17'
+  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1'
 
 # Unit + integration tests
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   -only-testing:FinanceTrackerTests
 
 # UI tests
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   -only-testing:FinanceTrackerUITests
 ```
 
-> Simulator: `iPhone 17` — iOS 26.4 ships with iPhone 17 only.
+> Simulator: `iPhone 17` on iOS 26.4 — pin `OS=26.4.1` explicitly, since a second "iPhone 17" device now exists under the iOS 26.5 runtime and a bare `name=iPhone 17` destination is ambiguous.
 
 ---
 

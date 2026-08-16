@@ -58,7 +58,7 @@ final class MockAccountRepository: AccountRepositoryProtocol {
 ### Build command (run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`)
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | xcsift
 ```
 
