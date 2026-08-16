@@ -58,7 +58,10 @@ Fail: `main`, `develop`, or any non-conforming name — stop and ask the user to
 grep -A 10 "## \[Unreleased\]" CHANGELOG.md 2>/dev/null | grep -v "^##" | grep -v "^$"
 ```
 Pass: at least one non-empty line under `## [Unreleased]`.
-Fail: section missing or empty — create the section and add a one-line summary per task commit on this branch using `git log develop...HEAD --oneline`.
+Fail: section missing or empty — create the section and add a one-line summary per task,
+using `git log develop..HEAD --oneline` to enumerate commits. `/feature`'s two-commit-per-task
+structure means only the GREEN (implementation) commit carries user-facing content — summarize
+those, skipping RED (test-only) commits, which have nothing to summarize.
 
 ### Gate 6 — Coverage (conditional: new Swift files on branch)
 ```bash
