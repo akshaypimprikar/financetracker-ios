@@ -30,12 +30,12 @@ Before starting any task:
 ```bash
 # Full test suite
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | grep -E "Test.*passed|Test.*failed|TEST SUCCEEDED|TEST FAILED"
 
 # Single suite
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   -only-testing:FinanceTrackerTests/<SuiteName> \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```

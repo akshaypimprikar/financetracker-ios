@@ -8,17 +8,17 @@ All commands run from `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/` (g
 
 ```bash
 # Build
-xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17'
+xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1'
 
 # Full test suite
-xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17'
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1'
 
 # Single suite / single test
-xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:FinanceTrackerTests/<SuiteName>
-xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:FinanceTrackerTests/<SuiteName>/<testName>
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' -only-testing:FinanceTrackerTests/<SuiteName>
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' -only-testing:FinanceTrackerTests/<SuiteName>/<testName>
 ```
 
-> **Simulator:** `iPhone 17` — iOS 26.4 ships with iPhone 17 only, not iPhone 16.
+> **Simulator:** `iPhone 17` on iOS 26.4 — pin `OS=26.4.1` explicitly (update to match `xcrun simctl list runtimes` if the patch version drifts; `xcodebuild` requires an exact match). Both iOS 26.4 and 26.5 runtimes are installed, each with its own "iPhone 17" device, so a bare `name=iPhone 17` destination is ambiguous. If a UI test fails with `RequestDenied ... SBMainWorkspace`, the simulator's SpringBoard state is corrupt — `xcrun simctl erase <device-id>` and reboot it; killing `Simulator.app`/`CoreSimulatorService` alone won't fix it.
 > **File inclusion:** `PBXFileSystemSynchronizedRootGroup` (Xcode 16) — drop a `.swift` file in the right folder and it compiles automatically. Never edit `project.pbxproj`.
 
 ## Architecture
