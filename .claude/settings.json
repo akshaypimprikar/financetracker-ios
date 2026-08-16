@@ -135,6 +135,7 @@
       "Bash(gh run view * --log *)",
       "Bash(gh issue *)",
       "Bash(python3 scripts/check_coverage.py *)",
+      "Bash(python3 scripts/check_tdd_commit_order.py *)",
       "Bash(rm -rf /tmp/debug_ui.xcresult *)",
       "Bash(rm -rf /tmp/FinanceTracker.xcresult *)",
       "Bash(git -C \"/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki\" diff --stat)",
