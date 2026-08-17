@@ -6,6 +6,10 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+---
+
+## [1.2.2] — 2026-08-17
+
 ### Fixed
 - **Re-render cleanup pass** — memoized `TransactionViewModel.filteredTransactions` (previously re-filtered/re-sorted on every access); `AccountListView` now computes `netWorth()` once per render instead of twice (each call does one repository fetch per account); `BudgetListView`'s month-change reload is now debounced (150ms); dropped unused `@Bindable` in `BudgetDetailView`/`TransactionDetailView` (no `$viewModel` bindings existed in either). All 5 fixes sourced from the same Instruments profiling session; see `docs/superpowers/specs/2026-08-16-re-render-cleanup-pass.md`.
 - **`UITestImportFlowTests` simulator-launch failure (`SBMainWorkspace RequestDenied`)** — the "iPhone 17" (iOS 26.4) simulator's internal SpringBoard state was corrupt; killing `Simulator.app`/`CoreSimulatorService` didn't fix it (tried during the v1.2.1 release, see [1.2.1]'s Known issues). `xcrun simctl erase` on the affected device followed by a reboot did — verified by re-running the previously-failing test to a pass. Not an app-code issue.
