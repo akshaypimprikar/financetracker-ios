@@ -57,7 +57,6 @@
       "Bash(cua-driver screenshot *)",
       "Bash(python3 -c ' *)",
       "Bash(ls ~/.claude/commands/ 2>/dev/null && echo \"exists\" || echo \"does not exist\")",
-      "Read(//Users/akshaypimprikar/.claude/**)",
       "Bash(mkdir -p ~/.claude/commands)",
       "Bash(rm /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/commands/agentic-ai-report.md \\\\ *)",
       "Bash(find /Users/akshaypimprikar -path \"*/Obsidian*\" -name \"*.md\" 2>/dev/null | grep -i linkedin | head -20)",
@@ -138,10 +137,7 @@
       "Bash(cua-driver set_value *)",
       "Bash(cua-driver press_key *)",
       "Bash(python3 -c \"import json; json.load\\(open\\('.claude/settings.json'\\)\\)\")",
-      "Read(//Users/akshaypimprikar/.claude/skills/**)",
       "Bash(grep -n \"iPhone 16\\\\|iPhone 15\" /Users/akshaypimprikar/.claude/skills/ios-build-verify/SKILL.md 2>&1)",
-      "Read(//Users/akshaypimprikar/.claude/skills/ios-build-verify/**)",
-      "Read(//Users/akshaypimprikar/.claude/skills/ios-coverage/**)",
       "Bash(xcrun simctl list *)",
       "mcp__XcodeBuildMCP__session_show_defaults",
       "Bash(git merge *)"

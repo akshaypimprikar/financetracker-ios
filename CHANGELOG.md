@@ -6,6 +6,10 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **`/review`'s pre-review-fix logging pointed at a non-invokable `/code-review`** — the correct skill name, used correctly two lines away in the same file, is `code-review:code-review`. Found by the 2026-08-17 pipeline review.
+- **`.claude/settings.json`** — removed 4 redundant double-slash permission entries (`Read(//Users/akshaypimprikar/.claude/**)` and three narrower subsets of it) already covered by the existing single-slash `Read(/Users/akshaypimprikar/.claude/**)` grant. Found by the 2026-08-17 pipeline review.
+
 ---
 
 ## [1.2.2] — 2026-08-17
