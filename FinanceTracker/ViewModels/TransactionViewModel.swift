@@ -3,11 +3,22 @@ import Observation
 
 @Observable
 final class TransactionViewModel {
-    private(set) var transactions: [Transaction] = []
+    // Any new input to `filteredTransactions` below must invalidate the cache
+    // here too, or it will silently return stale results.
+    private(set) var transactions: [Transaction] = [] {
+        didSet { invalidateFilteredTransactionsCache() }
+    }
     private(set) var accounts: [Account] = []
     private(set) var categories: [Category] = []
-    var searchText: String = ""
-    var selectedAccount: Account?
+    var searchText: String = "" {
+        didSet { invalidateFilteredTransactionsCache() }
+    }
+    var selectedAccount: Account? {
+        didSet { invalidateFilteredTransactionsCache() }
+    }
+
+    @ObservationIgnored private var cachedFilteredTransactions: [Transaction]?
+    @ObservationIgnored private(set) var filterComputeCount = 0
 
     private let transactionRepo: any TransactionRepositoryProtocol
     private let accountRepo: any AccountRepositoryProtocol
@@ -30,6 +41,10 @@ final class TransactionViewModel {
     }
 
     var filteredTransactions: [Transaction] {
+        if let cachedFilteredTransactions {
+            return cachedFilteredTransactions
+        }
+        filterComputeCount += 1
         var result = transactions
         if !searchText.isEmpty {
             result = result.filter {
@@ -39,7 +54,13 @@ final class TransactionViewModel {
         if let selectedAccount {
             result = result.filter { $0.account.id == selectedAccount.id }
         }
-        return result.sorted { $0.date > $1.date }
+        let sorted = result.sorted { $0.date > $1.date }
+        cachedFilteredTransactions = sorted
+        return sorted
+    }
+
+    private func invalidateFilteredTransactionsCache() {
+        cachedFilteredTransactions = nil
     }
 
     func add(

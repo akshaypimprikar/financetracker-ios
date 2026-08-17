@@ -95,4 +95,94 @@ struct TransactionViewModelTests {
         #expect(vm.filteredTransactions.count == 1)
         #expect(vm.filteredTransactions[0].payee == "Coffee")
     }
+
+    @Test func filteredTransactionsIsMemoizedAcrossRepeatedAccess() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        ctx.insert(Transaction(date: .now, amount: 25, payee: "Coffee",
+                               type: .debit, account: account))
+        try ctx.save()
+
+        let vm = TransactionViewModel(
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+
+        _ = vm.filteredTransactions
+        _ = vm.filteredTransactions
+
+        #expect(vm.filterComputeCount == 1)
+    }
+
+    @Test func filteredTransactionsCacheInvalidatesOnSearchTextChange() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        ctx.insert(Transaction(date: .now, amount: 25, payee: "Coffee",
+                               type: .debit, account: account))
+        try ctx.save()
+
+        let vm = TransactionViewModel(
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+
+        _ = vm.filteredTransactions
+        vm.searchText = "coffee"
+        _ = vm.filteredTransactions
+
+        #expect(vm.filterComputeCount == 2)
+    }
+
+    @Test func filteredTransactionsCacheInvalidatesOnSelectedAccountChange() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let checking = Account(name: "Checking", type: .checking)
+        ctx.insert(checking)
+        ctx.insert(Transaction(date: .now, amount: 25, payee: "Coffee",
+                               type: .debit, account: checking))
+        try ctx.save()
+
+        let vm = TransactionViewModel(
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+
+        _ = vm.filteredTransactions
+        vm.selectedAccount = checking
+        _ = vm.filteredTransactions
+
+        #expect(vm.filterComputeCount == 2)
+    }
+
+    @Test func filteredTransactionsCacheInvalidatesOnReload() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        ctx.insert(account)
+        try ctx.save()
+
+        let vm = TransactionViewModel(
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        try vm.load()
+
+        _ = vm.filteredTransactions
+        try vm.add(date: .now, amount: 50, payee: "Grocery", notes: nil,
+                   type: .debit, account: account, toAccount: nil, category: nil)
+        _ = vm.filteredTransactions
+
+        #expect(vm.filterComputeCount == 2)
+    }
 }

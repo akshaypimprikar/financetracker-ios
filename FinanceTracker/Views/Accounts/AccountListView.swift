@@ -12,15 +12,15 @@ struct AccountListView: View {
     }
 
     var body: some View {
+        let netWorth = viewModel.netWorth()
         List {
             Section {
                 HStack {
                     Text("Net Worth")
                     Spacer()
-                    Text(viewModel.netWorth(),
-                         format: .currency(code: viewModel.currency))
-                    .bold()
-                    .foregroundStyle(viewModel.netWorth() >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
+                    Text(netWorth, format: .currency(code: viewModel.currency))
+                        .bold()
+                        .foregroundStyle(netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
                 }
             }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TransactionDetailView: View {
     let transaction: Transaction
-    @Bindable var viewModel: TransactionViewModel
+    let viewModel: TransactionViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

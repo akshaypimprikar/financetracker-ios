@@ -2,6 +2,18 @@
 
 <!-- Append one entry per violation per PR. Never edit past entries. -->
 
+## 2026-08-16 — PR#91 — @Observable stored cache/counter fields not marked @ObservationIgnored
+**What was wrong:** `TransactionViewModel.filteredTransactions`'s new memoization added `cachedFilteredTransactions` and `filterComputeCount` as plain stored properties on an `@Observable` class. `filteredTransactions` reads `cachedFilteredTransactions` (registering it as an observation dependency) then writes to both it and `filterComputeCount` within the same call — a read-then-write of a tracked property in one call is a known `@Observable` footgun that can schedule a redundant re-render right after the one that just ran, partially defeating the point of memoizing.
+**Rule violated:** No formal rule — caught pre-review by `/simplify`'s efficiency-angle agent.
+**File:** `FinanceTracker/ViewModels/TransactionViewModel.swift:18-19` (now with `@ObservationIgnored`)
+**Caught by:** /simplify
+
+## 2026-08-16 — PR#91 — .task(id:) suggested by all 4 /simplify agents, would have introduced a double-load regression
+**What was wrong:** `/simplify`'s 4 parallel review agents unanimously recommended replacing `BudgetListView`'s hand-rolled `@State Task`/cancel debounce with SwiftUI's `.task(id: viewModel.selectedMonth)`. Applied first, then caught before commit: `.task(id:)` also fires on initial view appearance, and this view already has a separate `.onAppear { viewModel.load() }` for the first load — combining both would double-load every time the screen opens. None of the 4 review agents could see this, since each was shown only the diff hunk, not the full file (the `.onAppear` line was outside the diff). Reverted to `.onChange` (which correctly does not fire on initial appearance) but kept the real bug the agents did catch: nothing cancelled the in-flight debounce `Task` on view disappear. Added `.onDisappear { loadTask?.cancel() }`.
+**Rule violated:** No formal rule — caught via manual verification against the full file before committing, not by any review pass.
+**File:** `FinanceTracker/Views/Budgets/BudgetListView.swift:9-27`
+**Caught by:** manual verification
+
 ## 2026-08-16 — PR#82 — git log triple-dot used for a gating decision
 **What was wrong:** `scripts/check_tdd_commit_order.py` used `git log develop...HEAD` (triple-dot) to build the commit list its RED-before-GREEN violation detection depends on. For `git log` (unlike `git diff`), triple-dot is symmetric difference, not "commits unique to HEAD" — once `develop` advances past the branch's fork point, `develop`-only commits leak into the list and corrupt the ordering check. Also: `/gates` Gate 5's CHANGELOG-repair fallback text still assumed one commit per task, stale against this same PR's new two-commit RED/GREEN structure.
 **Rule violated:** No formal rule — caught pre-review by `code-review:code-review` (3 independent review passes converged on the git-log issue; one flagged the stale Gate 5 text).

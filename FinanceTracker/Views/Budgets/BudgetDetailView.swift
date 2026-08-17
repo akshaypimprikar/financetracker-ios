@@ -4,7 +4,7 @@ import Charts
 struct BudgetDetailView: View {
     let budget: Budget
     let progress: BudgetProgress
-    @Bindable var viewModel: BudgetViewModel
+    let viewModel: BudgetViewModel
     @Environment(\.dismiss) private var dismiss
 
     @State private var spendingData: [MonthlySpendingPoint] = []

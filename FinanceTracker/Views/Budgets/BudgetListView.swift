@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct BudgetListView: View {
+    private static let monthChangeDebounce: Duration = .milliseconds(150)
+
     @Bindable var viewModel: BudgetViewModel
     @Bindable var categoryVM: CategoryViewModel
     @State private var isPresentingAdd = false
+    @State private var loadTask: Task<Void, Never>?
 
     var body: some View {
         List {
@@ -15,7 +18,12 @@ struct BudgetListView: View {
                 )
                 .datePickerStyle(.compact)
                 .onChange(of: viewModel.selectedMonth) {
-                    try? viewModel.load()
+                    loadTask?.cancel()
+                    loadTask = Task {
+                        try? await Task.sleep(for: Self.monthChangeDebounce)
+                        guard !Task.isCancelled else { return }
+                        try? viewModel.load()
+                    }
                 }
             }
 
@@ -55,6 +63,7 @@ struct BudgetListView: View {
             AddBudgetSheet(viewModel: viewModel, categoryVM: categoryVM)
         }
         .onAppear { try? viewModel.load() }
+        .onDisappear { loadTask?.cancel() }
     }
 }
 
