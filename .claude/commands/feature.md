@@ -15,7 +15,7 @@ Before starting any task:
 - Confirm you are on a `feature/<name>` branch off `develop` (create it if not)
 
 ## Per-task rules
-- Before starting the RED step of each task, run `Skill(test-driven-development)` (installed via the Superpowers plugin, already enabled in this repo's `.claude/settings.json`) — it enforces watching the test fail before implementing, with an explicit anti-rationalization checklist. Do not paraphrase TDD from memory; invoke the skill.
+- Iron law before the RED step of each task: **no production code without a failing test that already exists.** Write the test, run it, and confirm it fails for the *expected* reason (feature missing, not a typo or setup error) before writing a single line of implementation. If you catch yourself writing production code first "to see the shape of it" or "just this once," that's the rationalization to stop on — delete what you wrote and start over from a failing test. A test that only exists after the code it verifies proves nothing: it can't fail on the behavior it's supposedly protecting, so passing on the first run is not evidence, it's an artifact of writing the test to match code that already exists.
 - If the task adds or modifies a mutation on a shared/persisted entity (create, update, or delete on an `@Model` type), the failing test written first must cover **both** a repeat-call/duplicate case (e.g. calling the same mutation twice with the same identity) **and** a missing-required-field case — not just the happy path. `docs/2026-05-18-correctness-review-postmortem.md` documents both failure shapes: Rule 6 for the repeat-call case ("the guard was not written because the failure mode was not imagined"), and issue #10 for the missing-field case (`AddTransactionSheet.canAdd` didn't check `selectedToAccount != nil` for transfers, so a transfer with no destination could be saved). TDD's write-test-first sequencing alone does not force imagining either failure mode, only that some test exists — this rule forces both specific gaps that postmortem found.
 - After implementation passes tests, run the `simplify` skill on changed files before committing
 - Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent)
@@ -30,12 +30,12 @@ Before starting any task:
 ```bash
 # Full test suite
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | grep -E "Test.*passed|Test.*failed|TEST SUCCEEDED|TEST FAILED"
 
 # Single suite
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   -only-testing:FinanceTrackerTests/<SuiteName> \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```

@@ -14,7 +14,7 @@ Invoked with a version number (e.g. `/release 1.0.0`).
 - [ ] All tests pass on `develop`:
   ```bash
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-    -destination 'platform=iOS Simulator,name=iPhone 17' \
+    -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     2>&1 | xcsift
   ```
 - [ ] No TODO/FIXME in any file added since last release:

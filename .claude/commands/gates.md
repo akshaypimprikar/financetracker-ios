@@ -27,7 +27,7 @@ If any Swift files are listed, run Gates 1 and 2 as normal.
 ### Gate 1 — Build (conditional: Swift files changed)
 ```bash
 xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | xcsift
 ```
 Pass: xcsift output shows no errors. Fail: stop immediately — a test run on a broken build is meaningless.
@@ -35,7 +35,7 @@ Pass: xcsift output shows no errors. Fail: stop immediately — a test run on a 
 ### Gate 2 — Full test suite (conditional: Swift files changed)
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | xcsift
 ```
 Pass: xcsift output shows all tests passed, zero failures.

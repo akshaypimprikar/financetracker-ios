@@ -26,7 +26,7 @@ Run it to confirm it fails. Do not proceed until it fails for the right reason.
 
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   -only-testing:FinanceTrackerTests/<SuiteName>/<testName> \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```
@@ -40,7 +40,7 @@ Change only what's needed to make the failing test pass. Do not refactor, rename
 
 ```bash
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
-  -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   2>&1 | grep -E "TEST SUCCEEDED|TEST FAILED"
 ```
 
