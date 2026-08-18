@@ -2,7 +2,7 @@ import SwiftUI
 
 extension Theme {
     enum Typography {
-        static let amountDisplay: Font = .system(size: 36, weight: .bold)
+        static let amountDisplay: Font = .system(size: 36, weight: .bold, design: .rounded)
         static let sectionHeader: Font = .headline
         static let rowTitle:      Font = .body
         static let rowSubtitle:   Font = .caption

@@ -13,8 +13,8 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 | `positive` | `.green` | Income amounts, credit transactions, available budget, positive balances |
 | `destructive` | `.red` | Over-budget, negative balances, delete actions |
 | `transfer` | `.blue` | Transfer transaction amounts |
-| `netWorthCardBackground` | `.teal.opacity(0.12)` | Net worth hero card background |
-| `spendingCardBackground` | `.orange.opacity(0.08)` | Spending summary card background |
+| `netWorthCardBackground` | `.teal.opacity(0.12)` | *Legacy* — flat net worth card background, superseded by `Theme.Glass.netWorthTint`; still referenced by `DashboardView` until that view is refactored onto Glass Cards |
+| `spendingCardBackground` | `.orange.opacity(0.08)` | *Legacy* — flat spending card background, superseded by `Theme.Glass.spendingTint`; still referenced by `DashboardView` until that view is refactored onto Glass Cards |
 | `primaryInteractive` | `.accentColor` | Progress bars, buttons, decorative call-to-action icons |
 
 ---
@@ -43,7 +43,7 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 
 | Token | Value | Usage |
 |---|---|---|
-| `amountDisplay` | `.system(size: 36, weight: .bold)` | Hero financial figures (net worth on dashboard) |
+| `amountDisplay` | `.system(size: 36, weight: .bold, design: .rounded)` | Hero financial figures (net worth on dashboard) — rounded design echoes Wallet/Stocks numeral style |
 | `sectionHeader` | `.headline` | Section titles ("Budgets", "Recent Transactions") |
 | `rowTitle` | `.body` | Primary row text (payee names, account names) |
 | `rowSubtitle` | `.caption` | Secondary metadata (dates, types, labels) |
@@ -65,8 +65,8 @@ VStack { ... }
     .frame(maxWidth: .infinity, alignment: .leading)
 ```
 
-- Hero card: `cornerRadiusCardLarge` (16pt), `netWorthCardBackground`
-- Secondary card: `cornerRadiusCard` (12pt), `spendingCardBackground`
+- Hero card (Dashboard Net Worth / Spending): see **Glass Cards** below — supersedes the flat-tint treatment
+- Secondary card elsewhere: `cornerRadiusCard` (12pt), flat tint background (e.g. `spendingCardBackground`)
 
 ### Row
 A list item with a leading label block and a trailing value.
@@ -178,6 +178,56 @@ Chart(categoryTotals) { item in
 }
 .frame(minHeight: Theme.Charts.minHeight)
 .padding(.horizontal, Theme.Spacing.cardPadding)
+```
+
+---
+
+## Glass Cards
+
+`Theme.Glass` — `FinanceTracker/Theme/Glass.swift`
+
+Hero-level cards (Dashboard Net Worth, Spending) use a translucent material instead of a flat tinted background, so they read as one visual language with the app's iOS 26 floating/glass tab bar rather than a flat, dated card style.
+
+### Materials & Tints
+
+| Token | Value | Meaning |
+|---|---|---|
+| `cardMaterial` | `Material.regularMaterial` | Base translucent material — same material family as the system tab bar |
+| `netWorthTint` | `LinearGradient([.teal.opacity(0.28), .teal.opacity(0.08)], topLeading→bottomTrailing)` | Tint overlay for the Net Worth card — same hue as the legacy `netWorthCardBackground`, now layered over material instead of flat |
+| `spendingTint` | `LinearGradient([.orange.opacity(0.22), .orange.opacity(0.06)], topLeading→bottomTrailing)` | Tint overlay for the Spending card — echoes the legacy `spendingCardBackground` |
+
+### Shadow
+
+| Token | Value | Meaning |
+|---|---|---|
+| `cardShadowColor` | `.black.opacity(0.12)` | Soft drop shadow beneath glass cards |
+| `cardShadowRadius` | `12pt` | Shadow blur radius |
+| `cardShadowY` | `4pt` | Shadow vertical offset |
+
+`.regularMaterial` adapts to Dark Mode automatically — no separate dark-mode tokens are needed.
+
+### Reused tokens
+
+| Token | Source | Use in glass cards |
+|---|---|---|
+| `Theme.Spacing.cornerRadiusCardLarge` | Spacing | Card corner radius |
+| `Theme.Spacing.cardPadding` | Spacing | Card content padding |
+| `Theme.Typography.amountDisplay` | Typography | Hero figure text (now `.rounded` design) |
+
+### Component pattern
+
+```swift
+VStack { ... }
+    .padding(Theme.Spacing.cardPadding)
+    .background(
+        RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCardLarge)
+            .fill(Theme.Glass.cardMaterial)
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCardLarge)
+                    .fill(Theme.Glass.netWorthTint)
+            )
+    )
+    .shadow(color: Theme.Glass.cardShadowColor, radius: Theme.Glass.cardShadowRadius, y: Theme.Glass.cardShadowY)
 ```
 
 ---

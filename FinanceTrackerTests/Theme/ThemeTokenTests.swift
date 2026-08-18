@@ -25,4 +25,19 @@ struct ThemeTokenTests {
     @Test func spacingSheetSpacing()             { #expect(Theme.Spacing.sheetSpacing == 24) }
     @Test func spacingCornerRadiusCard()         { #expect(Theme.Spacing.cornerRadiusCard == 12) }
     @Test func spacingCornerRadiusCardLarge()    { #expect(Theme.Spacing.cornerRadiusCardLarge == 16) }
+
+    // MARK: Typography
+
+    @Test func typographyAmountDisplay() {
+        #expect(Theme.Typography.amountDisplay == Font.system(size: 36, weight: .bold, design: .rounded))
+    }
+
+    // MARK: Glass
+
+    // Theme.Glass.cardMaterial (SwiftUI.Material) and .netWorthTint/.spendingTint
+    // (LinearGradient) are not Equatable, so their declared type is verified by
+    // this file compiling at all rather than a runtime equality check.
+    @Test func glassCardShadowColor()             { #expect(Theme.Glass.cardShadowColor == Color.black.opacity(0.12)) }
+    @Test func glassCardShadowRadius()            { #expect(Theme.Glass.cardShadowRadius == 12) }
+    @Test func glassCardShadowY()                 { #expect(Theme.Glass.cardShadowY == 4) }
 }
