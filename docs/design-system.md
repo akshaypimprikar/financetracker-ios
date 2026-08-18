@@ -13,7 +13,7 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 | `positive` | `.green` | Income amounts, credit transactions, available budget, positive balances |
 | `destructive` | `.red` | Over-budget, negative balances, delete actions |
 | `transfer` | `.blue` | Transfer transaction amounts |
-| `primaryInteractive` | `.accentColor` | Progress bars, buttons, decorative call-to-action icons |
+| `primaryInteractive` | `.accentColor` | Buttons, decorative call-to-action icons; progress-bar fallback when a category's `colorHex` fails to parse |
 
 ---
 
@@ -100,11 +100,11 @@ ContentUnavailableView(
 ```
 
 ### Progress Bar
-Used in budget rows and detail views.
+Used in budget rows and detail views (Dashboard's `BudgetProgressCard`, `BudgetListView`, `BudgetDetailView`). Tints by the budget's category color rather than a uniform accent, falling back to `primaryInteractive` if the category's hex fails to parse.
 
 ```swift
 ProgressView(value: min(progress.percentUsed, 1.0))
-    .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+    .tint(progress.isOverBudget ? Theme.Colors.destructive : (Color(hex: budget.category.colorHex) ?? Theme.Colors.primaryInteractive))
     .padding(.vertical, Theme.Spacing.compact)
 ```
 
