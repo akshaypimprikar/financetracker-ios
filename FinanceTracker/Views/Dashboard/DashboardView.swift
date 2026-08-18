@@ -97,7 +97,7 @@ private struct BudgetProgressCard: View {
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: min(progress.percentUsed, 1.0))
-                .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                .tint(progress.isOverBudget ? Theme.Colors.destructive : (Color(hex: budget.category.colorHex) ?? Theme.Colors.primaryInteractive))
         }
         .padding(.vertical, Theme.Spacing.compact)
     }
