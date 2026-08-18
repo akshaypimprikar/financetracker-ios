@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
@@ -8,6 +9,21 @@ struct DashboardView: View {
             VStack(spacing: Theme.Spacing.cardPadding) {
                 netWorthCard
                 spendingCard
+
+                if !viewModel.categorySpending.isEmpty {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
+                        Text("Spending by Category").font(Theme.Typography.sectionHeader)
+                        Chart(viewModel.categorySpending) { item in
+                            BarMark(
+                                x: .value("Category", item.category.name),
+                                y: .value("Spent", NSDecimalNumber(decimal: item.amount).doubleValue)
+                            )
+                            .foregroundStyle(Theme.Charts.spendingBar)
+                        }
+                        .frame(minHeight: Theme.Charts.minHeight)
+                        .padding(.horizontal, Theme.Spacing.cardPadding)
+                    }
+                }
 
                 if !viewModel.budgetProgresses.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
