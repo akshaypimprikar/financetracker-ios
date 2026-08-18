@@ -85,7 +85,7 @@ struct AccountRow: View {
                 .frame(width: 28)
             VStack(alignment: .leading, spacing: Theme.Spacing.tight) {
                 Text(account.name)
-                Text(account.type.rawValue.capitalized)
+                Text(account.type.displayName)
                     .font(Theme.Typography.rowSubtitle)
                     .foregroundStyle(.secondary)
             }
