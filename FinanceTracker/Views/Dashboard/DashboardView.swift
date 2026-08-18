@@ -62,8 +62,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.netWorthCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCardLarge))
+        .glassCardBackground(cornerRadius: Theme.Spacing.cornerRadiusCardLarge, tint: Theme.Glass.netWorthTint)
     }
 
     private var spendingCard: some View {
@@ -74,8 +73,16 @@ struct DashboardView: View {
                 .bold()
         }
         .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.spendingCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCard))
+        .glassCardBackground(cornerRadius: Theme.Spacing.cornerRadiusCard, tint: Theme.Glass.spendingTint)
+    }
+}
+
+private extension View {
+    func glassCardBackground(cornerRadius: CGFloat, tint: LinearGradient) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        return self
+            .background(shape.fill(Theme.Glass.cardMaterial).overlay(shape.fill(tint)))
+            .shadow(color: Theme.Glass.cardShadowColor, radius: Theme.Glass.cardShadowRadius, y: Theme.Glass.cardShadowY)
     }
 }
 

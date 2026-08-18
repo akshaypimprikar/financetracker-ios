@@ -10,8 +10,6 @@ struct ThemeTokenTests {
     @Test func colorsPositive()                  { #expect(Theme.Colors.positive == .green) }
     @Test func colorsDestructive()               { #expect(Theme.Colors.destructive == .red) }
     @Test func colorsTransfer()                  { #expect(Theme.Colors.transfer == .blue) }
-    @Test func colorsNetWorthCardBackground()    { #expect(Theme.Colors.netWorthCardBackground == Color.teal.opacity(0.12)) }
-    @Test func colorsSpendingCardBackground()    { #expect(Theme.Colors.spendingCardBackground == Color.orange.opacity(0.08)) }
     @Test func colorsPrimaryInteractive()        { #expect(Theme.Colors.primaryInteractive == Color.accentColor) }
 
     // MARK: Spacing

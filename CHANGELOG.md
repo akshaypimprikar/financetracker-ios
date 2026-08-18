@@ -7,9 +7,7 @@ All notable changes to FinanceTracker are documented here.
 ## [Unreleased]
 
 ### Added
-- **`Theme.Glass` design tokens** — translucent-material card style (`cardMaterial`, `netWorthTint`, `spendingTint`, shadow tokens) for Dashboard hero cards, matching the app's existing iOS 26 glass tab bar instead of the prior flat-tint card style. `Theme.Typography.amountDisplay` now uses `.rounded` font design (Wallet/Stocks-style numerals). Tokens only — `DashboardView` adoption lands in a follow-up feature PR.
-
-### Added
+- **`DashboardView` adopts Glass Cards** — Net Worth and Spending cards now use `Theme.Glass`'s translucent material + tinted gradient + shadow (tokens added in a prior PR), replacing the flat opacity-tint background. The now-dead `Theme.Colors.netWorthCardBackground`/`spendingCardBackground` tokens are removed, along with their `docs/design-system.md` entries; verified visually in both light and Dark Mode.
 - **Category-colored budget progress bars, app-wide** — Dashboard, `BudgetListView`, and `BudgetDetailView` progress bars now tint by `Category.colorHex` instead of a uniform accent color (over-budget red still overrides), reusing the same `Color(hex:)` mechanism `AccountRow` already uses for account icons.
 - **Dashboard spending-by-category chart** — new `Chart`/`BarMark` section showing this month's spend grouped by category, reusing `Theme.Charts.spendingBar` (same convention as `BudgetDetailView`'s existing spending chart). `DashboardViewModel.categorySpending` aggregation reuses `BudgetCalculationService.totalSpent(transactions:)` rather than reimplementing the debit-sum rule inline.
 
