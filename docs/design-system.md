@@ -13,9 +13,7 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 | `positive` | `.green` | Income amounts, credit transactions, available budget, positive balances |
 | `destructive` | `.red` | Over-budget, negative balances, delete actions |
 | `transfer` | `.blue` | Transfer transaction amounts |
-| `netWorthCardBackground` | `.teal.opacity(0.12)` | *Legacy* — flat net worth card background, superseded by `Theme.Glass.netWorthTint`; still referenced by `DashboardView` until that view is refactored onto Glass Cards |
-| `spendingCardBackground` | `.orange.opacity(0.08)` | *Legacy* — flat spending card background, superseded by `Theme.Glass.spendingTint`; still referenced by `DashboardView` until that view is refactored onto Glass Cards |
-| `primaryInteractive` | `.accentColor` | Progress bars, buttons, decorative call-to-action icons |
+| `primaryInteractive` | `.accentColor` | Buttons, decorative call-to-action icons; progress-bar fallback when a category's `colorHex` fails to parse |
 
 ---
 
@@ -57,16 +55,7 @@ All visual constants live in `FinanceTracker/Theme/`. Every view must use these 
 ### Card
 A tappable or informational surface with a colored background.
 
-```swift
-VStack { ... }
-    .padding()                                      // Theme.Spacing.cardPadding
-    .background(Theme.Colors.netWorthCardBackground)
-    .cornerRadius(Theme.Spacing.cornerRadiusCardLarge)
-    .frame(maxWidth: .infinity, alignment: .leading)
-```
-
-- Hero card (Dashboard Net Worth / Spending): see **Glass Cards** below — supersedes the flat-tint treatment
-- Secondary card elsewhere: `cornerRadiusCard` (12pt), flat tint background (e.g. `spendingCardBackground`)
+Dashboard's Net Worth and Spending cards — the only two hero-level cards in the app — both use the **Glass Cards** pattern below. There is currently no other card component in the app, so there is no separate flat-tint "Card" pattern to document; if a future screen needs a simple flat-tint card, `cornerRadiusCard`/`cornerRadiusCardLarge` from Spacing remain available with any semantic `Theme.Colors` background token.
 
 ### Row
 A list item with a leading label block and a trailing value.
@@ -111,11 +100,11 @@ ContentUnavailableView(
 ```
 
 ### Progress Bar
-Used in budget rows and detail views.
+Used in budget rows and detail views (Dashboard's `BudgetProgressCard`, `BudgetListView`, `BudgetDetailView`). Tints by the budget's category color rather than a uniform accent, falling back to `primaryInteractive` if the category's hex fails to parse.
 
 ```swift
 ProgressView(value: min(progress.percentUsed, 1.0))
-    .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+    .tint(progress.isOverBudget ? Theme.Colors.destructive : (Color(hex: budget.category.colorHex) ?? Theme.Colors.primaryInteractive))
     .padding(.vertical, Theme.Spacing.compact)
 ```
 
@@ -130,8 +119,8 @@ ProgressView(value: min(progress.percentUsed, 1.0))
 | Token | Value | Meaning |
 |---|---|---|
 | `balanceLine` | `.teal` | Stroke colour for the running balance line chart in AccountDetailView |
-| `balanceAreaFill` | `.teal.opacity(0.08)` | Gradient fill under the balance line — same hue as `netWorthCardBackground` at lower opacity |
-| `spendingBar` | `.orange` | Bar fill for the spending breakdown chart in BudgetDetailView — echoes `spendingCardBackground` |
+| `balanceAreaFill` | `.teal.opacity(0.08)` | Gradient fill under the balance line — same hue as `Theme.Glass.netWorthTint` |
+| `spendingBar` | `.orange` | Bar fill for the spending breakdown chart in BudgetDetailView and the Dashboard category chart — echoes `Theme.Glass.spendingTint` |
 | `gridLine` | `Color(.separator)` | Chart axis grid lines; system colour so it respects dark mode automatically |
 
 ### Sizes

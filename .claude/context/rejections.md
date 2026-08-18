@@ -2,6 +2,18 @@
 
 <!-- Append one entry per violation per PR. Never edit past entries. -->
 
+## 2026-08-18 — PR#98 — DashboardViewModel.categorySpending duplicated a filter pass and reimplemented debit-summation instead of reusing BudgetCalculationService
+**What was wrong:** The first draft of `categorySpending`'s aggregation re-scanned `allTransactions` with a near-duplicate predicate to `spendingThisMonth`'s existing filter (only adding `$0.category != nil`), and summed each category group's transactions with an inline `.reduce(Decimal.zero) { $0 + $1.amount }` instead of calling `BudgetCalculationService.totalSpent(transactions:)`, which the same class already holds as `budgetCalcService` and uses for `budgetProgresses` two lines later. Left as-is, "what counts as spending" would have lived in 3 places in one file, able to silently diverge.
+**Rule violated:** No formal rule — caught pre-review by `/simplify`'s reuse, simplification, efficiency, and altitude agents (all 4 independently flagged variants of the same duplication).
+**File:** `FinanceTracker/ViewModels/DashboardViewModel.swift:61-73` (now filters `allTransactions` once into `thisMonthDebits` and calls `budgetCalcService.totalSpent` for both `spendingThisMonth` and each category group)
+**Caught by:** /simplify
+
+## 2026-08-18 — PR#98 — DashboardView's two Glass Cards hand-rolled the same background+shadow recipe twice
+**What was wrong:** `netWorthCard` and `spendingCard` each inlined an identical 5-statement `RoundedRectangle.fill(cardMaterial).overlay(RoundedRectangle.fill(tint))` + `.shadow(...)` block, differing only in corner-radius and tint tokens — duplication introduced by the diff itself (the file had no prior `.background(` shape composition to follow). All 4 `/simplify` agents flagged it as a reuse/simplification/altitude issue: a third glass card anywhere in the app would likely become a third copy-paste rather than a call into shared infrastructure.
+**Rule violated:** No formal rule — caught pre-review by `/simplify`'s reuse, simplification, efficiency, and altitude agents (efficiency's specific shadow-rasterization suggestion was evaluated and skipped as speculative/unverified without profiling; the duplication finding was fixed).
+**File:** `FinanceTracker/Views/Dashboard/DashboardView.swift` (extracted a private `View.glassCardBackground(cornerRadius:tint:)` modifier, both cards now call it)
+**Caught by:** /simplify
+
 ## 2026-08-16 — PR#91 — @Observable stored cache/counter fields not marked @ObservationIgnored
 **What was wrong:** `TransactionViewModel.filteredTransactions`'s new memoization added `cachedFilteredTransactions` and `filterComputeCount` as plain stored properties on an `@Observable` class. `filteredTransactions` reads `cachedFilteredTransactions` (registering it as an observation dependency) then writes to both it and `filterComputeCount` within the same call — a read-then-write of a tracked property in one call is a known `@Observable` footgun that can schedule a redundant re-render right after the one that just ran, partially defeating the point of memoizing.
 **Rule violated:** No formal rule — caught pre-review by `/simplify`'s efficiency-angle agent.

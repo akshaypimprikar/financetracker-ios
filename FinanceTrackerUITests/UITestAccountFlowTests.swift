@@ -15,4 +15,10 @@ final class UITestAccountFlowTests: UITestBase {
 
         XCTAssertTrue(app.staticTexts["Test Checking"].waitForExistence(timeout: timeout))
     }
+
+    func testEmptyStateShowsWhenNoAccountsExist() {
+        app.tabBars.firstMatch.buttons["Accounts"].tap()
+        XCTAssertTrue(app.navigationBars["Accounts"].waitForExistence(timeout: timeout))
+        XCTAssertTrue(app.staticTexts["No Accounts Yet"].waitForExistence(timeout: timeout))
+    }
 }

@@ -69,4 +69,58 @@ struct DashboardViewModelTests {
 
         #expect(vm.recentTransactions.count == 5)
     }
+
+    @Test func categorySpendingGroupsDebitsByCategoryForCurrentMonth() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        let groceries = Category(name: "Groceries", type: .expense)
+        let dining = Category(name: "Dining", type: .expense)
+        ctx.insert(account)
+        ctx.insert(groceries)
+        ctx.insert(dining)
+        ctx.insert(Transaction(date: .now, amount: 40, payee: "Store",
+                               type: .debit, account: account, category: groceries))
+        ctx.insert(Transaction(date: .now, amount: 10, payee: "Store2",
+                               type: .debit, account: account, category: groceries))
+        ctx.insert(Transaction(date: .now, amount: 25, payee: "Cafe",
+                               type: .debit, account: account, category: dining))
+        try ctx.save()
+
+        let vm = DashboardViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            budgetRepo: SwiftDataBudgetRepository(context: ctx)
+        )
+        try vm.load()
+
+        #expect(vm.categorySpending.count == 2)
+        let groceriesSpend = vm.categorySpending.first { $0.category.id == groceries.id }
+        #expect(groceriesSpend?.amount == 50)
+        let diningSpend = vm.categorySpending.first { $0.category.id == dining.id }
+        #expect(diningSpend?.amount == 25)
+    }
+
+    @Test func categorySpendingExcludesCreditAndUncategorizedTransactions() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let account = Account(name: "Checking", type: .checking)
+        let salary = Category(name: "Salary", type: .income)
+        ctx.insert(account)
+        ctx.insert(salary)
+        ctx.insert(Transaction(date: .now, amount: 1000, payee: "Payroll",
+                               type: .credit, account: account, category: salary))
+        ctx.insert(Transaction(date: .now, amount: 20, payee: "Uncategorized Purchase",
+                               type: .debit, account: account))
+        try ctx.save()
+
+        let vm = DashboardViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            budgetRepo: SwiftDataBudgetRepository(context: ctx)
+        )
+        try vm.load()
+
+        #expect(vm.categorySpending.isEmpty)
+    }
 }
