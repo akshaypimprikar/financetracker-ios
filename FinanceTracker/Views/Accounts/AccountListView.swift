@@ -14,47 +14,55 @@ struct AccountListView: View {
     var body: some View {
         let netWorth = viewModel.netWorth()
         List {
-            Section {
-                HStack {
-                    Text("Net Worth")
-                    Spacer()
-                    Text(netWorth, format: .currency(code: viewModel.currency))
-                        .bold()
-                        .foregroundStyle(netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
-                }
-            }
-
-            if !assets.isEmpty {
-                Section("Assets") {
-                    ForEach(assets) { account in
-                        NavigationLink {
-                            AccountDetailView(account: account, viewModel: viewModel)
-                        } label: {
-                            AccountRow(account: account,
-                                       balance: viewModel.balance(for: account))
-                        }
-                    }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            try? viewModel.delete(assets[index])
-                        }
+            if assets.isEmpty && liabilities.isEmpty {
+                ContentUnavailableView(
+                    "No Accounts Yet",
+                    systemImage: "building.columns",
+                    description: Text("Tap + to add your first account.")
+                )
+            } else {
+                Section {
+                    HStack {
+                        Text("Net Worth")
+                        Spacer()
+                        Text(netWorth, format: .currency(code: viewModel.currency))
+                            .bold()
+                            .foregroundStyle(netWorth >= 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.Colors.destructive))
                     }
                 }
-            }
 
-            if !liabilities.isEmpty {
-                Section("Liabilities") {
-                    ForEach(liabilities) { account in
-                        NavigationLink {
-                            AccountDetailView(account: account, viewModel: viewModel)
-                        } label: {
-                            AccountRow(account: account,
-                                       balance: viewModel.balance(for: account))
+                if !assets.isEmpty {
+                    Section("Assets") {
+                        ForEach(assets) { account in
+                            NavigationLink {
+                                AccountDetailView(account: account, viewModel: viewModel)
+                            } label: {
+                                AccountRow(account: account,
+                                           balance: viewModel.balance(for: account))
+                            }
+                        }
+                        .onDelete { indexSet in
+                            for index in indexSet {
+                                try? viewModel.delete(assets[index])
+                            }
                         }
                     }
-                    .onDelete { indexSet in
-                        for index in indexSet {
-                            try? viewModel.delete(liabilities[index])
+                }
+
+                if !liabilities.isEmpty {
+                    Section("Liabilities") {
+                        ForEach(liabilities) { account in
+                            NavigationLink {
+                                AccountDetailView(account: account, viewModel: viewModel)
+                            } label: {
+                                AccountRow(account: account,
+                                           balance: viewModel.balance(for: account))
+                            }
+                        }
+                        .onDelete { indexSet in
+                            for index in indexSet {
+                                try? viewModel.delete(liabilities[index])
+                            }
                         }
                     }
                 }
