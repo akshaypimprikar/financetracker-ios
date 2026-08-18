@@ -167,7 +167,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.tool_input.command // empty' | { read -r cmd; echo \"$cmd\" | grep -qE '^gh pr create' && grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' \"$SETTINGS\" 2>/dev/null && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific junk (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before this PR ships it.\"}' || true; } 2>/dev/null || true"
+            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.tool_input.command // empty' | { read -r cmd; echo \"$cmd\" | grep -qE '^gh pr create' && jq -r '.permissions.allow[]' \"$SETTINGS\" 2>/dev/null | grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific junk (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before this PR ships it.\"}' || true; } 2>/dev/null || true"
           }
         ]
       }
@@ -177,7 +177,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' \"$SETTINGS\" 2>/dev/null && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific entries (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before your next session.\"}' || true"
+            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.permissions.allow[]' \"$SETTINGS\" 2>/dev/null | grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific entries (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before your next session.\"}' || true"
           }
         ]
       }
