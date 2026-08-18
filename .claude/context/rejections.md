@@ -2,6 +2,12 @@
 
 <!-- Append one entry per violation per PR. Never edit past entries. -->
 
+## 2026-08-18 — PR#99 — New junk-detection hooks self-matched their own stored command text
+**What was wrong:** The `PreToolUse`/`SessionEnd` hooks added to detect leftover session-specific junk in `.claude/settings.json` grepped the *entire raw file* for the exact literal pattern (`/private/tmp/claude-`, `"pid":[0-9]`, etc.) that the hook's own `command` string — itself stored inside that same file — also contains verbatim. The hooks matched themselves on every single run, reporting "junk detected" unconditionally, including immediately after a clean prune, making the feature permanently useless. `/review` approved the PR before this was caught, since it only confirms gates/design/code-quality checks, not runtime behavior of new hook logic.
+**Rule violated:** No formal rule — caught by `code-review:code-review`, independently across its shallow-bug-scan and code-comment-compliance passes.
+**File:** `.claude/settings.json:170,180` (fixed by scoping the grep to `jq -r '.permissions.allow[]'` instead of the raw file, so the hooks' own command text under `.hooks` is never part of what gets scanned)
+**Caught by:** code-review:code-review
+
 ## 2026-08-18 — PR#98 — DashboardViewModel.categorySpending duplicated a filter pass and reimplemented debit-summation instead of reusing BudgetCalculationService
 **What was wrong:** The first draft of `categorySpending`'s aggregation re-scanned `allTransactions` with a near-duplicate predicate to `spendingThisMonth`'s existing filter (only adding `$0.category != nil`), and summed each category group's transactions with an inline `.reduce(Decimal.zero) { $0 + $1.amount }` instead of calling `BudgetCalculationService.totalSpent(transactions:)`, which the same class already holds as `budgetCalcService` and uses for `budgetProgresses` two lines later. Left as-is, "what counts as spending" would have lived in 3 places in one file, able to silently diverge.
 **Rule violated:** No formal rule — caught pre-review by `/simplify`'s reuse, simplification, efficiency, and altitude agents (all 4 independently flagged variants of the same duplication).
