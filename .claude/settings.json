@@ -134,7 +134,8 @@
     ],
     "ask": [
       "Bash(mcporter call linkedin.connect_with_person*)",
-      "Bash(mcporter call linkedin.send_message*)"
+      "Bash(mcporter call linkedin.send_message*)",
+      "Bash(rdt comment*)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
