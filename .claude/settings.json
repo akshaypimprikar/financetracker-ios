@@ -135,7 +135,13 @@
     "ask": [
       "Bash(mcporter call linkedin.connect_with_person*)",
       "Bash(mcporter call linkedin.send_message*)",
-      "Bash(rdt comment*)"
+      "Bash(rdt comment*)",
+      "Bash(twitter post*)",
+      "Bash(twitter reply*)",
+      "Bash(twitter quote*)",
+      "Bash(twitter retweet*)",
+      "Bash(twitter delete*)",
+      "Bash(twitter follow*)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
