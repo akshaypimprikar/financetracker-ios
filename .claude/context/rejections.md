@@ -55,3 +55,9 @@
 **Rule violated:** No formal rule — caught pre-review by `code-review:code-review` (both issues scored 100/100 confidence).
 **File:** `.claude/commands/sync-workflow.md` (step 5 intro; step 5c)
 **Caught by:** code-review:code-review
+
+## 2026-08-19 — PR#100 — permissions.ask wildcards missing word boundary, one caused a real collision
+**What was wrong:** The 9 new `permissions.ask` entries gating Agent Reach write actions (LinkedIn/Reddit/Twitter) all glued the trailing `*` directly onto the command with no space, breaking this file's unanimous existing convention (`Bash(<command> *)`, e.g. `Bash(gh pr *)`, `Bash(git merge *)`). One instance was a real, verified collision, not just a stylistic gap: `Bash(twitter follow*)` matched any command starting with the literal text "twitter follow", which includes the unrelated read-only commands `twitter followers` and `twitter following` — forcing an unnecessary approval prompt on reads, contradicting the PR's own claim that read-only calls are unaffected. `/review` approved the PR before this was caught, since it only checks architecture/design/code-quality against CLAUDE.md, not runtime prefix-match behavior of new permission rules.
+**Rule violated:** No formal rule — caught by `code-review:code-review`, independently by two of five review agents (historical-context/rejections.md-history angle and code-comment/file-convention angle), converging on the same root cause from different directions.
+**File:** `.claude/settings.json:135-144` and `~/.claude/settings.json` (global copy) — fixed by adding a space before the wildcard on all 9 entries, commit 88e6ce2
+**Caught by:** code-review:code-review
