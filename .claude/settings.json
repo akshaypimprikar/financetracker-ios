@@ -132,6 +132,10 @@
       "mcp__XcodeBuildMCP__session_show_defaults",
       "Bash(git merge *)"
     ],
+    "ask": [
+      "Bash(mcporter call linkedin.connect_with_person*)",
+      "Bash(mcporter call linkedin.send_message*)"
+    ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
       "/Users/akshaypimprikar/.claude/skills",
