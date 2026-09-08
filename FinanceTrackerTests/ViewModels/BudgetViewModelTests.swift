@@ -230,4 +230,32 @@ struct BudgetViewModelTests {
             try vm.load()
         }
     }
+
+    @Test func loadDoesNotMutateCategoriesWhenBudgetFetchFailsAfterCategoriesSucceed() throws {
+        // Regression test for a partial-mutation bug: `categories` used to be assigned
+        // immediately after `categoryRepo.fetchAll()` succeeded, before `budgetRepo`/
+        // `transactionRepo` were even called — so a later throw left `categories`
+        // updated while `budgets`/`unbudgetedCategories` (derived from it) stayed
+        // stale. `load()` now only publishes state after every fetch has succeeded.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let category = Category(name: "Food", type: .expense)
+        ctx.insert(category)
+        try ctx.save()
+
+        let vm = BudgetViewModel(
+            budgetRepo: FailingBudgetRepo(),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        #expect(vm.categories.isEmpty)
+        #expect(throws: FailingBudgetRepo.RepoError.self) {
+            try vm.load()
+        }
+        // categoryRepo genuinely has "Food" — if categories were assigned before the
+        // budgetRepo throw (the old bug), this would now be non-empty.
+        #expect(vm.categories.isEmpty)
+        #expect(vm.budgets.isEmpty)
+    }
 }

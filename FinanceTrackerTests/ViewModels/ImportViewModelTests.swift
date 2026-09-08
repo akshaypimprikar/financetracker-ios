@@ -112,6 +112,21 @@ struct ImportViewModelTests {
         #expect(vm.importFailure == .mappingFailed)
     }
 
+    @Test func markLoadFailedSetsLoadFailedImportFailure() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        #expect(vm.importFailure == nil)
+        vm.markLoadFailed()
+        #expect(vm.importFailure == .loadFailed)
+    }
+
     @Test func startImportChunksAndReportsCompletionProgress() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)

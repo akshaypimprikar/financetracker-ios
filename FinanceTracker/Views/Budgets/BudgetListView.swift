@@ -22,11 +22,7 @@ struct BudgetListView: View {
                     loadTask = Task {
                         try? await Task.sleep(for: Self.monthChangeDebounce)
                         guard !Task.isCancelled else { return }
-                        do {
-                            try viewModel.load()
-                        } catch {
-                            viewModel.markLoadFailed()
-                        }
+                        loadBudgets()
                     }
                 }
             }
@@ -50,7 +46,11 @@ struct BudgetListView: View {
                     }
                     .onDelete { indexSet in
                         for index in indexSet {
-                            try? viewModel.delete(viewModel.budgets[index].0)
+                            do {
+                                try viewModel.delete(viewModel.budgets[index].0)
+                            } catch {
+                                viewModel.markLoadFailed()
+                            }
                         }
                     }
                 }
@@ -66,16 +66,10 @@ struct BudgetListView: View {
         .sheet(isPresented: $isPresentingAdd) {
             AddBudgetSheet(viewModel: viewModel, categoryVM: categoryVM)
         }
-        .onAppear {
-            do {
-                try viewModel.load()
-            } catch {
-                viewModel.markLoadFailed()
-            }
-        }
+        .onAppear { loadBudgets() }
         .onDisappear { loadTask?.cancel() }
         .alert(
-            "Couldn't Load Budgets",
+            "Couldn't Update Budgets",
             isPresented: Binding(
                 get: { viewModel.loadFailed },
                 set: { isPresented in
@@ -85,7 +79,20 @@ struct BudgetListView: View {
         ) {
             Button("OK") { }
         } message: {
-            Text("Budgets for this month couldn't be loaded. Try again.")
+            Text("Something went wrong loading or updating your budgets. Try again.")
+        }
+    }
+
+    /// Shared by the debounced month-change reload and the initial `onAppear` load —
+    /// one place owns "load failed, tell the user" so the two call sites can't drift
+    /// out of sync. `.onDelete` above calls `markLoadFailed()` directly instead (a
+    /// delete failure isn't a load failure, but reuses the same alert rather than
+    /// adding a second failure state for one extra call site).
+    private func loadBudgets() {
+        do {
+            try viewModel.load()
+        } catch {
+            viewModel.markLoadFailed()
         }
     }
 }

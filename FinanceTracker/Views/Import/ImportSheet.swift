@@ -47,7 +47,11 @@ struct ImportSheet: View {
             // Re-fetch categories/accounts every time this sheet opens, not just once
             // at app launch — otherwise a category added in Settings (or by a prior
             // import session) wouldn't show up here until an app relaunch.
-            try? viewModel.load()
+            do {
+                try viewModel.load()
+            } catch {
+                viewModel.markLoadFailed()
+            }
         }
         .onDisappear {
             // Same cleanup as the toolbar Cancel button — swipe-to-dismiss shouldn't
@@ -81,6 +85,8 @@ struct ImportSheet: View {
             return "All \(pluralized(count)) were imported successfully, but the import summary couldn't be saved."
         case .mappingFailed:
             return "The file couldn't be read with this column mapping. Check that the columns match your CSV and try again."
+        case .loadFailed:
+            return "Your accounts and categories couldn't be loaded. Close and reopen to try again."
         }
     }
 
@@ -265,10 +271,14 @@ struct ImportSheet: View {
                     Task {
                         do {
                             try await viewModel.applyMapping(mapping)
+                            // Only on success — on failure, pendingTransactions still
+                            // holds a prior attempt's (or nothing's) rows, and running
+                            // the on-device suggester over stale data wastes a model
+                            // call per unique payee for nothing the user asked for.
+                            await viewModel.loadSuggestions()
                         } catch {
                             viewModel.markMappingFailed()
                         }
-                        await viewModel.loadSuggestions()
                     }
                 }
                 .frame(maxWidth: .infinity)
