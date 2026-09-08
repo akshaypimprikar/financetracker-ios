@@ -1,12 +1,16 @@
 # PR Followup Agent
 
-Auto-chains `/review` then `/test` immediately after a PR is opened — the two
-pipeline stages that can run without a human trigger.
+Auto-chains `/review`, `/test`, and `code-review:code-review` immediately
+after a PR is opened — none of the three need a human trigger.
 
-`code-review:code-review` is deliberately excluded: it has
-`disable-model-invocation` set and does not appear in the agent-invocable skill
-list at all, so no agent-driven path — this command included — can trigger it
-(confirmed 2026-07-30, on FinanceTracker PRs #67-#70). It must be run manually.
+Note: `code-review:code-review` can be configured per-project with
+`disable-model-invocation`, which removes it from the agent-invocable skill
+list entirely — if your project has that set, step 4 below catches the
+invocation error and continues to reporting rather than halting the whole
+command; you'll still need to run the skill yourself before merging. That's
+a project-config issue to fix, not the expected default. (This was true for
+FinanceTracker on 2026-07-30, confirmed on PRs #67-70; it was not true as of
+PR #100, 2026-08-19 — check current behavior before assuming either state.)
 
 ## Trigger
 Invoked right after `gh pr create` succeeds, or manually against an existing
@@ -14,13 +18,18 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
 
 ## Process
 1. Run `/review <PR>`.
-2. If the verdict is **CHANGES REQUESTED**, stop — do not run `/test` until the
-   issues are addressed and the branch is re-reviewed.
+2. If the verdict is **CHANGES REQUESTED**, stop — do not run `/test` or
+   `code-review:code-review` until the issues are addressed and the branch is
+   re-reviewed.
 3. If the verdict is **APPROVED**, run `/test <PR>`.
-4. Report both verdicts, then print exactly this line:
-   `⚠️ code-review:code-review still needs to run manually — it can't be triggered by an agent. Run it yourself before merging.`
+4. Run `code-review:code-review` against the PR. If the invocation errors
+   (e.g. `Unknown skill`, on a project with `disable-model-invocation` set),
+   don't stall — print this line instead and continue to step 5:
+   `⚠️ code-review:code-review couldn't be agent-invoked on this project (disable-model-invocation?) — run it yourself before merging.`
+5. Report all three verdicts (or the fallback warning in place of the third).
 
 ## Done when
-`/review` and `/test` have both reported and the code-review reminder has been
-printed. Do not merge — per CLAUDE.md's Merge rule, merging is the user's call
-once all three (review, test, code-review) are clean.
+`/review` and `/test` have reported, and `code-review:code-review` has either
+reported or (on a `disable-model-invocation` setup) printed the fallback
+warning. Do not merge — per CLAUDE.md's Merge rule, merging is the user's
+call once every configured check is clean.
