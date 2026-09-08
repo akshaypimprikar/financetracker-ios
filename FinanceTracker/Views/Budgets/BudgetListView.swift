@@ -22,7 +22,11 @@ struct BudgetListView: View {
                     loadTask = Task {
                         try? await Task.sleep(for: Self.monthChangeDebounce)
                         guard !Task.isCancelled else { return }
-                        try? viewModel.load()
+                        do {
+                            try viewModel.load()
+                        } catch {
+                            viewModel.markLoadFailed()
+                        }
                     }
                 }
             }
@@ -62,8 +66,27 @@ struct BudgetListView: View {
         .sheet(isPresented: $isPresentingAdd) {
             AddBudgetSheet(viewModel: viewModel, categoryVM: categoryVM)
         }
-        .onAppear { try? viewModel.load() }
+        .onAppear {
+            do {
+                try viewModel.load()
+            } catch {
+                viewModel.markLoadFailed()
+            }
+        }
         .onDisappear { loadTask?.cancel() }
+        .alert(
+            "Couldn't Load Budgets",
+            isPresented: Binding(
+                get: { viewModel.loadFailed },
+                set: { isPresented in
+                    if !isPresented { viewModel.dismissLoadFailure() }
+                }
+            )
+        ) {
+            Button("OK") { }
+        } message: {
+            Text("Budgets for this month couldn't be loaded. Try again.")
+        }
     }
 }
 

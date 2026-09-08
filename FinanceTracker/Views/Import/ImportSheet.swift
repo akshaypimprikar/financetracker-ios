@@ -79,6 +79,8 @@ struct ImportSheet: View {
                 : "The import could not be completed. No transactions were imported."
         case .recordSaveFailed(let count):
             return "All \(pluralized(count)) were imported successfully, but the import summary couldn't be saved."
+        case .mappingFailed:
+            return "The file couldn't be read with this column mapping. Check that the columns match your CSV and try again."
         }
     }
 
@@ -261,7 +263,11 @@ struct ImportSheet: View {
                         hasHeader: hasHeader
                     )
                     Task {
-                        try? await viewModel.applyMapping(mapping)
+                        do {
+                            try await viewModel.applyMapping(mapping)
+                        } catch {
+                            viewModel.markMappingFailed()
+                        }
                         await viewModel.loadSuggestions()
                     }
                 }

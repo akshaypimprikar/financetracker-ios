@@ -5,6 +5,7 @@ import Observation
 final class BudgetViewModel {
     private(set) var budgets: [(Budget, BudgetProgress)] = []
     private(set) var categories: [Category] = []
+    private(set) var loadFailed: Bool = false
     var selectedMonth: Date = {
         let cal = Calendar.current
         return cal.date(from: cal.dateComponents([.year, .month], from: .now)) ?? .now
@@ -53,6 +54,17 @@ final class BudgetViewModel {
         }
         let budgetedIDs = Set(budgets.map { $0.0.category.id })
         unbudgetedCategories = categories.filter { !budgetedIDs.contains($0.id) }
+    }
+
+    /// Sets the load-failure alert state. Callers that previously used `try? load()`
+    /// (silently dropping the error) should call this from their own `catch` instead
+    /// — `load()` itself keeps throwing so its existing callers and tests are unaffected.
+    func markLoadFailed() {
+        loadFailed = true
+    }
+
+    func dismissLoadFailure() {
+        loadFailed = false
     }
 
     enum BudgetError: Error {

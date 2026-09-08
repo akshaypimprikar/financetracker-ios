@@ -197,4 +197,37 @@ struct BudgetViewModelTests {
         )
         #expect(!unavailable.suggestionsAvailable)
     }
+
+    @Test func markLoadFailedSetsLoadFailedAndDismissClearsIt() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let vm = BudgetViewModel(
+            budgetRepo: SwiftDataBudgetRepository(context: ctx),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        #expect(!vm.loadFailed)
+        vm.markLoadFailed()
+        #expect(vm.loadFailed)
+        vm.dismissLoadFailure()
+        #expect(!vm.loadFailed)
+    }
+
+    @Test func loadStillThrowsWhenRepoFetchFails() throws {
+        // Mirrors BudgetListView's own do/catch around `load()`: the ViewModel keeps
+        // throwing (unchanged contract), and the caller calls `markLoadFailed()` — see
+        // previous test for that half.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let vm = BudgetViewModel(
+            budgetRepo: FailingBudgetRepo(),
+            transactionRepo: SwiftDataTransactionRepository(context: ctx),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        #expect(throws: FailingBudgetRepo.RepoError.self) {
+            try vm.load()
+        }
+    }
 }

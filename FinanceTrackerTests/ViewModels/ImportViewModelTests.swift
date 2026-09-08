@@ -71,6 +71,47 @@ struct ImportViewModelTests {
         #expect(vm.pendingTransactions[0].payee == "Grocery")
     }
 
+    @Test func applyMappingStillThrowsOnExistingHashesFailure() async throws {
+        // Mirrors ImportSheet's own do/catch around `applyMapping()`: the ViewModel
+        // keeps throwing (unchanged contract for existing callers), and the caller is
+        // responsible for calling `markMappingFailed()` to surface it — see next test.
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
+        await fake.setFailNextExistingHashes(TransactionImportError.accountNotFound)
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        let csv = "date,amount,payee\n2026-05-01,25.50,Coffee Shop"
+        vm.loadCSV(csv)
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        await #expect(throws: TransactionImportError.self) {
+            try await vm.applyMapping(mapping)
+        }
+        #expect(vm.step == .columnMapping)
+    }
+
+    @Test func markMappingFailedSetsMappingFailedImportFailure() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        #expect(vm.importFailure == nil)
+        vm.markMappingFailed()
+        #expect(vm.importFailure == .mappingFailed)
+    }
+
     @Test func startImportChunksAndReportsCompletionProgress() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
