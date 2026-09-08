@@ -24,6 +24,7 @@ Compare each file in `/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/comma
 - App-specific content (hardcoded file paths, model names, protocol names) that should use `<AppName>` / `<Model>` / `<RepositoryProtocol>` placeholders — **High**
 - Command files that exist in FinanceTracker but have no template equivalent — **Medium**
 - Logic improvements in FinanceTracker commands not yet back-ported to the template — **Low**
+- Logic improvements present in the pragma template but not yet pulled into FinanceTracker — **Low** (`/sync-workflow` only pushes FinanceTracker → pragma; check this direction manually since no command pulls it automatically)
 
 ### 3. CLAUDE.md token budget
 Count lines in `CLAUDE.md`. Target: ≤50 lines.
