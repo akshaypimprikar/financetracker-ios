@@ -52,4 +52,4 @@ The plan must be executable by a subagent with no prior context. Every task need
 - UI tests: `FinanceTrackerUITests/`
 
 ## Done when
-The user reviews and approves the plan. Then hand off to `/feature`. After the PR is open, `/review` runs first; once it passes, `/test` runs (`code-review:code-review` is manual — it can't be agent-invoked).
+The user reviews and approves the plan. Then hand off to `/feature`. After the PR is open, `/pr-followup` chains `/review`, then `/test`, then `code-review:code-review`, in that order, not in parallel.
