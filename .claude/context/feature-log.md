@@ -2,6 +2,11 @@
 
 <!-- Append one entry per release. Never edit past entries. -->
 
+## v1.3.0 — 2026-09-09
+**Features added:** UI Appeal Pass — Dashboard adopts Glass Cards (`Theme.Glass`), category-colored budget progress bars app-wide, new Dashboard spending-by-category chart, Accounts tab empty state, `AccountType.displayName` fixing the "Creditcard" label bug; `DemoDataSeeder` now covers 3 months of history plus an over-budget category. Ported 4 pragma pipeline improvements (Apple-docs-as-Markdown fetch, `.claude/context/incidents.md` bug log, `/benchmark` command, `scripts/slim_simulator.sh` CI simulator memory slimming).
+**Key files changed:** `DashboardView.swift`, `Theme/Glass.swift`, `Theme/Colors.swift`, `BudgetListView.swift`, `BudgetDetailView.swift`, `DashboardViewModel.swift`, `AccountListView.swift`, `AccountDetailView.swift`, `AccountType.swift`, `DemoDataSeeder.swift`, `BudgetViewModel.swift`, `ImportViewModel.swift`, `ImportSheet.swift`, `TransactionImportActor.swift`, `scripts/select_simulator.py`, `.claude/settings.json`, `.claude/commands/*.md`
+**Key architectural decisions:** `BudgetViewModel.load()`/`ImportViewModel` now only publish state after every underlying fetch succeeds, closing a partial-mutation window surfaced by the `Task {}` silent-throw audit — a pattern worth reusing for any future ViewModel with multiple sequential fetches feeding derived published state.
+
 ## v1.2.2 — 2026-08-17
 **Features added:** None — perf/fix release. Re-render cleanup pass: memoized `TransactionViewModel.filteredTransactions`, `AccountListView` computes `netWorth()` once per render instead of twice, `BudgetListView` month-change reload debounced (150ms), unused `@Bindable` dropped from `BudgetDetailView`/`TransactionDetailView`; fixed the `UITestImportFlowTests` simulator-launch failure (corrupt SpringBoard state, not app code) and pinned `OS=26.4.1` explicitly in the destination string to disambiguate two installed "iPhone 17" simulators.
 **Key files changed:** `TransactionViewModel.swift`, `AccountListView.swift`, `BudgetListView.swift`, `BudgetDetailView.swift`, `TransactionDetailView.swift`, `CLAUDE.md`, `README.md`, `.claude/commands/*.md`
