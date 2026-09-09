@@ -14,6 +14,7 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
     private var delayPerChunk: Duration?
     private var failNextSave: Error?
     private var failAfterSuccesses: Int?
+    private var failExistingHashes: Error?
 
     private var chunkStartCount = 0
     private var chunkStartWaiters: [(threshold: Int, continuation: CheckedContinuation<Void, Never>)] = []
@@ -50,8 +51,17 @@ actor FakeTransactionImportWriting: TransactionImportWriting {
         failAfterSuccesses = count
     }
 
+    /// One-shot failure for the next `existingHashes()` call — mirrors `setFailNextSave`.
+    func setFailNextExistingHashes(_ error: Error) {
+        failExistingHashes = error
+    }
+
     func existingHashes() async throws -> Set<String> {
-        _existingHashes
+        if let error = failExistingHashes {
+            failExistingHashes = nil
+            throw error
+        }
+        return _existingHashes
     }
 
     func save(chunk: [ParsedTransaction], accountID: UUID) async throws {
@@ -109,6 +119,14 @@ struct FailingImportRecordRepo: ImportRecordRepositoryProtocol {
     func fetchAll() throws -> [ImportRecord] { [] }
     func save(_ record: ImportRecord) throws { throw RepoError.saveFailed }
     func delete(_ record: ImportRecord) throws {}
+}
+
+struct FailingBudgetRepo: BudgetRepositoryProtocol {
+    enum RepoError: Error { case fetchFailed }
+    func fetchAll(for month: Date) throws -> [Budget] { throw RepoError.fetchFailed }
+    func fetch(for category: FinanceTracker.Category, in month: Date) throws -> Budget? { nil }
+    func save(_ budget: Budget) throws {}
+    func delete(_ budget: Budget) throws {}
 }
 
 /// Wraps a real CategoryRepositoryProtocol but throws on save() after `failAfter`

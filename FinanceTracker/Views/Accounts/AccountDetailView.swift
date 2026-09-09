@@ -21,7 +21,7 @@ struct AccountDetailView: View {
                 HStack {
                     Text("Type")
                     Spacer()
-                    Text(account.type.rawValue.capitalized)
+                    Text(account.type.displayName)
                         .foregroundStyle(.secondary)
                 }
                 HStack {

@@ -2,6 +2,24 @@
 
 <!-- Append one entry per violation per PR. Never edit past entries. -->
 
+## 2026-08-18 — PR#99 — New junk-detection hooks self-matched their own stored command text
+**What was wrong:** The `PreToolUse`/`SessionEnd` hooks added to detect leftover session-specific junk in `.claude/settings.json` grepped the *entire raw file* for the exact literal pattern (`/private/tmp/claude-`, `"pid":[0-9]`, etc.) that the hook's own `command` string — itself stored inside that same file — also contains verbatim. The hooks matched themselves on every single run, reporting "junk detected" unconditionally, including immediately after a clean prune, making the feature permanently useless. `/review` approved the PR before this was caught, since it only confirms gates/design/code-quality checks, not runtime behavior of new hook logic.
+**Rule violated:** No formal rule — caught by `code-review:code-review`, independently across its shallow-bug-scan and code-comment-compliance passes.
+**File:** `.claude/settings.json:170,180` (fixed by scoping the grep to `jq -r '.permissions.allow[]'` instead of the raw file, so the hooks' own command text under `.hooks` is never part of what gets scanned)
+**Caught by:** code-review:code-review
+
+## 2026-08-18 — PR#98 — DashboardViewModel.categorySpending duplicated a filter pass and reimplemented debit-summation instead of reusing BudgetCalculationService
+**What was wrong:** The first draft of `categorySpending`'s aggregation re-scanned `allTransactions` with a near-duplicate predicate to `spendingThisMonth`'s existing filter (only adding `$0.category != nil`), and summed each category group's transactions with an inline `.reduce(Decimal.zero) { $0 + $1.amount }` instead of calling `BudgetCalculationService.totalSpent(transactions:)`, which the same class already holds as `budgetCalcService` and uses for `budgetProgresses` two lines later. Left as-is, "what counts as spending" would have lived in 3 places in one file, able to silently diverge.
+**Rule violated:** No formal rule — caught pre-review by `/simplify`'s reuse, simplification, efficiency, and altitude agents (all 4 independently flagged variants of the same duplication).
+**File:** `FinanceTracker/ViewModels/DashboardViewModel.swift:61-73` (now filters `allTransactions` once into `thisMonthDebits` and calls `budgetCalcService.totalSpent` for both `spendingThisMonth` and each category group)
+**Caught by:** /simplify
+
+## 2026-08-18 — PR#98 — DashboardView's two Glass Cards hand-rolled the same background+shadow recipe twice
+**What was wrong:** `netWorthCard` and `spendingCard` each inlined an identical 5-statement `RoundedRectangle.fill(cardMaterial).overlay(RoundedRectangle.fill(tint))` + `.shadow(...)` block, differing only in corner-radius and tint tokens — duplication introduced by the diff itself (the file had no prior `.background(` shape composition to follow). All 4 `/simplify` agents flagged it as a reuse/simplification/altitude issue: a third glass card anywhere in the app would likely become a third copy-paste rather than a call into shared infrastructure.
+**Rule violated:** No formal rule — caught pre-review by `/simplify`'s reuse, simplification, efficiency, and altitude agents (efficiency's specific shadow-rasterization suggestion was evaluated and skipped as speculative/unverified without profiling; the duplication finding was fixed).
+**File:** `FinanceTracker/Views/Dashboard/DashboardView.swift` (extracted a private `View.glassCardBackground(cornerRadius:tint:)` modifier, both cards now call it)
+**Caught by:** /simplify
+
 ## 2026-08-16 — PR#91 — @Observable stored cache/counter fields not marked @ObservationIgnored
 **What was wrong:** `TransactionViewModel.filteredTransactions`'s new memoization added `cachedFilteredTransactions` and `filterComputeCount` as plain stored properties on an `@Observable` class. `filteredTransactions` reads `cachedFilteredTransactions` (registering it as an observation dependency) then writes to both it and `filterComputeCount` within the same call — a read-then-write of a tracked property in one call is a known `@Observable` footgun that can schedule a redundant re-render right after the one that just ran, partially defeating the point of memoizing.
 **Rule violated:** No formal rule — caught pre-review by `/simplify`'s efficiency-angle agent.
@@ -37,3 +55,27 @@
 **Rule violated:** No formal rule — caught pre-review by `code-review:code-review` (both issues scored 100/100 confidence).
 **File:** `.claude/commands/sync-workflow.md` (step 5 intro; step 5c)
 **Caught by:** code-review:code-review
+
+## 2026-08-19 — PR#100 — permissions.ask wildcards missing word boundary, one caused a real collision
+**What was wrong:** The 9 new `permissions.ask` entries gating Agent Reach write actions (LinkedIn/Reddit/Twitter) all glued the trailing `*` directly onto the command with no space, breaking this file's unanimous existing convention (`Bash(<command> *)`, e.g. `Bash(gh pr *)`, `Bash(git merge *)`). One instance was a real, verified collision, not just a stylistic gap: `Bash(twitter follow*)` matched any command starting with the literal text "twitter follow", which includes the unrelated read-only commands `twitter followers` and `twitter following` — forcing an unnecessary approval prompt on reads, contradicting the PR's own claim that read-only calls are unaffected. `/review` approved the PR before this was caught, since it only checks architecture/design/code-quality against CLAUDE.md, not runtime prefix-match behavior of new permission rules.
+**Rule violated:** No formal rule — caught by `code-review:code-review`, independently by two of five review agents (historical-context/rejections.md-history angle and code-comment/file-convention angle), converging on the same root cause from different directions.
+**File:** `.claude/settings.json:135-144` and `~/.claude/settings.json` (global copy) — fixed by adding a space before the wildcard on all 9 entries, commit 88e6ce2
+**Caught by:** code-review:code-review
+
+## 2026-09-08 — PR#105 — Round 1: overclaim about Gate 9's diff scope
+**What was wrong:** `parallel-review.md`'s Check 1, while porting pragma's converged fix, said Gate 9's commands "already use `git diff develop...HEAD`, the same scope this command needs," with no exception noted. Gate 9's UI-selector-listing command (`.claude/commands/gates.md:121-122`) actually scans all of `FinanceTrackerUITests/*.swift` unconditionally, not the branch diff like every other Gate 9 command — the framing gave no warning of that one exception.
+**Rule violated:** No formal rule — pure docs/process content not covered by an actual CLAUDE.md architecture rule; caught on correctness grounds.
+**File:** `.claude/commands/parallel-review.md`
+**Caught by:** code-review pass (round 1, documented in PR#105 body — mirrors pragma PR#56's identical Round 1 entry, the upstream source of this fix)
+
+## 2026-09-08 — PR#105 — Round 2: run-on sentence, ambiguous wording
+**What was wrong:** Two more wording issues surfaced in the same file while porting: Check 1 was a single long run-on sentence covering three different checks and scoping rules in one breath, and `Done when`'s "combined verdict from the three above" was ambiguous — unclear whether it meant three checks or three possible verdict strings.
+**Rule violated:** No formal rule — pure docs/process content not covered by an actual CLAUDE.md architecture rule; caught on correctness grounds.
+**File:** `.claude/commands/parallel-review.md`
+**Caught by:** code-review pass (round 2, documented in PR#105 body — mirrors pragma PR#56's identical Round 2 entry, the upstream source of this fix)
+
+## 2026-09-08 — PR#105 — Round 3: duplication regression in the fallback wording
+**What was wrong:** Round 2's own fix restated `/pr-followup`'s fallback warning string as an independently-authored copy with one word swapped, instead of referencing it — the exact duplication-drift pattern pragma's own rejections.md had already flagged as a repeat-violation risk on this same file (see pragma PR#55 Round 2/3/5, and pragma PR#56 Round 3). Fixed by replacing it with an explicit, mechanical substitution rule (take `/pr-followup`'s canonical string, swap `before merging` → `before /gates`), so there is no independently-maintained copy left to drift.
+**Rule violated:** No formal rule — pure docs/process content not covered by an actual CLAUDE.md architecture rule; caught on correctness grounds. (Repeats a duplication pattern named in pragma's own rejections.md; caught and fixed pre-merge this time.)
+**File:** `.claude/commands/parallel-review.md`
+**Caught by:** code-review pass (round 3, documented in PR#105 body — mirrors pragma PR#56's identical Round 3 entry, the upstream source of this fix)

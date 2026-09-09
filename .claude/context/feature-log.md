@@ -2,6 +2,11 @@
 
 <!-- Append one entry per release. Never edit past entries. -->
 
+## v1.2.2 — 2026-08-17
+**Features added:** None — perf/fix release. Re-render cleanup pass: memoized `TransactionViewModel.filteredTransactions`, `AccountListView` computes `netWorth()` once per render instead of twice, `BudgetListView` month-change reload debounced (150ms), unused `@Bindable` dropped from `BudgetDetailView`/`TransactionDetailView`; fixed the `UITestImportFlowTests` simulator-launch failure (corrupt SpringBoard state, not app code) and pinned `OS=26.4.1` explicitly in the destination string to disambiguate two installed "iPhone 17" simulators.
+**Key files changed:** `TransactionViewModel.swift`, `AccountListView.swift`, `BudgetListView.swift`, `BudgetDetailView.swift`, `TransactionDetailView.swift`, `CLAUDE.md`, `README.md`, `.claude/commands/*.md`
+**Key architectural decisions:** none
+
 ## v1.2.1 — 2026-08-16
 **Features added:** `/gates` Gate 10 (restored generic duplication/abstraction-bloat heuristic, originally from pragma) and Gate 11 (RED-before-GREEN commit order — `/feature` now commits the failing test and its implementation separately, `scripts/check_tdd_commit_order.py` verifies the order from git history rather than trusting agent self-report; Gate 11 specifically was also ported to the pragma template repo as a generic gate); README screenshots via a new `--seedscreenshots`/`--starttab` demo-data launch path
 **Key files changed:** `.claude/commands/feature.md`, `.claude/commands/gates.md`, `.claude/commands/plan.md`, `.claude/commands/sync-workflow.md`, `.claude/commands/review.md`, `scripts/check_tdd_commit_order.py`, `.claude/settings.json`, `.claude/context/rejections.md`, `FinanceTracker/Debug/DemoDataSeeder.swift`

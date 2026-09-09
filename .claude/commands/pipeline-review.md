@@ -15,7 +15,7 @@ Run this entire audit in the background. Save findings and send a push notificat
 Check every file in `.claude/commands/` for references to skills that are not in the current registry.
 
 Current valid skills:
-`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`, `run`, `verify`, `status`
+`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`, `run`, `verify`, `status`, `benchmark`, `parallel-review`, `pr-followup`
 
 Flag any skill name used in a command file that does not appear on this list. Severity: **Critical**.
 
@@ -24,6 +24,7 @@ Compare each file in `/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/comma
 - App-specific content (hardcoded file paths, model names, protocol names) that should use `<AppName>` / `<Model>` / `<RepositoryProtocol>` placeholders — **High**
 - Command files that exist in FinanceTracker but have no template equivalent — **Medium**
 - Logic improvements in FinanceTracker commands not yet back-ported to the template — **Low**
+- Logic improvements present in the pragma template but not yet pulled into FinanceTracker — **Medium** (higher than its counterpart above: this direction means the live production pipeline is running stale/buggy logic already fixed elsewhere, not just a future scaffold missing an enhancement; `/sync-workflow` only pushes FinanceTracker → pragma, so this comparison is the only thing that catches it)
 
 ### 3. CLAUDE.md token budget
 Count lines in `CLAUDE.md`. Target: ≤50 lines.

@@ -9,6 +9,16 @@ enum AccountType: String, Codable, CaseIterable {
     case investment
 
     var isLiability: Bool { self == .creditCard }
+
+    var displayName: String {
+        switch self {
+        case .checking:   return "Checking"
+        case .savings:    return "Savings"
+        case .creditCard: return "Credit Card"
+        case .cash:       return "Cash"
+        case .investment: return "Investment"
+        }
+    }
 }
 
 @Model

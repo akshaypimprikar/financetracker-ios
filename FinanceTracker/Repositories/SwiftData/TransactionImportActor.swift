@@ -6,9 +6,16 @@ actor TransactionImportActor: TransactionImportWriting {
     private var cachedAccount: (id: UUID, account: Account)?
     private var cachedCategories: [UUID: Category?] = [:]   // caches misses too, not just hits
 
+    /// No `propertiesToFetch` here — deliberately. SwiftData doesn't limit the SQL
+    /// column list the way Core Data's `propertiesToFetch` does: it still issues one
+    /// extra full-column `SELECT ... WHERE Z_PK = ?` per returned row when a property
+    /// is accessed, on top of the narrower initial query. Confirmed via live SQL debug
+    /// logging (`com.apple.CoreData.SQLDebug`) against this exact method: 1 narrow
+    /// query + N full-row queries, versus 1 single full-column query with no
+    /// `propertiesToFetch` at all. It's not a missed optimization — it was actively
+    /// worse than a plain fetch.
     func existingHashes() async throws -> Set<String> {
-        var descriptor = FetchDescriptor<Transaction>()
-        descriptor.propertiesToFetch = [\.importHash]
+        let descriptor = FetchDescriptor<Transaction>()
         let all = try modelContext.fetch(descriptor)
         return Set(all.compactMap(\.importHash))
     }

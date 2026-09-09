@@ -14,7 +14,7 @@ struct DemoDataSeederTests {
 
         #expect(try context.fetchCount(FetchDescriptor<Account>()) == 3)
         #expect(try context.fetchCount(FetchDescriptor<FinanceTracker.Category>()) == 9)
-        #expect(try context.fetchCount(FetchDescriptor<Transaction>()) == 18)
+        #expect(try context.fetchCount(FetchDescriptor<Transaction>()) == 43)
         #expect(try context.fetchCount(FetchDescriptor<Budget>()) == 4)
     }
 
@@ -34,7 +34,7 @@ struct DemoDataSeederTests {
         }
 
         #expect(balanceByName["Ally Savings"] == 12000)
-        #expect(balanceByName["Chase Sapphire"] == -382.94)
+        #expect(balanceByName["Chase Sapphire"] == -809.87)
     }
 
     @Test func seedNeverPersistsOutsideInMemoryStore() throws {

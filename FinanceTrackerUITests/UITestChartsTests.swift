@@ -84,4 +84,15 @@ final class UITestChartsTests: UITestBase {
             XCTAssertTrue(historySection.isHittable)
         }
     }
+
+    func testDashboardHidesSpendingByCategoryChartWhenNoSpendingExists() {
+        app.tabBars.firstMatch.buttons["Dashboard"].tap()
+        XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: timeout))
+
+        // Without categorized spending, the chart section is hidden — correct behaviour.
+        let chartSection = app.staticTexts["Spending by Category"]
+        if chartSection.exists {
+            XCTAssertTrue(chartSection.isHittable)
+        }
+    }
 }

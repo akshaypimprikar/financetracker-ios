@@ -42,6 +42,9 @@ jobs:
           set -o pipefail
           SIM_ID=$(xcrun simctl list devices available -j | python3 scripts/select_simulator.py)
           echo "Selected simulator: $SIM_ID"
+          # No push/StoreKit/universal-link/Spotlight-dependent tests currently exist —
+          # add --requires <feature,feature> here if that changes (see scripts/slim_simulator.sh header)
+          bash scripts/slim_simulator.sh "$SIM_ID" || true
           xcodebuild test \
             -project FinanceTracker.xcodeproj \
             -scheme FinanceTracker \

@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
@@ -8,6 +9,21 @@ struct DashboardView: View {
             VStack(spacing: Theme.Spacing.cardPadding) {
                 netWorthCard
                 spendingCard
+
+                if !viewModel.categorySpending.isEmpty {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
+                        Text("Spending by Category").font(Theme.Typography.sectionHeader)
+                        Chart(viewModel.categorySpending) { item in
+                            BarMark(
+                                x: .value("Category", item.category.name),
+                                y: .value("Spent", NSDecimalNumber(decimal: item.amount).doubleValue)
+                            )
+                            .foregroundStyle(Theme.Charts.spendingBar)
+                        }
+                        .frame(minHeight: Theme.Charts.minHeight)
+                        .padding(.horizontal, Theme.Spacing.cardPadding)
+                    }
+                }
 
                 if !viewModel.budgetProgresses.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Spacing.contentSpacing) {
@@ -46,8 +62,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.netWorthCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCardLarge))
+        .glassCardBackground(cornerRadius: Theme.Spacing.cornerRadiusCardLarge, tint: Theme.Glass.netWorthTint)
     }
 
     private var spendingCard: some View {
@@ -58,8 +73,16 @@ struct DashboardView: View {
                 .bold()
         }
         .padding(Theme.Spacing.cardPadding)
-        .background(Theme.Colors.spendingCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Spacing.cornerRadiusCard))
+        .glassCardBackground(cornerRadius: Theme.Spacing.cornerRadiusCard, tint: Theme.Glass.spendingTint)
+    }
+}
+
+private extension View {
+    func glassCardBackground(cornerRadius: CGFloat, tint: LinearGradient) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        return self
+            .background(shape.fill(Theme.Glass.cardMaterial).overlay(shape.fill(tint)))
+            .shadow(color: Theme.Glass.cardShadowColor, radius: Theme.Glass.cardShadowRadius, y: Theme.Glass.cardShadowY)
     }
 }
 
@@ -81,7 +104,7 @@ private struct BudgetProgressCard: View {
                     .foregroundStyle(.secondary)
             }
             ProgressView(value: min(progress.percentUsed, 1.0))
-                .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                .tint(progress.isOverBudget ? Theme.Colors.destructive : (Color(hex: budget.category.colorHex) ?? Theme.Colors.primaryInteractive))
         }
         .padding(.vertical, Theme.Spacing.compact)
     }

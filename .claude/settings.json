@@ -57,12 +57,10 @@
       "Bash(cua-driver screenshot *)",
       "Bash(python3 -c ' *)",
       "Bash(ls ~/.claude/commands/ 2>/dev/null && echo \"exists\" || echo \"does not exist\")",
-      "Read(//Users/akshaypimprikar/.claude/**)",
       "Bash(mkdir -p ~/.claude/commands)",
-      "Bash(rm /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/commands/agentic-ai-report.md \\\\ *)",
       "Bash(find /Users/akshaypimprikar -path \"*/Obsidian*\" -name \"*.md\" 2>/dev/null | grep -i linkedin | head -20)",
-      "Read(//Users/akshaypimprikar/Desktop/**)",
-      "Read(//Users/akshaypimprikar/Documents/**)",
+      "Read(//Users/akshaypimprikar/Documents/Resumes/**)",
+      "Read(//Users/akshaypimprikar/Documents/Resumes 2025/**)",
       "Edit(~/.claude/skills/linkedin-post/**)",
       "Bash(xcrun --find mcpbridge)",
       "Bash(grep -v \"^$\")",
@@ -70,9 +68,6 @@
       "mcp__XcodeBuildMCP__session_set_defaults",
       "Bash(convert --version)",
       "mcp__XcodeBuildMCP__screenshot",
-      "Bash(screencapture -x /tmp/xcode_check.png)",
-      "Bash(screencapture -x /tmp/xcode_check2.png)",
-      "Bash(screencapture -x /tmp/xcode_dialog.png)",
       "Bash(osascript -e 'tell application \"Xcode\" to get name of workspace documents')",
       "Bash(osascript -e 'tell application \"Xcode\" to activate')",
       "Bash(defaults read *)",
@@ -87,9 +82,6 @@
       "Bash(grep -v \"^--$\")",
       "Bash(uvx code-review-graph *)",
       "Bash(sqlite3 /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.code-review-graph/graph.db ' *)",
-      "Bash(sqlite3 /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.code-review-graph/graph.db \".schema nodes\")",
-      "Bash(sqlite3 /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.code-review-graph/graph.db \".schema edges\")",
-      "Bash(sqlite3 /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.code-review-graph/graph.db \"SELECT kind, COUNT\\(*\\) FROM edges GROUP BY kind;\")",
       "Bash(gh api *)",
       "Bash(python3 -)",
       "Bash(osascript -e 'tell application \"Safari\" to activate')",
@@ -109,7 +101,6 @@
       "Bash(xargs -I{} sh -c 'echo ==={}===; cat {}')",
       "Bash(xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \\\\ *)",
       "Bash(xcsift)",
-      "Bash(rm -f /tmp/FinanceTracker.xcresult *)",
       "Bash(cua-driver get_window_state *)",
       "Bash(cua-driver list_windows *)",
       "Bash(cua-driver launch_app *)",
@@ -125,7 +116,6 @@
       "Bash(system_profiler SPHardwareDataType)",
       "mcp__XcodeBuildMCP__snapshot_ui",
       "Bash(pkill -f serve_csv.py)",
-      "Bash(tee /private/tmp/claude-501/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/*)",
       "Bash(gh run view * --log *)",
       "Bash(gh issue *)",
       "Bash(python3 scripts/check_coverage.py *)",
@@ -138,13 +128,21 @@
       "Bash(cua-driver set_value *)",
       "Bash(cua-driver press_key *)",
       "Bash(python3 -c \"import json; json.load\\(open\\('.claude/settings.json'\\)\\)\")",
-      "Read(//Users/akshaypimprikar/.claude/skills/**)",
       "Bash(grep -n \"iPhone 16\\\\|iPhone 15\" /Users/akshaypimprikar/.claude/skills/ios-build-verify/SKILL.md 2>&1)",
-      "Read(//Users/akshaypimprikar/.claude/skills/ios-build-verify/**)",
-      "Read(//Users/akshaypimprikar/.claude/skills/ios-coverage/**)",
       "Bash(xcrun simctl list *)",
       "mcp__XcodeBuildMCP__session_show_defaults",
       "Bash(git merge *)"
+    ],
+    "ask": [
+      "Bash(mcporter call linkedin.connect_with_person *)",
+      "Bash(mcporter call linkedin.send_message *)",
+      "Bash(rdt comment *)",
+      "Bash(twitter post *)",
+      "Bash(twitter reply *)",
+      "Bash(twitter quote *)",
+      "Bash(twitter retweet *)",
+      "Bash(twitter delete *)",
+      "Bash(twitter follow *)"
     ],
     "additionalDirectories": [
       "/Users/akshaypimprikar/Desktop/Claude/pragma",
@@ -170,7 +168,28 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified — run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.tool_input.command // empty' | { read -r cmd; echo \"$cmd\" | grep -qE '^gh pr create' && jq -r '.permissions.allow[]' \"$SETTINGS\" 2>/dev/null | grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific junk (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before this PR ships it.\"}' || true; } 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.permissions.allow[]' \"$SETTINGS\" 2>/dev/null | grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific entries (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before your next session.\"}' || true"
           }
         ]
       }

@@ -22,8 +22,14 @@ final class UITestImportFlowTests: UITestBase {
         // docs/superpowers/specs/2026-07-15-csv-import-async-migration.md.
         XCTAssertTrue(app.navigationBars.element(boundBy: 0).waitForExistence(timeout: timeout))
 
-        if app.buttons["Cancel"].waitForExistence(timeout: 2) {
-            app.buttons["Cancel"].tap()
+        // .firstMatch, not a bare identifier lookup — the app's own
+        // "import-cancel-toolbar-button" is still present underneath the modal
+        // document picker sheet, so a plain app.buttons["Cancel"] query matches
+        // both it and the system picker's own Cancel button and throws
+        // "Multiple matching elements found". Either one dismisses the screen
+        // for this test's purposes (it isn't asserting which Cancel fires).
+        if app.buttons["Cancel"].firstMatch.waitForExistence(timeout: 2) {
+            app.buttons["Cancel"].firstMatch.tap()
         }
     }
 }

@@ -1,10 +1,17 @@
 import Foundation
 import Observation
 
+struct CategorySpending: Identifiable {
+    var id: UUID { category.id }
+    let category: Category
+    let amount: Decimal
+}
+
 @Observable
 final class DashboardViewModel {
     private(set) var netWorth: Decimal = 0
     private(set) var spendingThisMonth: Decimal = 0
+    private(set) var categorySpending: [CategorySpending] = []
     private(set) var recentTransactions: [Transaction] = []
     private(set) var budgetProgresses: [(Budget, BudgetProgress)] = []
     private(set) var currency: String = "USD"
@@ -51,9 +58,18 @@ final class DashboardViewModel {
               let endOfMonth = calendar.date(
                 byAdding: DateComponents(month: 1), to: startOfMonth) else { return }
 
-        spendingThisMonth = allTransactions
+        let thisMonthDebits = allTransactions
             .filter { $0.type == .debit && $0.date >= startOfMonth && $0.date < endOfMonth }
-            .reduce(Decimal.zero) { $0 + $1.amount }
+        spendingThisMonth = budgetCalcService.totalSpent(transactions: thisMonthDebits)
+
+        let categorizedDebits = thisMonthDebits.filter { $0.category != nil }
+        let groupedByCategory = Dictionary(grouping: categorizedDebits) { $0.category!.id }
+        categorySpending = groupedByCategory.values.map { transactions in
+            CategorySpending(
+                category: transactions[0].category!,
+                amount: budgetCalcService.totalSpent(transactions: transactions)
+            )
+        }
 
         recentTransactions = Array(
             allTransactions.sorted { $0.date > $1.date }.prefix(5)

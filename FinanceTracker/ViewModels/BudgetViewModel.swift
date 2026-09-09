@@ -5,6 +5,7 @@ import Observation
 final class BudgetViewModel {
     private(set) var budgets: [(Budget, BudgetProgress)] = []
     private(set) var categories: [Category] = []
+    private(set) var loadFailed: Bool = false
     var selectedMonth: Date = {
         let cal = Calendar.current
         return cal.date(from: cal.dateComponents([.year, .month], from: .now)) ?? .now
@@ -37,22 +38,45 @@ final class BudgetViewModel {
     var suggestionsAvailable: Bool { categorySuggester.isAvailable }
 
     func load() throws {
-        categories = try categoryRepo.fetchAll()
+        // Fetches are held in locals and published state is only written after every
+        // fetch below has succeeded — a mid-load throw (e.g. budgetRepo/transactionRepo
+        // fetch failing after categoryRepo's already returned) must never leave
+        // `categories` updated while `budgets`/`unbudgetedCategories` (derived from it)
+        // stay stale, which is exactly the inconsistency the old field-by-field
+        // assignment order could produce.
+        let fetchedCategories = try categoryRepo.fetchAll()
         let cal = Calendar.current
         guard let start = cal.date(from: cal.dateComponents([.year, .month], from: selectedMonth)),
-              let end = cal.date(byAdding: .month, value: 1, to: start) else { return }
+              let end = cal.date(byAdding: .month, value: 1, to: start) else {
+            categories = fetchedCategories
+            return
+        }
         let allBudgets = try budgetRepo.fetchAll(for: selectedMonth)
         let allTx = try transactionRepo.fetchAll()
 
-        budgets = allBudgets.map { budget in
+        let computedBudgets = allBudgets.map { budget in
             let txs = allTx.filter {
                 $0.category?.id == budget.category.id &&
                 $0.date >= start && $0.date < end
             }
             return (budget, budgetCalcService.progress(budget: budget, transactions: txs))
         }
-        let budgetedIDs = Set(budgets.map { $0.0.category.id })
-        unbudgetedCategories = categories.filter { !budgetedIDs.contains($0.id) }
+        let budgetedIDs = Set(computedBudgets.map { $0.0.category.id })
+
+        categories = fetchedCategories
+        budgets = computedBudgets
+        unbudgetedCategories = fetchedCategories.filter { !budgetedIDs.contains($0.id) }
+    }
+
+    /// Sets the load-failure alert state. Callers that previously used `try? load()`
+    /// (silently dropping the error) should call this from their own `catch` instead
+    /// — `load()` itself keeps throwing so its existing callers and tests are unaffected.
+    func markLoadFailed() {
+        loadFailed = true
+    }
+
+    func dismissLoadFailure() {
+        loadFailed = false
     }
 
     enum BudgetError: Error {

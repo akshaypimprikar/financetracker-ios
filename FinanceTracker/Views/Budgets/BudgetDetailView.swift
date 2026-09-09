@@ -31,7 +31,7 @@ struct BudgetDetailView: View {
                         .foregroundStyle(progress.remaining < 0 ? Theme.Colors.destructive : Theme.Colors.positive)
                 }
                 ProgressView(value: min(progress.percentUsed, 1.0))
-                    .tint(progress.isOverBudget ? Theme.Colors.destructive : Theme.Colors.primaryInteractive)
+                    .tint(progress.isOverBudget ? Theme.Colors.destructive : (Color(hex: budget.category.colorHex) ?? Theme.Colors.primaryInteractive))
                     .padding(.vertical, Theme.Spacing.compact)
             }
 

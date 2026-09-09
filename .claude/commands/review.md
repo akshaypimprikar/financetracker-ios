@@ -12,6 +12,7 @@ Read `CLAUDE.md` first — it defines the architecture rules you enforce.
 Also read the following files if they exist — skip silently if absent:
 - `.claude/context/invariants.md` — project invariants; these supplement CLAUDE.md rules
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
+- `.claude/context/incidents.md` — past bug root causes; flag any PR that reintroduces a previously-fixed symptom as HIGH severity, same as a rejections.md repeat
 
 ### Architecture, type-safety, build/test/coverage compliance — already verified by `/gates`
 
@@ -57,7 +58,7 @@ Final verdict:
 Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
 
 1. This review's own verdict is CHANGES REQUESTED — log each issue found here.
-2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `/code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
+2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>

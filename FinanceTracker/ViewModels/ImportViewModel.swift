@@ -14,6 +14,12 @@ enum ImportFailure: Equatable {
     /// Every transaction was successfully persisted, but the bookkeeping `ImportRecord`
     /// itself failed to save. No transaction data was lost.
     case recordSaveFailed(persistedCount: Int)
+    /// `applyMapping()` failed before any transaction was parsed or persisted — most
+    /// commonly `existingHashes()` failing to fetch. No data was written either way.
+    case mappingFailed
+    /// `load()` failed while opening the sheet (fetching accounts/categories) — the
+    /// sheet has nothing to show until it's retried.
+    case loadFailed
 }
 
 @Observable
@@ -106,6 +112,21 @@ final class ImportViewModel {
         pendingTransactions = deduped
         skippedCount = parsed.count - deduped.count
         step = .preview
+    }
+
+    /// Sets the mapping-failure alert state. The View's `Task` calls this from its
+    /// own `catch` rather than `applyMapping()` catching internally, so the throwing
+    /// contract callers already rely on (tests assert success via `try await`) stays
+    /// unchanged — only the View's previously-silent `try?` swallow is fixed.
+    func markMappingFailed() {
+        importFailure = .mappingFailed
+    }
+
+    /// Same rationale as `markMappingFailed()`: `load()` keeps throwing unchanged,
+    /// the caller's own `catch` (e.g. the sheet's `onAppear`) calls this instead of
+    /// silently dropping the error via `try?`.
+    func markLoadFailed() {
+        importFailure = .loadFailed
     }
 
     func loadSuggestions() async {
