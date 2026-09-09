@@ -31,7 +31,7 @@ Count lines in `CLAUDE.md`. Target: ≤50 lines.
 If over budget, list the specific sections that could be trimmed. Severity: **Medium** if 51–60 lines, **High** if >60 lines.
 
 ### 4. Memory staleness
-Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/memory/`.
+Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude/memory/`.
 Flag any memory that:
 - References a branch, PR, or task that no longer exists in `git log` or `gh pr list`
 - Describes a failure mode that has since been fixed in the command files (the fix is the source of truth)
