@@ -156,7 +156,7 @@ Gates:
 [✓] Architecture & layer-rule compliance
 [i] Abstraction bloat — no candidates found
 [✓] RED-before-GREEN commit order
-[👁] Visual verification — screenshot captured, review above (advisory, not blocking)
+[i] Visual verification — screenshot captured, review above
 ```
 
 When Gates 1 and 2 are skipped:
@@ -181,9 +181,9 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
+/loop Fix failing gates and re-check. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```
-Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix. Visual verification (Gate 12) has no pass/fail condition to loop on — it always reports `[👁]` or `[–]`, never a fixable failure.
+Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
 To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
 ```
@@ -235,30 +235,35 @@ skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator 
 unavailable)`, if the XcodeBuildMCP simulator/UI-automation tools are not available in this
 session — this is a spike, not a hard dependency for `/gates` to run.
 
-If any `Views/` files changed, capture what the change actually looks like before the PR opens:
+If any `Views/` files changed, capture what the change actually looks like before the PR opens.
+By this point Gate 1 already built FinanceTracker successfully and Gate 2 already ran the full
+test suite on the simulator (booting it as a side effect) — reuse both instead of repeating them:
 1. Call `session_show_defaults` — confirm project, scheme (`FinanceTracker`), and simulator
    (`iPhone 17`, `OS=26.4.1`) are set; call `session_set_defaults` if not.
-2. Call `boot_sim` to boot the simulator if it isn't already booted.
-3. Call `build_run_sim` to build and launch FinanceTracker with this branch's changes.
-4. If the plan document for this feature (`docs/superpowers/plans/*.md`) names a specific
+2. Call `get_sim_app_path` (`platform: "iOS Simulator"`) to find the app Gate 1 already built,
+   then `install_app_sim` + `launch_app_sim`. Do **not** call `build_run_sim` — it triggers a
+   second full build identical to Gate 1's, and `boot_sim` is unnecessary here too (its own
+   description notes it's "not required before simulator build-and-run," and Gate 2 already
+   left a simulator booted). Fall back to `boot_sim` only if `install_app_sim`/`launch_app_sim`
+   reports no simulator is booted.
+3. If the plan document for this feature (`docs/superpowers/plans/*.md`) names a specific
    screen to reach, use `snapshot_ui` to find tappable elements and navigate there; otherwise
    capture the app's default launch screen.
-5. Call `screenshot`, saving to `.gates-artifacts/gate12-<branch-name>-<screen-or-task>.png`
-   (create the directory if absent — it's gitignored, these are evidence artifacts, not source).
-6. Read the saved screenshot back into this session so it renders inline in the transcript —
-   Akshay reviews it directly here, not just from a file path.
+4. Call `screenshot` with `returnFormat: "base64"` so it renders inline in this session in one
+   call — Akshay reviews it directly in the transcript. Only fall back to `returnFormat: "path"`
+   saved under `.gates-artifacts/gate12-<branch-name>-<screen-or-task>.png` (gitignored) if the
+   base64 payload is rejected as too large, then Read that path back to render it.
 
-This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made
-against the plan's UI intent — scoring that automatically would make this an LLM-as-judge
-check, which contradicts every other gate's deterministic-checks-only design (the same
-positioning `skills/deterministic-pr-gates/SKILL.md` states explicitly). Report status as
-`[👁]`, never `[✓]`/`[✗]` — this gate cannot fail and never blocks PR creation. The actual
-"does this look right" call is Akshay's, made by looking at the screenshot before merging —
-same as the existing rule that generated visual assets get shown for approval, not
-auto-approved by an agent.
+This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made against
+the plan's UI intent — scoring that automatically would make this an LLM-as-judge check, which
+every other gate here avoids (see Gate 10 above, the existing precedent for "advisory, reports
+candidates/evidence, never blocks"). Report status as `[i]`, the same symbol Gate 10 uses for
+the same "advisory" contract — never `[✓]`/`[✗]`, since this gate cannot fail. The "does this
+look right" call is Akshay's, made by looking at the screenshot before merging.
 
-If `build_run_sim` fails, that's already caught by Gate 1 (Build); don't treat it as a new
-failure mode here — note "could not capture screenshot, see Gate 1" and move on.
+If `install_app_sim`/`launch_app_sim` fails for a reason unrelated to a missing build, that's
+likely already caught by Gate 1; don't treat it as a new failure mode here — note "could not
+capture screenshot, see Gate 1" and move on.
 
 ## After all gates pass — open the PR
 
@@ -306,11 +311,8 @@ Gates 0–12 are all agent-instruction-driven checks — read the prompt, run th
 Closing this for real means adding a native `PreToolUse` hook in `.claude/settings.json` that blocks `Write`/`Edit` calls targeting `.claude/commands/*.md`, `CLAUDE.md`, and `.claude/context/invariants.md` during autonomous runs. That's a genuine architecture addition, not a gate tweak, so it's tracked here as a known limitation rather than implemented speculatively. Sourced from a practitioner pattern (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
 
 ## Done when
-All 12 gates report (10 blocking gates pass; Abstraction bloat and Visual verification are
-advisory and always report `[i]`/`[👁]`/`[–]`, never block), PR is open, and the PR URL is
-returned to the user. If Gate 12 captured a screenshot, it stays visible above for Akshay to
-review before merging — merging already requires his own action per CLAUDE.md's Merge rule,
-so this doesn't add a new manual step, just evidence for the one that already exists.
+All 12 gates report (10 blocking gates pass; Gates 10 and 12 are advisory, see their own
+sections above), PR is open, and the PR URL is returned to the user.
 
 ## Tip — chain into review + test + code-review
 Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review`, `/test`,
