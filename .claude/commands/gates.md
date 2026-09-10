@@ -156,6 +156,7 @@ Gates:
 [✓] Architecture & layer-rule compliance
 [i] Abstraction bloat — no candidates found
 [✓] RED-before-GREEN commit order
+[👁] Visual verification — screenshot captured, review above (advisory, not blocking)
 ```
 
 When Gates 1 and 2 are skipped:
@@ -172,6 +173,7 @@ Gates:
 [✓] Architecture & layer-rule compliance
 [i] Abstraction bloat — 1 candidate found (see report)
 [–] RED-before-GREEN commit order — skipped (no new ViewModel/Service/Repository files)
+[–] Visual verification — skipped (no Views/ changes)
 ```
 
 Fix any failures before continuing.
@@ -179,13 +181,13 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Stop when all 11 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
+/loop Fix failing gates and re-check. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```
-Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
+Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix. Visual verification (Gate 12) has no pass/fail condition to loop on — it always reports `[👁]` or `[–]`, never a fixable failure.
 
 To drive the full feature-to-PR cycle autonomously (no interval = Claude self-paces):
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 11 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all blocking gates pass.
 ```
 
 ### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
@@ -223,6 +225,40 @@ commits (test-only, confirm it fails, then implementation) per `/feature`'s per-
 Rewriting already-pushed history is not required or expected; this gate only evaluates the
 branch as it stands when `/gates` runs.
 Skip this gate if the branch adds no new files under the scoped directories.
+
+### Gate 12 — Visual verification (advisory, conditional: Views/ changed)
+```bash
+git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/'
+```
+Skip this gate if this returns no output — no UI-facing changes to verify visually. Also
+skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator tools
+unavailable)`, if the XcodeBuildMCP simulator/UI-automation tools are not available in this
+session — this is a spike, not a hard dependency for `/gates` to run.
+
+If any `Views/` files changed, capture what the change actually looks like before the PR opens:
+1. Call `session_show_defaults` — confirm project, scheme (`FinanceTracker`), and simulator
+   (`iPhone 17`, `OS=26.4.1`) are set; call `session_set_defaults` if not.
+2. Call `boot_sim` to boot the simulator if it isn't already booted.
+3. Call `build_run_sim` to build and launch FinanceTracker with this branch's changes.
+4. If the plan document for this feature (`docs/superpowers/plans/*.md`) names a specific
+   screen to reach, use `snapshot_ui` to find tappable elements and navigate there; otherwise
+   capture the app's default launch screen.
+5. Call `screenshot`, saving to `.gates-artifacts/gate12-<branch-name>-<screen-or-task>.png`
+   (create the directory if absent — it's gitignored, these are evidence artifacts, not source).
+6. Read the saved screenshot back into this session so it renders inline in the transcript —
+   Akshay reviews it directly here, not just from a file path.
+
+This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made
+against the plan's UI intent — scoring that automatically would make this an LLM-as-judge
+check, which contradicts every other gate's deterministic-checks-only design (the same
+positioning `skills/deterministic-pr-gates/SKILL.md` states explicitly). Report status as
+`[👁]`, never `[✓]`/`[✗]` — this gate cannot fail and never blocks PR creation. The actual
+"does this look right" call is Akshay's, made by looking at the screenshot before merging —
+same as the existing rule that generated visual assets get shown for approval, not
+auto-approved by an agent.
+
+If `build_run_sim` fails, that's already caught by Gate 1 (Build); don't treat it as a new
+failure mode here — note "could not capture screenshot, see Gate 1" and move on.
 
 ## After all gates pass — open the PR
 
@@ -263,14 +299,18 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 ## A known limitation: no native guard against self-modifying guardrail files
 
-Gates 0–11 are all agent-instruction-driven checks — read the prompt, run the described commands, evaluate. Nothing in this pipeline uses Claude Code's native `PreToolUse` hook mechanism to block a `Write`/`Edit` tool call against this file, `CLAUDE.md`, or `.claude/context/invariants.md` while an agent session is running. That means an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — has nothing stopping it from editing this file's gate definition instead of fixing the underlying violation, then reporting a clean gate summary afterward.
+Gates 0–12 are all agent-instruction-driven checks — read the prompt, run the described commands, evaluate. Nothing in this pipeline uses Claude Code's native `PreToolUse` hook mechanism to block a `Write`/`Edit` tool call against this file, `CLAUDE.md`, or `.claude/context/invariants.md` while an agent session is running. That means an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — has nothing stopping it from editing this file's gate definition instead of fixing the underlying violation, then reporting a clean gate summary afterward.
 
 `/pipeline-review`'s Settings hygiene check (item 7) reads `.claude/settings.json` for hook-config hygiene, but that's a periodic, after-the-fact audit — not a live block during a session. FinanceTracker's own `.claude/settings.json` does exist and defines `PreToolUse` hooks, but they only match `Bash` commands (the `gh pr create` junk-check) — none of them intercept `Write`/`Edit` calls, so this gap is live here, not just theoretical.
 
 Closing this for real means adding a native `PreToolUse` hook in `.claude/settings.json` that blocks `Write`/`Edit` calls targeting `.claude/commands/*.md`, `CLAUDE.md`, and `.claude/context/invariants.md` during autonomous runs. That's a genuine architecture addition, not a gate tweak, so it's tracked here as a known limitation rather than implemented speculatively. Sourced from a practitioner pattern (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
 
 ## Done when
-All 11 gates pass, PR is open, and the PR URL is returned to the user.
+All 12 gates report (10 blocking gates pass; Abstraction bloat and Visual verification are
+advisory and always report `[i]`/`[👁]`/`[–]`, never block), PR is open, and the PR URL is
+returned to the user. If Gate 12 captured a screenshot, it stays visible above for Akshay to
+review before merging — merging already requires his own action per CLAUDE.md's Merge rule,
+so this doesn't add a new manual step, just evidence for the one that already exists.
 
 ## Tip — chain into review + test + code-review
 Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review`, `/test`,

@@ -27,3 +27,6 @@ Pods/
 
 # Superpowers plugin cache
 .superpowers/
+
+# Gate 12 visual-verification screenshots (evidence artifacts, not source)
+.gates-artifacts/
