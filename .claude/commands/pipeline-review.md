@@ -31,7 +31,7 @@ Count lines in `CLAUDE.md`. Target: ≤50 lines.
 If over budget, list the specific sections that could be trimmed. Severity: **Medium** if 51–60 lines, **High** if >60 lines.
 
 ### 4. Memory staleness
-Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude-FinanceTracker/memory/`.
+Read every file in `/Users/akshaypimprikar/.claude/projects/-Users-akshaypimprikar-Desktop-Claude/memory/`.
 Flag any memory that:
 - References a branch, PR, or task that no longer exists in `git log` or `gh pr list`
 - Describes a failure mode that has since been fixed in the command files (the fix is the source of truth)
@@ -89,7 +89,7 @@ addressed: false
 - <area>: no issues found
 ```
 
-Mark items `[x]` as they are resolved. When every item is checked, update the frontmatter to `addressed: true`.
+Mark items `[x]` as they are resolved. An item deliberately left open — not a live bug, a judgment call to defer — still counts as resolved for this purpose: check it `[x]` and append a `**Deferred <date>** — <reason>` note instead of leaving it `[ ]` forever, which would permanently block `/status`'s next-action check with no way to represent "won't-fix" separately from "not yet done." When every item is either fixed or explicitly deferred this way, update the frontmatter to `addressed: true`.
 
 ## Notify when done
 

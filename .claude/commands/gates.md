@@ -261,6 +261,14 @@ EOF
 **Always pass `--base develop`** — `gh pr create` defaults to `main` (repo default), which bypasses gitflow.
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
+## A known limitation: no native guard against self-modifying guardrail files
+
+Gates 0–11 are all agent-instruction-driven checks — read the prompt, run the described commands, evaluate. Nothing in this pipeline uses Claude Code's native `PreToolUse` hook mechanism to block a `Write`/`Edit` tool call against this file, `CLAUDE.md`, or `.claude/context/invariants.md` while an agent session is running. That means an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — has nothing stopping it from editing this file's gate definition instead of fixing the underlying violation, then reporting a clean gate summary afterward.
+
+`/pipeline-review`'s Settings hygiene check (item 7) reads `.claude/settings.json` for hook-config hygiene, but that's a periodic, after-the-fact audit — not a live block during a session. FinanceTracker's own `.claude/settings.json` does exist and defines `PreToolUse` hooks, but they only match `Bash` commands (the `gh pr create` junk-check) — none of them intercept `Write`/`Edit` calls, so this gap is live here, not just theoretical.
+
+Closing this for real means adding a native `PreToolUse` hook in `.claude/settings.json` that blocks `Write`/`Edit` calls targeting `.claude/commands/*.md`, `CLAUDE.md`, and `.claude/context/invariants.md` during autonomous runs. That's a genuine architecture addition, not a gate tweak, so it's tracked here as a known limitation rather than implemented speculatively. Sourced from a practitioner pattern (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
+
 ## Done when
 All 11 gates pass, PR is open, and the PR URL is returned to the user.
 
