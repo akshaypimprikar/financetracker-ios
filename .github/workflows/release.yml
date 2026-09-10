@@ -40,7 +40,6 @@ jobs:
             -destination "id=$SIM_ID" \
             -skip-testing:FinanceTrackerUITests \
             -resultBundlePath result.xcresult \
-            -enableCodeCoverage YES \
             2>&1 | tee xcode.log
           grep -E "TEST SUCCEEDED|TEST FAILED" xcode.log
 
