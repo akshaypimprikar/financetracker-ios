@@ -6,6 +6,9 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Added
+- **`/gates` Gate 12 — Visual verification (advisory, spike)** — when a branch touches `FinanceTracker/Views/`, boots the simulator via XcodeBuildMCP, builds and runs the app, and captures a screenshot inline in the session for Akshay to review before merging. Advisory only, never blocks the PR — deliberately kept out of the LLM-as-judge pattern the rest of `/gates` avoids; the agent captures evidence, a human makes the call. Prototype scoped to this repo only, not yet ported to pragma's template.
+
 ## [1.3.0] — 2026-09-09
 
 ### Fixed
