@@ -193,7 +193,7 @@ To drive the full feature-to-PR cycle autonomously (no interval = Claude self-pa
 ### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
 ```bash
 # New protocols introduced on this branch
-git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -ln "^protocol \|^public protocol " 2>/dev/null
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -Eln "^(public )?(nonisolated )?protocol " 2>/dev/null
 
 # Duplicated added lines (non-blank, appearing 2+ times across the diff) — copy-paste signal
 git diff develop...HEAD -- '*.swift' | grep -E '^\+[^+]' | sed 's/^\+//' | grep -v '^\s*$' | sort | uniq -d
