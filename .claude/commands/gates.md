@@ -236,16 +236,17 @@ unavailable)`, if the XcodeBuildMCP simulator/UI-automation tools are not availa
 session — this is a spike, not a hard dependency for `/gates` to run.
 
 If any `Views/` files changed, capture what the change actually looks like before the PR opens.
-By this point Gate 1 already built FinanceTracker successfully and Gate 2 already ran the full
-test suite on the simulator (booting it as a side effect) — reuse both instead of repeating them:
+By this point Gate 1 already built FinanceTracker successfully — reuse that build instead of
+repeating it. Gate 2's simulator is **not** reusable: verified 2026-09-20 (Xcode 27 / Device
+Hub) that `xcodebuild test` always tears down its ephemeral simulator clone the moment the test
+run completes, on both a single-suite run and the full suite — no simulator is left booted by
+the time Gate 12 runs. Expect to `boot_sim` every time; it is the normal path here, not a
+fallback.
 1. Call `session_show_defaults` — confirm project, scheme (`FinanceTracker`), and simulator
    (`iPhone 17`, `OS=26.4.1`) are set; call `session_set_defaults` if not.
 2. Call `get_sim_app_path` (`platform: "iOS Simulator"`) to find the app Gate 1 already built,
-   then `install_app_sim` + `launch_app_sim`. Do **not** call `build_run_sim` — it triggers a
-   second full build identical to Gate 1's, and `boot_sim` is unnecessary here too (its own
-   description notes it's "not required before simulator build-and-run," and Gate 2 already
-   left a simulator booted). Fall back to `boot_sim` only if `install_app_sim`/`launch_app_sim`
-   reports no simulator is booted.
+   then `boot_sim`, `install_app_sim`, and `launch_app_sim`. Do **not** call `build_run_sim` —
+   it triggers a second full build identical to Gate 1's.
 3. If the plan document for this feature (`docs/superpowers/plans/*.md`) names a specific
    screen to reach, use `snapshot_ui` to find tappable elements and navigate there; otherwise
    capture the app's default launch screen.
