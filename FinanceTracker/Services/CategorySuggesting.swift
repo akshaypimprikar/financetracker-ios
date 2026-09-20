@@ -14,7 +14,7 @@ struct CategoryCandidate: Sendable {
 }
 
 /// Domain Service protocol — zero SwiftData imports.
-protocol CategorySuggesting: Sendable {
+nonisolated protocol CategorySuggesting: Sendable {
     /// Backed by SystemLanguageModel.default.availability == .available.
     /// Checked once per import session (preview step), not per row.
     var isAvailable: Bool { get }

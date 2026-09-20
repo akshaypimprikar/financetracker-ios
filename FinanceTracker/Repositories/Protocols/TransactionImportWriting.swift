@@ -1,6 +1,6 @@
 import Foundation
 
-protocol TransactionImportWriting: Sendable {
+nonisolated protocol TransactionImportWriting: Sendable {
     /// All `importHash` values currently in the store, fetched once rather than
     /// checked per row — see docs/superpowers/specs/2026-07-15-csv-import-async-migration.md.
     func existingHashes() async throws -> Set<String>
