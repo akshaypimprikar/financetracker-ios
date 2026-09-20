@@ -17,28 +17,60 @@ Read `.claude/context/invariants.md` if it exists — skip silently if absent. A
 
 Run every gate in order. If any gate fails, stop, report what must be fixed, and do NOT open the PR.
 
-### Gate 0 — Swift change check (runs first; determines if Gates 1–2 apply)
+### Pre-step — clean tree and pinned SHA (runs before Gate 0; applies to every gate)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift'
+git status --porcelain      # must print nothing
+git rev-parse HEAD          # record this — every gate below is evidence about this exact commit
 ```
-If this returns **no output**, skip Gates 1 and 2 — no Swift code changed, so build and test suite are not applicable. Continue from Gate 3.
-If any Swift files are listed, run Gates 1 and 2 as normal.
+If `git status --porcelain` prints anything, **stop** and tell the user to commit (or stash) first —
+Gates 1–2 build the working tree, while Gates 3–13 read the committed `git diff develop...HEAD`,
+so a dirty tree makes the two halves describe different code. Any fix made while gates are failing
+(including Gate 5's CHANGELOG auto-populate) is a new commit: return to this pre-step and re-record
+the SHA, because the gate summary must describe the commit that actually opens the PR.
 
-### Gate 1 — Build (conditional: Swift files changed)
+### Gate 0 — Build-relevant change check (runs first; determines if Gates 1–2 apply)
 ```bash
+git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved'
+```
+If this returns **no output**, skip Gates 1 and 2 — nothing that affects the build or test suite changed. Continue from Gate 3.
+If any file is listed, run Gates 1 and 2 as normal. Project, config, plist, entitlement and
+package-pin changes are included on purpose: a build-setting flip (e.g. `SWIFT_DEFAULT_ACTOR_ISOLATION`
+in the `.pbxproj`) can break the build or change runtime behavior without touching a `.swift` file.
+Gates 3–13 still scope their own greps to `*.swift` where they say so.
+
+### Gate 1 — Build (conditional: Gate 0 listed files)
+```bash
+LOG=$(mktemp -t gate1-build)
 xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
-  2>&1 | xcsift
+  > "$LOG" 2>&1; RC=$?
+xcsift < "$LOG"
+[ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "BUILD SUCCEEDED" "$LOG" \
+  && echo "GATE 1 PASS" || echo "GATE 1 FAIL (xcodebuild exit $RC, log bytes $(wc -c < "$LOG"))"
 ```
-Pass: xcsift output shows no errors. Fail: stop immediately — a test run on a broken build is meaningless.
+`xcodebuild` writes to a log file and `xcsift` reads that file afterwards — there is no pipeline, so
+its own exit status is captured directly (a `| xcsift` pipeline hides it unless `pipefail`,
+`PIPESTATUS` (bash) or `pipestatus` (zsh) is used, and `2>&1 | xcsift` on an empty or crashed run
+prints a clean-looking summary). Pass: `GATE 1 PASS` — non-empty log, exit 0, and the `BUILD SUCCEEDED`
+marker. Fail: anything else — an empty log or a non-zero exit is a failure, never "no errors seen".
+Stop immediately — a test run on a broken build is meaningless.
 
-### Gate 2 — Full test suite (conditional: Swift files changed)
+### Gate 2 — Full test suite (conditional: Gate 0 listed files)
 ```bash
+LOG=$(mktemp -t gate2-test)
 xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
-  2>&1 | xcsift
+  > "$LOG" 2>&1; RC=$?
+xcsift < "$LOG"
+PASSED=$(grep -cE "^Test [Cc]ase .* passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase .* failed" "$LOG")
+[ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
+  && echo "GATE 2 PASS ($PASSED tests executed)" || echo "GATE 2 FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 ```
-Pass: xcsift output shows all tests passed, zero failures.
+Pass: `GATE 2 PASS` with an executed-test count above zero. The count is required because
+`xcodebuild test` reports `** TEST SUCCEEDED **` with exit 0 when a test filter or scheme change
+matches nothing (verified 2026-09-20: `-only-testing:FinanceTrackerTests/<nonexistent suite>` ran zero
+tests and still printed `TEST SUCCEEDED`). Fail: empty log, non-zero exit, any failed test case, or zero
+executed tests. Report the executed-test count in the gate summary.
 
 ### Gate 3 — No TODO/FIXME/HACK in changed files
 ```bash
@@ -90,9 +122,9 @@ Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
 ### Gate 9 — Architecture & layer-rule compliance (CLAUDE.md-enforced rules)
 This is the single authoritative check for all layer-separation, type-safety, and
-pattern rules — `/review` trusts this gate rather than re-running these checks
-post-PR. If any command below produces output, that's a violation to fix here,
-before opening the PR.
+pattern rules. `/review` re-runs this gate's grep-only commands at the PR HEAD SHA and
+compares the result to your gate summary (it does not re-run `xcodebuild`). If any command
+below produces output, that's a violation to fix here, before opening the PR.
 ```bash
 # Domain Services must have zero SwiftData imports
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Services/' | xargs grep -ln '^import SwiftData' 2>/dev/null
@@ -109,8 +141,19 @@ git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | grep -v
 # Views must have no direct SwiftData access (no business logic beyond calling ViewModel methods)
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/' | xargs grep -ln '^import SwiftData' 2>/dev/null
 
-# Money values must be Decimal, never Double
-git diff develop...HEAD --name-only -- '*.swift' | xargs grep -nE '\b(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*:\s*Double\b' 2>/dev/null
+# Money values must be Decimal, never Double — regex heuristic, NOT an AST check (see note below).
+# (a) Declared as Double: `amount: Double`, `[Double]`, `Double?`, `-> Double` / `-> [Double]` on a
+#     money-named func, or an inferred-Double float literal (`var total = 0.0`, `let price = 9.99`).
+git diff develop...HEAD --name-only -- '*.swift' | xargs grep -nHiE \
+  -e '\b\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*:\s*\[?Double\b' \
+  -e 'func\s+\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*\(.*\)\s*(async\s+)?(throws\s+)?->\s*\[?Double\b' \
+  -e '\b\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*=\s*-?[0-9]+\.[0-9]+\b' 2>/dev/null
+# (b) Conversions to Double: any `.doubleValue`, or `Double(` on a line naming a money stem.
+#     Swift Charts plot values (`.value(...)` lines — the one boundary this codebase converts at) are excluded.
+git diff develop...HEAD --name-only -- '*.swift' | xargs grep -nHiE \
+  -e '\.doubleValue' \
+  -e '(amount|balance|total|price|cost|budget|limit|spent|income|expense).*\bDouble\(' \
+  -e '\bDouble\(.*(amount|balance|total|price|cost|budget|limit|spent|income|expense)' 2>/dev/null | grep -v '\.value('
 
 # No try! or as! in changed production code (Tests/UITests excluded)
 git diff develop...HEAD --name-only -- '*.swift' | grep -v 'Tests/' | xargs grep -nE '\btry!|as!' 2>/dev/null
@@ -140,13 +183,47 @@ git diff develop...HEAD --name-only -- '*.swift' | grep -q 'Models/Transaction.s
 Pass: every command returns no output (the UI-selector listing is cross-checked by hand/agent against `FinanceTracker/Views/` — flag any selector with no matching `accessibilityIdentifier`; the `@Model`/`deleteRule` checks only fire when Models/ files are actually touched).
 Fail: list every offending file and line, grouped by which rule it violates.
 
+**The money check is a regex heuristic, not an AST check.** It matches identifier names, so it can
+miss a `Double` behind a `typealias`, through a generic, or under a name with none of the listed stems,
+and it can flag a non-money identifier that merely contains one (`totalPages: Double`). A real check
+needs SwiftSyntax — a new dependency, out of scope here. Treat a hit as a violation unless it is a
+dimensionless ratio (e.g. `percentUsed`), and say which in the gate summary; treat silence as "no
+match found", not proof.
+
+**`importHash` golden test (conditional: `Gate 0` listed files, and the suite exists on `develop`).** The
+grep above only proves the name `importHash` still appears; it cannot notice the hash *value* changing,
+which silently breaks CSV dedup on re-import. The behavioral check is the Swift Testing suite
+`ImportHashGoldenTests` (`FinanceTrackerTests/ImportHashGoldenTests.swift`):
+```bash
+if git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
+  test -f FinanceTrackerTests/ImportHashGoldenTests.swift || echo "GOLDEN FAIL: ImportHashGoldenTests.swift exists on develop but is missing on this branch"
+  LOG=$(mktemp -t gate9-golden)
+  xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
+    -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
+    -only-testing:FinanceTrackerTests/ImportHashGoldenTests > "$LOG" 2>&1; RC=$?
+  PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.* passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase .* failed" "$LOG")
+  [ "$RC" -eq 0 ] && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
+    && echo "GOLDEN PASS ($PASSED tests executed)" || echo "GOLDEN FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
+else
+  echo "GOLDEN SKIP: ImportHashGoldenTests not on develop yet (merge-order dependency) — report as [–], not [✓]"
+fi
+```
+Pass: `GOLDEN PASS` with more than zero tests executed, or a visible `GOLDEN SKIP` because the suite has not
+reached `develop` yet. Fail: any `GOLDEN FAIL` — including the suite file missing on a branch whose
+`develop` already has it, which is what a deleted or renamed golden test looks like. Never fix a failing
+golden test by editing the expected value on a `feature/*` branch: an intentional hash-format change is a
+`chore/*`/`fix/*` decision and needs a migration plan (invariants.md #2). The zero-test guard matters: a
+misspelled or renamed suite passes `xcodebuild` with exit 0 and no tests.
+
 ## Gate summary
 
-Report every gate before opening the PR:
+Report every gate before opening the PR. The first line is mandatory: the full SHA recorded in the
+pre-step. `/review` compares it to the PR HEAD and rejects a summary that is missing or stale.
 ```
+Gates run at <full 40-char SHA from `git rev-parse HEAD`>
 Gates:
 [✓] Build
-[✓] Tests
+[✓] Tests — <N> tests executed
 [✓] No TODO/FIXME/HACK
 [✓] Branch naming
 [✗] CHANGELOG — Unreleased section empty (auto-populating from git log...)
@@ -157,13 +234,15 @@ Gates:
 [i] Abstraction bloat — no candidates found
 [✓] RED-before-GREEN commit order
 [i] Visual verification — screenshot captured, review above
+[✓] Gate integrity
 ```
 
 When Gates 1 and 2 are skipped:
 ```
+Gates run at <full 40-char SHA>
 Gates:
-[–] Build — skipped (no Swift changes)
-[–] Tests — skipped (no Swift changes)
+[–] Build — skipped (no build-relevant changes)
+[–] Tests — skipped (no build-relevant changes)
 [✓] No TODO/FIXME/HACK
 [✓] Branch naming
 [✓] CHANGELOG
@@ -174,6 +253,7 @@ Gates:
 [i] Abstraction bloat — 1 candidate found (see report)
 [–] RED-before-GREEN commit order — skipped (no new ViewModel/Service/Repository files)
 [–] Visual verification — skipped (no Views/ changes)
+[✓] Gate integrity
 ```
 
 Fix any failures before continuing.
@@ -181,7 +261,7 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
+/loop Fix failing gates and re-check. Stop when all blocking gates pass (13 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): tree clean and SHA recorded, build succeeds, all tests pass with a non-zero executed count, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file, gate integrity clean.
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
@@ -266,6 +346,23 @@ If `install_app_sim`/`launch_app_sim` fails for a reason unrelated to a missing 
 likely already caught by Gate 1; don't treat it as a new failure mode here — note "could not
 capture screenshot, see Gate 1" and move on.
 
+### Gate 13 — Gate integrity (floor-guard)
+```bash
+python3 scripts/check_gate_integrity.py
+```
+On a `release/*` or `hotfix/*` branch (which PRs against `main`, not `develop`), pass the correct base
+explicitly instead: `python3 scripts/check_gate_integrity.py main`.
+
+Detects gate-weakening — a gate-definition file edited on a `feature/*` branch, a test deleted instead
+of fixed, a new suppression marker, an unfinished stub, or a lowered threshold — rather than
+code-quality issues. It is the diff-detectable half of "A known limitation" below; the live half is
+`.claude/hooks/guard_protected_paths.py`.
+
+Pass: script exits 0. Fail: script lists each violation — fix the underlying issue, or, if the
+gate-definition change is legitimate maintenance, move it to its own `chore/*` or `fix/*` branch instead
+of bundling it with feature work. If `scripts/check_gate_integrity.py` does not exist, this gate FAILS
+(report `[✗] Gate integrity — script missing`); never skip it as "not applicable".
+
 ## After all gates pass — open the PR
 
 ### Write candidate invariants (conditional)
@@ -277,8 +374,9 @@ If any gate caught a violation pattern that is NOT already listed in `.claude/co
 
 Do not promote it to a numbered invariant — that is a human decision made during the next `/pipeline-review`.
 
-Include the actual Gate summary output (from above) in the PR body under its own
-section — `/review` reads this instead of re-running the same checks itself.
+Include the actual Gate summary output (from above, starting with its `Gates run at <sha>` line) in the
+PR body under its own section — `/review` checks that SHA against the PR HEAD and re-runs the
+deterministic gates itself, comparing its results to this block.
 
 ```bash
 gh pr create \
@@ -289,7 +387,7 @@ gh pr create \
 - <bullet per task from the plan>
 
 ## Gates
-<paste the actual Gate summary block from this run — commit SHA it was run against, plus each gate's ✓/✗/– status>
+<paste the actual Gate summary block from this run — the `Gates run at <sha>` line, plus each gate's ✓/✗/– status>
 
 ## Test plan
 - [ ] Full test suite passes (TEST SUCCEEDED)
@@ -303,17 +401,18 @@ EOF
 **Always pass `--base develop`** — `gh pr create` defaults to `main` (repo default), which bypasses gitflow.
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
-## A known limitation: no native guard against self-modifying guardrail files
+## A known limitation: the guard against self-modifying guardrail files is partial
 
-Gates 0–12 are all agent-instruction-driven checks — read the prompt, run the described commands, evaluate. Nothing in this pipeline uses Claude Code's native `PreToolUse` hook mechanism to block a `Write`/`Edit` tool call against this file, `CLAUDE.md`, or `.claude/context/invariants.md` while an agent session is running. That means an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — has nothing stopping it from editing this file's gate definition instead of fixing the underlying violation, then reporting a clean gate summary afterward.
+Gates 0–13 are agent-instruction-driven checks — read the prompt, run the described commands, evaluate. An agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit this file's gate definition instead of fixing the underlying violation, then report a clean gate summary afterward. Two layers now cut against that, neither complete:
 
-`/pipeline-review`'s Settings hygiene check (item 7) reads `.claude/settings.json` for hook-config hygiene, but that's a periodic, after-the-fact audit — not a live block during a session. FinanceTracker's own `.claude/settings.json` does exist and defines `PreToolUse` hooks, but they only match `Bash` commands (the `gh pr create` junk-check) — none of them intercept `Write`/`Edit` calls, so this gap is live here, not just theoretical.
+- **Live (partial):** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` against `.claude/commands/*.md`, `scripts/check_*.py`, `CLAUDE.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the current branch matches `feature/*` (exit 2, with the remedy printed). Limits: Bash-command detection is best-effort (redirects, `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`rm`; `python -c`, interpreter heredocs and the like get through); the hook and its settings entry are themselves editable on any non-`feature/*` branch, and nothing blocks an edit on a `chore/*`/`fix/*` branch (that is the intended route for real maintenance, reviewed as its own PR); it fails open on a detached HEAD or malformed input; it only runs in sessions that load this repo's `.claude/settings.json`; `.github/workflows/*` and `.githooks/*` are not on the protected list. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix.
+- **After the fact:** Gate 13 (`scripts/check_gate_integrity.py`) and `/review`'s re-run of it at the PR HEAD SHA catch a gate-definition edit on a `feature/*` branch in the diff, and the `gates` CI job repeats it outside the session.
 
-Closing this for real means adding a native `PreToolUse` hook in `.claude/settings.json` that blocks `Write`/`Edit` calls targeting `.claude/commands/*.md`, `CLAUDE.md`, and `.claude/context/invariants.md` during autonomous runs. That's a genuine architecture addition, not a gate tweak, so it's tracked here as a known limitation rather than implemented speculatively. Sourced from a practitioner pattern (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
+`/pipeline-review`'s Settings hygiene check (item 7) still reads `.claude/settings.json` for hook-config hygiene, but that is a periodic audit. The hook pattern is sourced from a practitioner design (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
 
 ## Done when
-All 12 gates report (10 blocking gates pass; Gates 10 and 12 are advisory, see their own
-sections above), PR is open, and the PR URL is returned to the user.
+All 13 gates report (11 blocking gates pass; Gates 10 and 12 are advisory, see their own
+sections above), the summary opens with `Gates run at <sha>`, PR is open, and the PR URL is returned to the user.
 
 ## Tip — chain into review + test + code-review
 Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review`, `/test`,
