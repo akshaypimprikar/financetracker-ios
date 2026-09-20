@@ -6,6 +6,12 @@ import FoundationModels
 /// Apple Intelligence-enabled host Mac's Simulator (see decisions.md 2026-07-21).
 /// ImportViewModelTests exercises the ViewModel against FakeCategorySuggesting instead.
 struct FoundationModelsCategorySuggester: CategorySuggesting {
+    /// `isAvailable` moved from implicitly `@MainActor`-isolated to `nonisolated` when
+    /// `CategorySuggesting` itself became `nonisolated` (Swift 6.4/Xcode 27 actor-isolation
+    /// fix — see the compiler(>=6.4) note on that protocol). Safe today only because
+    /// `SystemLanguageModel` is Sendable/non-MainActor; this file isn't unit-tested in CI
+    /// (see the type-level doc comment above), so a future edit adding MainActor-bound
+    /// state here won't get caught by tests — check isolation by hand before adding any.
     var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
     }
