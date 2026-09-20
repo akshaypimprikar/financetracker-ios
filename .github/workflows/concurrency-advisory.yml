@@ -44,6 +44,12 @@ jobs:
             -enableThreadSanitizer YES \
             2>&1 | tee tsan.log
 
+      - name: Summarize ThreadSanitizer result
+        if: always()
+        run: |
+          reports=$(grep -c "WARNING: ThreadSanitizer" tsan.log || true)
+          echo "ThreadSanitizer unit-test run: $reports report(s) (the previous step's exit status decides pass/fail)" | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Build with strict concurrency
         if: always()
         run: |
@@ -56,7 +62,7 @@ jobs:
             SWIFT_STRICT_CONCURRENCY=complete \
             2>&1 | tee strict.log
           # Anchor on file:line:col so wrapped/duplicate diagnostic renderings count once.
-          total=$(grep -E '^/.*:[0-9]+:[0-9]+: warning:' strict.log | sort -u | wc -l | tr -d ' ')
-          conc=$(grep -E '^/.*:[0-9]+:[0-9]+: warning:' strict.log | grep -iE "sendable|isolat|actor|concurren|data race" | sort -u | wc -l | tr -d ' ')
+          total=$({ grep -E '^/.*:[0-9]+:[0-9]+: warning:' strict.log || true; } | sort -u | wc -l | tr -d ' ')
+          conc=$({ grep -E '^/.*:[0-9]+:[0-9]+: warning:' strict.log | grep -iE "sendable|isolat|actor|concurren|data race" || true; } | sort -u | wc -l | tr -d ' ')
           echo "Strict-concurrency build: $total unique warnings ($conc concurrency-related)"
           echo "Strict-concurrency build: $total unique warnings ($conc concurrency-related)" >> "$GITHUB_STEP_SUMMARY"

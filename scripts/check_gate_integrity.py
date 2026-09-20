@@ -78,7 +78,7 @@ TEST_FILENAME_SUFFIX = re.compile(r"[^/]*Tests?\.(swift|py)$")
 # application code, so they're checked everywhere, not just in test files.
 UNAMBIGUOUS_SUPPRESSION_PATTERNS = (
     re.compile(r"^\+.*//\s*swiftlint:disable"),
-    re.compile(r"^\+.*\bXCTSkip\b"),
+    re.compile(r"^\+.*\bXCTSkip(If|Unless)?\b"),
 )
 TEST_ONLY_SUPPRESSION_PATTERNS = (
     re.compile(r"^\+.*\.disabled\("),  # Swift Testing trait
@@ -102,7 +102,9 @@ PERCENT_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 
 def run(*args):
     try:
-        return subprocess.run(args, capture_output=True, text=True, check=True).stdout
+        return subprocess.run(
+            args, capture_output=True, text=True, errors="replace", check=True
+        ).stdout
     except subprocess.CalledProcessError as e:
         print(f"ERROR: `{' '.join(args)}` failed — {e.stderr.strip() or e}", file=sys.stderr)
         if BASE_REF in args:
@@ -246,7 +248,7 @@ def paired_threshold_drops(diff):
 violations = []
 branch = current_branch()
 
-name_status = run("git", "diff", f"{BASE_REF}...HEAD", "--name-status")
+name_status = run("git", "-c", "core.quotepath=false", "diff", f"{BASE_REF}...HEAD", "--name-status")
 status_by_path = {}
 for line in name_status.splitlines():
     if not line.strip():
@@ -254,7 +256,12 @@ for line in name_status.splitlines():
     parts = line.split("\t")
     status_by_path[parts[-1]] = parts[0][0]  # first letter: A/M/D/R...
 
-full_diff = run("git", "diff", f"{BASE_REF}...HEAD")
+# --text: a PR's own .gitattributes (`-diff`) must not blank the diff these checks
+# read. Explicit prefixes and unquoted paths: parse_diff_by_file needs a/ b/ headers.
+full_diff = run(
+    "git", "-c", "core.quotepath=false", "diff", "--text",
+    "--src-prefix=a/", "--dst-prefix=b/", f"{BASE_REF}...HEAD",
+)
 diff_by_file = parse_diff_by_file(full_diff)
 
 # 1. Gate-definition files touched on a feature/* branch (any status — an

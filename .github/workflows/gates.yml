@@ -1,11 +1,13 @@
 name: Gates
 
 # No `paths:` filter on purpose: a gate that can be skipped by touching only
-# excluded paths (.github/**, .claude/**, docs) is not a gate.
+# excluded paths (.github/**, .claude/**, docs) is not a gate. develop only:
+# release/hotfix PRs to main diff the whole release delta and have no waiver path;
+# every commit in them already passed this job on its develop PR.
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [develop, main]
+    branches: [develop]
 
 concurrency:
   group: gates-${{ github.event.pull_request.number }}
