@@ -181,7 +181,7 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Skip Gate 12 (Visual verification) on every iteration except the last — it's advisory, can never affect this stop condition, and its boot_sim → install_app_sim → launch_app_sim → screenshot sequence has no purpose repeated against unchanged Views/ files. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file. Run Gate 12 once more on that final passing iteration before stopping.
+/loop Fix failing gates and re-check, skipping Gate 12 (Visual verification) on every iteration except the last — it's advisory, can never affect this stop condition, and its boot_sim → install_app_sim → launch_app_sim → screenshot sequence has no purpose repeated against unchanged Views/ files. Stop only once all of the following hold (12 gates total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block on their own): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file, AND Gate 12 has been run at least once on a passing iteration (skipped entirely if no Views/ files changed).
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
@@ -193,7 +193,7 @@ To drive the full feature-to-PR cycle autonomously (no interval = Claude self-pa
 ### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
 ```bash
 # New protocols introduced on this branch
-git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -Eln "^(public )?(nonisolated )?protocol " 2>/dev/null
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -Eln "^(public |nonisolated ){0,2}protocol " 2>/dev/null
 
 # Duplicated added lines (non-blank, appearing 2+ times across the diff) — copy-paste signal
 git diff develop...HEAD -- '*.swift' | grep -E '^\+[^+]' | sed 's/^\+//' | grep -v '^\s*$' | sort | uniq -d
