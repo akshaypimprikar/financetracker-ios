@@ -56,5 +56,5 @@ To drive the entire feature-to-gates cycle autonomously:
 ```
 Or target only gate-fixing after tasks are done:
 ```
-/loop Fix failing gates. Stop when all 13 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
+/loop Fix failing gates. Stop when all 13 gates pass: tree clean and SHA recorded, build succeeds, all tests pass with a non-zero executed count, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```

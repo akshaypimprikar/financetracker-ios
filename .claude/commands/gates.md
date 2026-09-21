@@ -30,11 +30,11 @@ the SHA, because the gate summary must describe the commit that actually opens t
 
 ### Gate 0 — Build-relevant change check (runs first; determines if Gates 1–2 apply)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved'
+git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xcscheme' '*.xctestplan'
 ```
 If this returns **no output**, skip Gates 1 and 2 — nothing that affects the build or test suite changed. Continue from Gate 3.
 If any file is listed, run Gates 1 and 2 as normal. Project, config, plist, entitlement and
-package-pin changes are included on purpose: a build-setting flip (e.g. `SWIFT_DEFAULT_ACTOR_ISOLATION`
+package-manifest, scheme and test-plan changes are included on purpose (a test-plan edit changes which tests run; add any other build input your project has — asset or string catalogs, data models): a build-setting flip (e.g. `SWIFT_DEFAULT_ACTOR_ISOLATION`
 in the `.pbxproj`) can break the build or change runtime behavior without touching a `.swift` file.
 Gates 3–13 still scope their own greps to `*.swift` where they say so.
 
@@ -62,7 +62,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   > "$LOG" 2>&1; RC=$?
 xcsift < "$LOG"
-PASSED=$(grep -cE "^Test [Cc]ase .* passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase .* failed" "$LOG")
+PASSED=$(grep -cE "^Test [Cc]ase '.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
 [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
   && echo "GATE 2 PASS ($PASSED tests executed)" || echo "GATE 2 FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 ```
@@ -70,7 +70,8 @@ Pass: `GATE 2 PASS` with an executed-test count above zero. The count is require
 `xcodebuild test` reports `** TEST SUCCEEDED **` with exit 0 when a test filter or scheme change
 matches nothing (verified 2026-09-20: `-only-testing:FinanceTrackerTests/<nonexistent suite>` ran zero
 tests and still printed `TEST SUCCEEDED`). Fail: empty log, non-zero exit, any failed test case, or zero
-executed tests. Report the executed-test count in the gate summary.
+executed tests (a test that fails once and passes on `-retry-tests-on-failure` still counts as failed here — fail-closed on purpose). Report the
+executed-test count in the gate summary.
 
 ### Gate 3 — No TODO/FIXME/HACK in changed files
 ```bash
@@ -197,7 +198,7 @@ which silently breaks CSV dedup on re-import. The behavioral check is the Swift 
 `ImportHashGoldenTests` (`FinanceTrackerTests/ImportHashGoldenTests.swift`). This is the one Gate 9 step
 that runs `xcodebuild`, so it is `/gates`-only — `/review` does not re-run it:
 ```bash
-if ! git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' | grep -q .; then
+if ! git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xcscheme' '*.xctestplan' | grep -q .; then
   echo "GOLDEN SKIP: no build-relevant changes (Gate 0 empty)"
 elif ! git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
   echo "GOLDEN SKIP: ImportHashGoldenTests not on develop yet (merge-order dependency)"
@@ -208,7 +209,7 @@ else
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     -only-testing:FinanceTrackerTests/ImportHashGoldenTests > "$LOG" 2>&1; RC=$?
-  PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.* passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase .* failed" "$LOG")
+  PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
   [ "$RC" -eq 0 ] && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "GOLDEN PASS ($PASSED tests executed)" || echo "GOLDEN FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 fi
@@ -378,7 +379,7 @@ If any gate caught a violation pattern that is NOT already listed in `.claude/co
 ```
 
 - **On a `feature/*` branch, do not write to `invariants.md`** — `.claude/hooks/guard_protected_paths.py` blocks the edit and Gate 13 flags it, and the write would also change the tree after the SHA was pinned. Put the comment line under a `## Candidate invariants` heading in the PR body instead; it gets appended to the file from a `chore/*` branch.
-- On any other branch, append it at the bottom of that file.
+- On any other branch, append it at the bottom of that file, commit it, and restart from the pre-step — the commit moves HEAD, so the gate summary must be re-run against the new SHA.
 
 Do not promote it to a numbered invariant — that is a human decision made during the next `/pipeline-review`.
 
@@ -405,6 +406,8 @@ gh pr create \
 EOF
 )"
 ```
+
+If `/gates` is re-run after the PR is open (a fix cycle changes HEAD), update the PR body's gate section with the new summary — `gh pr edit <PR> --body-file <file>` — so its `Gates run at <sha>` matches the new HEAD; `/review` rejects a stale one.
 
 **Always pass `--base develop`** — `gh pr create` defaults to `main` (repo default), which bypasses gitflow.
 Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
