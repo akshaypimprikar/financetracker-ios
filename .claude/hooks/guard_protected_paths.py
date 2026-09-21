@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""
+PreToolUse guard: blocks Write/Edit/MultiEdit (and, best-effort, Bash writes)
+against gate-definition / guardrail files while the current git branch is
+feature/*. Same branch semantics as scripts/check_gate_integrity.py, which
+only fires on feature/* — a real feature never needs to change what counts as
+passing; that belongs on a chore/* or fix/* branch.
+
+Hook contract (Claude Code hooks reference, code.claude.com/docs/en/hooks):
+  stdin  JSON with tool_name, tool_input (file_path, or command for Bash), cwd
+  exit 2 blocks the tool call and feeds stderr back to Claude
+  exit 0 allows; any other exit code is a non-blocking error (tool proceeds)
+
+Limits (deliberate — see the PR that added this file):
+  - Bash detection is a best-effort parse: redirects (> >> &> >| >&), tee,
+    sed/perl -i, cp/install/ln (destination), mv/rm (incl. a directory holding
+    protected files), truncate, dd of=, `bash -c '...'` and `cd dir && ...`.
+    `python -c`, interpreter heredocs, variable/glob expansion, git plumbing
+    (`git checkout <ref> -- file`) and the like are not detected.
+  - This file and its settings.json entry are protected only on feature/*:
+    editable on any other branch, and a chore/* edit is not blocked at all.
+    `.claude/settings.local.json` is not on the protected list.
+  - Fails open: bad stdin, no git repo, or a detached HEAD allow the call.
+
+Usage: guard_protected_paths.py            (reads hook JSON on stdin)
+       guard_protected_paths.py --self-test
+"""
+import fnmatch
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+
+# Repo-relative globs. fnmatch's `*` also crosses `/`, so nested paths match.
+PROTECTED_GLOBS = (
+    ".claude/commands/*.md",
+    "scripts/check_*.py",
+    "CLAUDE.md",
+    ".claude/context/invariants.md",
+    ".claude/settings.json",
+    ".claude/hooks/*",
+    "FinanceTrackerTests/ImportHashGoldenTests.swift",
+)
+GUARDED_BRANCH = re.compile(r"^feature/")
+FILE_TOOLS = ("Write", "Edit", "MultiEdit")
+WRAPPER_WORDS = ("sudo", "env", "command", "time", "nohup", "exec")
+
+
+def git(cwd, *args):
+    try:
+        out = subprocess.run(
+            ("git", "-C", cwd) + args, capture_output=True, text=True, check=True
+        ).stdout
+        return out.strip()
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def nearest_existing_dir(path):
+    d = os.path.dirname(path)
+    while d and not os.path.isdir(d):
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return d if os.path.isdir(d) else None
+
+
+# Directories that contain protected files: rm/mv of one of these removes them too.
+PROTECTED_DIRS = set()
+for _g in PROTECTED_GLOBS:
+    _parts = _g.split("/")[:-1]
+    PROTECTED_DIRS.update("/".join(_parts[: n + 1]) for n in range(len(_parts)))
+
+
+def protected_relpath(abs_path, destructive=False):
+    """(repo_root, relpath) if abs_path is a protected file inside a git repo, else None.
+    With destructive=True (rm/mv), a directory holding protected files also counts."""
+    d = nearest_existing_dir(abs_path)
+    if not d:
+        return None
+    root = git(d, "rev-parse", "--show-toplevel")
+    if not root:
+        return None
+    rel = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(root))
+    # macOS volumes are case-insensitive by default: claude.md is CLAUDE.md there.
+    for glob in PROTECTED_GLOBS:
+        if fnmatch.fnmatchcase(rel.lower(), glob.lower()):
+            return root, rel
+    if destructive and rel.lower() in {x.lower() for x in PROTECTED_DIRS}:
+        return root, rel
+    return None
+
+
+def resolve(path, cwd):
+    return os.path.normpath(os.path.join(cwd, os.path.expanduser(path)))
+
+
+def unquote(word):
+    if len(word) >= 2 and word[0] == word[-1] and word[0] in "'\"":
+        return word[1:-1]
+    return word
+
+
+def strip_heredocs_and_newlines(command):
+    """Drop heredoc bodies (data, not commands); turn unquoted newlines into `;`."""
+    lines, out, delim = command.split("\n"), [], None
+    for line in lines:
+        if delim is not None:
+            if line.strip() == delim:
+                delim = None
+            continue
+        out.append(line)
+        m = re.search(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z_0-9]*)\1", line)
+        if m:
+            delim = m.group(2)
+    return " ; ".join(out)
+
+
+def tokenize(command):
+    # Non-posix keeps quotes on tokens, so a quoted '>' stays distinguishable from a redirect.
+    try:
+        lex = shlex.shlex(strip_heredocs_and_newlines(command), posix=False, punctuation_chars=True)
+        lex.whitespace_split = False
+        return list(lex)
+    except ValueError:
+        return None
+
+
+def bash_write_targets(command, cwd, _depth=0):
+    """Best-effort [(absolute path, is_delete_or_move)] a shell command writes to or removes."""
+    tokens = tokenize(command)
+    if tokens is None:
+        return []
+    segments, segment = [], []
+    for t in tokens + [";"]:
+        if t in (";", "&&", "||", "|", "&", "|&"):
+            segments.append(segment)
+            segment = []
+        else:
+            segment.append(t)
+    results, cur = [], cwd  # `cd dir && ...` moves cur for later segments
+    for words in segments:
+        found, destructive = [], False
+        for i, w in enumerate(words):
+            if w in (">", ">>", "&>", "&>>", ">|") and i + 1 < len(words):
+                found.append(unquote(words[i + 1]))
+            elif w == ">&" and i + 1 < len(words) and not re.match(r"^(\d+|-)$", words[i + 1]):
+                found.append(unquote(words[i + 1]))  # `>& file` redirects both streams
+        cmd_idx = next(
+            (i for i, w in enumerate(words) if "=" not in w and w not in WRAPPER_WORDS), None
+        )
+        if cmd_idx is not None:
+            cmd = os.path.basename(unquote(words[cmd_idx]))
+            rest = [unquote(w) for w in words[cmd_idx + 1 :]]
+            args = [w for w in rest if not w.startswith("-") and not re.match(r"^[<>&|]", w)]
+            flags = [w for w in rest if w.startswith("-")]
+            if cmd == "cd":
+                if args:
+                    cur = resolve(args[0], cur)
+                continue
+            if cmd in ("bash", "sh", "zsh") and "-c" in rest and _depth < 3:
+                idx = rest.index("-c")
+                if idx + 1 < len(rest):
+                    results += bash_write_targets(rest[idx + 1], cur, _depth + 1)
+            elif cmd == "tee":
+                found += args
+            elif cmd in ("sed", "gsed", "perl") and any(
+                f.startswith("--in-place") or re.match(r"^-[A-Za-z]*i", f) for f in flags
+            ):
+                found += args
+            elif cmd in ("cp", "install", "ln") and args:
+                found.append(args[-1])
+            elif cmd in ("mv", "rm"):
+                found += args
+                destructive = True
+            elif cmd == "truncate":
+                found += args
+            elif cmd == "dd":
+                found += [w[3:] for w in rest if w.startswith("of=")]
+        results += [(resolve(t, cur), destructive) for t in found]
+    return results
+
+
+def evaluate(payload):
+    """Return a block message, or None to allow."""
+    tool = payload.get("tool_name", "")
+    tool_input = payload.get("tool_input") or {}
+    cwd = payload.get("cwd") or os.getcwd()
+
+    if tool in FILE_TOOLS:
+        candidates = [(resolve(tool_input["file_path"], cwd), False)] if tool_input.get("file_path") else []
+    elif tool == "Bash":
+        candidates = bash_write_targets(tool_input.get("command") or "", cwd)
+    else:
+        return None
+
+    for abs_path, destructive in candidates:
+        hit = protected_relpath(abs_path, destructive)
+        if not hit:
+            continue
+        root, rel = hit
+        branch = git(root, "branch", "--show-current")
+        if not branch or not GUARDED_BRANCH.match(branch):
+            continue  # detached HEAD or a non-feature branch: allow
+        return (
+            f"BLOCKED: `{rel}` is a gate-definition/guardrail file and the current branch is "
+            f"`{branch}` (feature/*). A feature branch must not change what counts as passing. "
+            "Remedy: make this change on a chore/* or fix/* branch in its own PR, then rebase "
+            "this feature branch onto it. If the edit really belongs to this feature, stop and "
+            "ask the user instead of editing around the guard."
+        )
+    return None
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)
+        message = evaluate(payload)
+    except Exception:  # fail open: a broken guard must not wedge every tool call
+        return 0
+    if message:
+        print(message, file=sys.stderr)
+        return 2
+    return 0
+
+
+def self_test():
+    failures = 0
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = os.path.realpath(tmp)
+        repos = {}
+        for name, branch in (("feat", "feature/demo"), ("chore", "chore/demo"), ("detached", None)):
+            d = os.path.join(tmp, name)
+            os.makedirs(os.path.join(d, ".claude", "commands"))
+            os.makedirs(os.path.join(d, "scripts"))
+            os.makedirs(os.path.join(d, "FinanceTracker"))
+            subprocess.run(["git", "-C", d, "init", "-q"], check=True)
+            for f in (".claude/commands/gates.md", "scripts/check_x.py", "CLAUDE.md", "FinanceTracker/A.swift"):
+                open(os.path.join(d, f), "w").close()
+            subprocess.run(["git", "-C", d, "add", "-A"], check=True)
+            subprocess.run(
+                ["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "i"],
+                check=True,
+            )
+            if branch:
+                subprocess.run(["git", "-C", d, "checkout", "-q", "-B", branch], check=True)
+            else:
+                subprocess.run(["git", "-C", d, "checkout", "-q", "--detach"], check=True)
+            repos[name] = d
+
+        def write(tool, repo, rel):
+            return {"tool_name": tool, "cwd": repos[repo], "tool_input": {"file_path": os.path.join(repos[repo], rel)}}
+
+        def bash(repo, cmd):
+            return {"tool_name": "Bash", "cwd": repos[repo], "tool_input": {"command": cmd}}
+
+        cases = [
+            # (label, payload, expect_block)
+            ("feature: Write gates.md", write("Write", "feat", ".claude/commands/gates.md"), True),
+            ("feature: Edit gates.md", write("Edit", "feat", ".claude/commands/gates.md"), True),
+            ("feature: MultiEdit CLAUDE.md", write("MultiEdit", "feat", "CLAUDE.md"), True),
+            ("feature: Write CLAUDE.md, wrong case", write("Write", "feat", "claude.md"), True),
+            ("feature: Write scripts/check_x.py", write("Write", "feat", "scripts/check_x.py"), True),
+            ("feature: Write .claude/settings.json (new)", write("Write", "feat", ".claude/settings.json"), True),
+            ("feature: Write .claude/hooks/new.py (new dir)", write("Write", "feat", ".claude/hooks/new.py"), True),
+            ("feature: Write invariants.md (new dirs)", write("Write", "feat", ".claude/context/invariants.md"), True),
+            ("feature: Write ImportHashGoldenTests (new dirs)", write("Write", "feat", "FinanceTrackerTests/ImportHashGoldenTests.swift"), True),
+            ("feature: Write ordinary .swift", write("Write", "feat", "FinanceTracker/A.swift"), False),
+            ("feature: Read tool is ignored", write("Read", "feat", "CLAUDE.md"), False),
+            ("chore: Write gates.md", write("Write", "chore", ".claude/commands/gates.md"), False),
+            ("chore: Edit CLAUDE.md", write("Edit", "chore", "CLAUDE.md"), False),
+            ("detached HEAD: Write gates.md (fail open)", write("Write", "detached", ".claude/commands/gates.md"), False),
+            ("feature: Bash redirect >", bash("feat", "echo x > .claude/commands/gates.md"), True),
+            ("feature: Bash append >>", bash("feat", "echo x >> CLAUDE.md"), True),
+            ("feature: Bash cat > file <<EOF", bash("feat", "cat > CLAUDE.md <<'EOF'\nhello\nEOF"), True),
+            ("feature: Bash tee", bash("feat", "echo x | tee -a scripts/check_x.py"), True),
+            ("feature: Bash sed -i", bash("feat", "sed -i '' 's/a/b/' .claude/commands/gates.md"), True),
+            ("feature: Bash chained after &&", bash("feat", "ls && echo x>CLAUDE.md"), True),
+            ("feature: Bash mv onto protected", bash("feat", "mv /tmp/x scripts/check_x.py"), True),
+            ("feature: Bash rm protected", bash("feat", "rm CLAUDE.md"), True),
+            ("feature: Bash read-only cat", bash("feat", "cat CLAUDE.md"), False),
+            ("feature: Bash protected path as SOURCE of redirect", bash("feat", "cat CLAUDE.md > /tmp/out.txt"), False),
+            ("feature: Bash 2>&1 is not a redirect target", bash("feat", "ls CLAUDE.md 2>&1"), False),
+            ("feature: Bash sed without -i", bash("feat", "sed 's/a/b/' CLAUDE.md"), False),
+            ("feature: Bash redirect to ordinary file", bash("feat", "echo x > FinanceTracker/A.swift"), False),
+            ("chore: Bash redirect", bash("chore", "echo x > CLAUDE.md"), False),
+            ("feature: Bash cd into dir then redirect", bash("feat", "cd .claude/commands && echo x > gates.md"), True),
+            ("feature: Bash bash -c redirect", bash("feat", "bash -c 'echo x > CLAUDE.md'"), True),
+            ("feature: Bash sed -i with quoted |", bash("feat", "sed -i 's/a|b/c/' CLAUDE.md"), True),
+            ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/commands"), True),
+            ("feature: Bash mv protected dir away", bash("feat", "mv scripts /tmp/s"), True),
+            ("feature: Bash >| clobber", bash("feat", "echo x >| CLAUDE.md"), True),
+            ("feature: Bash >& file", bash("feat", "echo x >& CLAUDE.md"), True),
+            ("feature: Bash truncate", bash("feat", "truncate -s 0 CLAUDE.md"), True),
+            ("feature: Bash dd of=", bash("feat", "dd if=/dev/null of=CLAUDE.md"), True),
+            ("feature: Bash grep '>' file is read-only", bash("feat", "grep '>' CLAUDE.md"), False),
+            ("feature: Bash heredoc body mentioning rm CLAUDE.md", bash("feat", "cat > /tmp/n.md <<'EOF'\nrm CLAUDE.md\nEOF"), False),
+            ("feature: Bash cd elsewhere then redirect to same-named ordinary file", bash("feat", "cd FinanceTracker && echo x > CLAUDE.md"), False),
+            ("feature: Bash rm of an ordinary dir", bash("feat", "rm -rf FinanceTracker/build"), False),
+        ]
+        for label, payload, expect_block in cases:
+            proc = subprocess.run(
+                [sys.executable, os.path.abspath(__file__)],
+                input=json.dumps(payload), capture_output=True, text=True,
+            )
+            blocked = proc.returncode == 2
+            ok = blocked == expect_block and (not blocked or "BLOCKED" in proc.stderr)
+            failures += 0 if ok else 1
+            print(f"{'PASS' if ok else 'FAIL'}  exit={proc.returncode}  {label}")
+
+        for label, stdin in (("malformed JSON fails open", "not json"), ("empty stdin fails open", "")):
+            proc = subprocess.run(
+                [sys.executable, os.path.abspath(__file__)], input=stdin, capture_output=True, text=True
+            )
+            ok = proc.returncode == 0
+            failures += 0 if ok else 1
+            print(f"{'PASS' if ok else 'FAIL'}  exit={proc.returncode}  {label}")
+
+    print(f"\n{failures} failure(s)")
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(self_test() if "--self-test" in sys.argv[1:] else main())
