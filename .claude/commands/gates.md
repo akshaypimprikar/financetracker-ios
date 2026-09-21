@@ -181,7 +181,7 @@ Fix any failures before continuing.
 ## Autonomous gate-fixing loop
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check the blocking gates each iteration, always skipping Gate 12 (Visual verification) during this fixing phase — it's advisory, can never affect whether the blocking gates pass, and its boot_sim → install_app_sim → launch_app_sim → screenshot sequence has no purpose repeated against unchanged Views/ files. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file. Once that happens, run Gate 12 exactly once (skip entirely if no Views/ files changed on this branch, or if XcodeBuildMCP tools are unavailable this session) as the last action before stopping.
+/loop Fix failing gates and re-check. Stop when all blocking gates pass (12 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): build succeeds, all tests pass, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated, coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
@@ -234,6 +234,14 @@ Skip this gate if this returns no output — no UI-facing changes to verify visu
 skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator tools
 unavailable)`, if the XcodeBuildMCP simulator/UI-automation tools are not available in this
 session — this is a spike, not a hard dependency for `/gates` to run.
+
+Run this gate last, and only if every blocking gate in this pass has already passed. If any
+blocking gate failed, report `[–] Visual verification — skipped (blocking gates still
+failing)` and stop here: it can't affect whether they pass, and its simulator boot → install →
+launch → screenshot sequence is wasted on a branch that is about to change again. This is what
+keeps the autonomous fixing loop above from rebooting the simulator on every iteration — the
+first fully green pass runs it exactly once, and that same pass satisfies the loop's stop
+condition.
 
 If any `Views/` files changed, capture what the change actually looks like before the PR opens.
 By this point Gate 1 already built FinanceTracker successfully — reuse that build instead of
