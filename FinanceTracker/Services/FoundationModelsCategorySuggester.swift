@@ -5,15 +5,17 @@ import FoundationModels
 /// unit-testable in CI — requires live Apple Intelligence-eligible hardware or an
 /// Apple Intelligence-enabled host Mac's Simulator (see decisions.md 2026-07-21).
 /// ImportViewModelTests exercises the ViewModel against FakeCategorySuggesting instead.
+///
+/// Isolation differs by toolchain: `CategorySuggesting` is `nonisolated` only under
+/// `#if compiler(>=6.4)` (see that protocol), so under Xcode 27/Swift 6.4+ both witnesses
+/// below (`isAvailable`, `suggestCategory`) are nonisolated, while under CI's Swift 6.2
+/// `#else` branch they keep the project's MainActor default. Consequence today: the 6.4
+/// build warns that `suggestCategory`'s `CategoryNameMatching.isNearDuplicate` call is a
+/// main-actor-isolated call from a nonisolated context (an error in Swift 6 language
+/// mode), and CI never sees it. `isAvailable` itself is fine either way because
+/// `SystemLanguageModel` is Sendable/non-MainActor. Check any new MainActor-bound state or
+/// call added here against an Xcode 27 build by hand — no test or CI job compiles that branch.
 struct FoundationModelsCategorySuggester: CategorySuggesting {
-    /// `isAvailable`'s isolation depends on which `#if compiler(>=6.4)` branch of
-    /// `CategorySuggesting` is active: `nonisolated` under Xcode 27/Swift 6.4+, but still
-    /// implicitly `@MainActor`-isolated under CI's Swift 6.2 `#else` branch — the two
-    /// toolchains compile this property under genuinely different isolation. Safe today
-    /// either way only because `SystemLanguageModel` is Sendable/non-MainActor; this file
-    /// isn't unit-tested in CI (see the type-level doc comment above), so a future edit
-    /// adding MainActor-bound state here won't get caught by tests under either toolchain —
-    /// check isolation by hand before adding any.
     var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
     }

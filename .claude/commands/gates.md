@@ -193,14 +193,14 @@ To drive the full feature-to-PR cycle autonomously (no interval = Claude self-pa
 ### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
 ```bash
 # New protocols introduced on this branch
-git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -Eln "^(public |nonisolated ){0,2}protocol " 2>/dev/null
+git diff develop...HEAD --name-only --diff-filter=A -- '*.swift' | xargs grep -Eln "^((public|internal|package|private|fileprivate|open|nonisolated|@[A-Za-z]+) )*protocol " 2>/dev/null
 
 # Duplicated added lines (non-blank, appearing 2+ times across the diff) — copy-paste signal
 git diff develop...HEAD -- '*.swift' | grep -E '^\+[^+]' | sed 's/^\+//' | grep -v '^\s*$' | sort | uniq -d
 ```
 For each new protocol found, check its conformance count: `grep -rn ": <ProtocolName>" --include=*.swift .` A protocol with exactly one conforming type, outside the established `<Repository>Protocol`-style pattern (where a single implementation plus a test mock is expected), is a candidate for inlining.
 
-For duplicated lines, flag any run of 3+ consecutive duplicated added lines as a candidate for extraction into a shared helper.
+For duplicated lines, flag any run of 3+ consecutive duplicated added lines as a candidate for extraction into a shared helper. Exception: the verbatim `#if compiler(>=6.4)` / `#else` protocol duplication that invariant #6 requires is intentional (`nonisolated` can't be conditionally applied to a lone modifier) — don't report it as an extraction candidate.
 
 This gate is advisory: list candidates in the gate summary but do not block the PR on them. Final judgment on whether to extract or inline is a human or `/review` call.
 
@@ -234,14 +234,6 @@ Skip this gate if this returns no output — no UI-facing changes to verify visu
 skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator tools
 unavailable)`, if the XcodeBuildMCP simulator/UI-automation tools are not available in this
 session — this is a spike, not a hard dependency for `/gates` to run.
-
-Run this gate last, and only if every blocking gate in this pass has already passed. If any
-blocking gate failed, report `[–] Visual verification — skipped (blocking gates still
-failing)` and stop here: it can't affect whether they pass, and its simulator boot → install →
-launch → screenshot sequence is wasted on a branch that is about to change again. This is what
-keeps the autonomous fixing loop above from rebooting the simulator on every iteration — the
-first fully green pass runs it exactly once, and that same pass satisfies the loop's stop
-condition.
 
 If any `Views/` files changed, capture what the change actually looks like before the PR opens.
 By this point Gate 1 already built FinanceTracker successfully — reuse that build instead of
