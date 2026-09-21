@@ -13,10 +13,16 @@ Invoked with a version number (e.g. `/release 1.0.0`).
 
 - [ ] All tests pass on `develop`:
   ```bash
+  LOG=$(mktemp -t test)
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
-    2>&1 | xcsift
+    > "$LOG" 2>&1; RC=$?
+  xcsift < "$LOG"
+  PASSED=$(grep -cE "^Test [Cc]ase '.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
+  [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
+    && echo "TESTS PASS ($PASSED tests executed)" || echo "TESTS FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
   ```
+  Same check as `/gates` Gate 2: a `| xcsift` pipe hides `xcodebuild`'s exit status, and a run that executes zero tests still prints `TEST SUCCEEDED`.
 - [ ] No TODO/FIXME in any file added since last release:
   ```bash
   git diff <last-tag>..develop -- '*.swift' | grep -E "TODO|FIXME"
