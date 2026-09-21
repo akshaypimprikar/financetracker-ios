@@ -38,20 +38,35 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    summary must equal that SHA. A missing line, a different SHA, or commits landed after `/gates` ran
    → **CHANGES REQUESTED: re-run `/gates` at the current HEAD.** Do not fall back to "ask the user
    whether to trust it".
-2. **Re-run the deterministic gates at that SHA and compare to the summary.**
+2. **Re-run the deterministic gates at that SHA and compare to the summary.** Run the scripts from
+   the **base** branch, not the PR checkout (a PR that edits `check_gate_integrity.py` must not be
+   judged by its own edited copy — `gates.yml` does the same), and pass the PR's branch name because
+   a `gh pr checkout`/worktree HEAD may be detached, which makes the integrity script silently skip
+   its `feature/*` check:
    ```bash
-   python3 scripts/check_gate_integrity.py origin/develop     # Gate 13   (origin/main on release/* and hotfix/*)
-   python3 scripts/check_tdd_commit_order.py origin/develop   # Gate 11
+   BR=$(gh pr view <PR> --json headRefName -q .headRefName)
+   BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)   # origin/main for release/* and hotfix/*
+   T=$(mktemp -d)
+   for s in check_gate_integrity check_tdd_commit_order; do
+     git show "${BASE}:scripts/${s}.py" > "$T/${s}.py" 2>/dev/null || echo "NOT VERIFIED: scripts/${s}.py not on ${BASE}"
+   done
+   python3 "$T/check_gate_integrity.py" "$BASE" "$BR"    # Gate 13
+   python3 "$T/check_tdd_commit_order.py" "$BASE"        # Gate 11
    ```
-   plus the grep-only gates, exactly as written in `gates.md`: Gate 3 (TODO/FIXME/HACK), Gate 4
-   (branch name), Gate 5 (CHANGELOG), Gate 8 (only if `TransactionImportActor.swift` changed), and
-   Gate 9's commands (each returns no output on a pass; the UI-selector listing is cross-checked by
-   hand). Any result that disagrees with the pasted summary — a script exits non-zero, a grep prints a
-   hit where the summary says `[✓]` — is **CHANGES REQUESTED**, quoting the command and its output.
-   If a script does not exist in this checkout (e.g. `check_gate_integrity.py` before its PR merges),
-   say `NOT VERIFIED: <script> missing` in the verdict; do not count it as a pass.
-   Gates 1, 2, 6, 7, 10, and 12 (build, tests, coverage, security skill, advisory heuristics,
-   screenshots) are **not** re-run here; state that they rest on the summary and CI.
+   A script that is not on the base branch yet (the PR introducing it, or before it merges) is reported
+   as `NOT VERIFIED: <script> not on <base>` and, for a PR that adds it, run from the PR copy
+   with that caveat stated — never counted as a clean pass. Also re-run the grep-only gates exactly
+   as written in `gates.md`, substituting `$BASE` (the fetched `origin/<base>`) for `develop` in every command (local
+   `develop` may be stale after `git fetch`): Gate 3 (TODO/FIXME/HACK), Gate 4 (branch name), Gate 5
+   (CHANGELOG), Gate 8 (only if `TransactionImportActor.swift` changed), and Gate 9's grep commands
+   (not its `ImportHashGoldenTests` step, which runs `xcodebuild`). Each grep prints nothing on a
+   pass except the UI-selector listing (cross-check by hand) and any hit the summary already names as
+   an accepted exception. Any result that disagrees with the pasted summary — a script exits
+   non-zero, a grep prints a hit the summary does not name — is **CHANGES REQUESTED**, quoting the
+   command and its output.
+   Gates 1, 2, 6, 7, 10, 12, and Gate 9's golden-test step (build, tests, coverage, security skill,
+   advisory heuristics, screenshots, `xcodebuild`) are **not** re-run here; state that they rest on the
+   summary and CI.
 3. **Check CI.** If a PR exists:
    ```bash
    gh pr checks <PR> --json name,bucket

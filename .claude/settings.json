@@ -197,7 +197,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard_protected_paths.py"
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_protected_paths.py\"; [ -f \"$f\" ] || exit 0; exec python3 \"$f\""
           }
         ]
       }

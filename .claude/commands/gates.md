@@ -13,7 +13,7 @@ Invoked at the end of every `/feature` session before `gh pr create` (e.g. `/gat
 
 All commands run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`.
 
-Read `.claude/context/invariants.md` if it exists — skip silently if absent. Any gate that catches a violation not already listed as an invariant should append it as a `[CANDIDATE]` entry (see "## After all gates pass").
+Read `.claude/context/invariants.md` if it exists — skip silently if absent. Any gate that catches a violation not already listed as an invariant should be recorded as a candidate (see "### Write candidate invariants" under "## After all gates pass").
 
 Run every gate in order. If any gate fails, stop, report what must be fixed, and do NOT open the PR.
 
@@ -142,11 +142,11 @@ git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | grep -v
 git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/' | xargs grep -ln '^import SwiftData' 2>/dev/null
 
 # Money values must be Decimal, never Double — regex heuristic, NOT an AST check (see note below).
-# (a) Declared as Double: `amount: Double`, `[Double]`, `Double?`, `-> Double` / `-> [Double]` on a
+# (a) Declared as Double: `amount: Double`, `[Double]`, `[String: Double]`, `Double?`, `-> Double` / `-> [Double]` on a
 #     money-named func, or an inferred-Double float literal (`var total = 0.0`, `let price = 9.99`).
 git diff develop...HEAD --name-only -- '*.swift' | xargs grep -nHiE \
-  -e '\b\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*:\s*\[?Double\b' \
-  -e 'func\s+\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*\(.*\)\s*(async\s+)?(throws\s+)?->\s*\[?Double\b' \
+  -e '\b\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*:\s*(\[\s*(\w+\s*:\s*)?)?Double\b' \
+  -e 'func\s+\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*\(.*\)\s*(async\s+)?(throws\s+)?->\s*(\[\s*(\w+\s*:\s*)?)?Double\b' \
   -e '\b\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\w*\s*=\s*-?[0-9]+\.[0-9]+\b' 2>/dev/null
 # (b) Conversions to Double: any `.doubleValue`, or `Double(` on a line naming a money stem.
 #     Swift Charts plot values (`.value(...)` lines — the one boundary this codebase converts at) are excluded.
@@ -187,16 +187,23 @@ Fail: list every offending file and line, grouped by which rule it violates.
 miss a `Double` behind a `typealias`, through a generic, or under a name with none of the listed stems,
 and it can flag a non-money identifier that merely contains one (`totalPages: Double`). A real check
 needs SwiftSyntax — a new dependency, out of scope here. Treat a hit as a violation unless it is a
-dimensionless ratio (e.g. `percentUsed`), and say which in the gate summary; treat silence as "no
+dimensionless ratio (e.g. `BudgetCalculationService.swift`'s `percentUsed`, an accepted hit today), and
+name each accepted hit in the gate summary so `/review` can tell it from a new one; treat silence as "no
 match found", not proof.
 
 **`importHash` golden test (conditional: `Gate 0` listed files, and the suite exists on `develop`).** The
 grep above only proves the name `importHash` still appears; it cannot notice the hash *value* changing,
 which silently breaks CSV dedup on re-import. The behavioral check is the Swift Testing suite
-`ImportHashGoldenTests` (`FinanceTrackerTests/ImportHashGoldenTests.swift`):
+`ImportHashGoldenTests` (`FinanceTrackerTests/ImportHashGoldenTests.swift`). This is the one Gate 9 step
+that runs `xcodebuild`, so it is `/gates`-only — `/review` does not re-run it:
 ```bash
-if git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
-  test -f FinanceTrackerTests/ImportHashGoldenTests.swift || echo "GOLDEN FAIL: ImportHashGoldenTests.swift exists on develop but is missing on this branch"
+if ! git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' | grep -q .; then
+  echo "GOLDEN SKIP: no build-relevant changes (Gate 0 empty)"
+elif ! git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
+  echo "GOLDEN SKIP: ImportHashGoldenTests not on develop yet (merge-order dependency)"
+elif [ ! -f FinanceTrackerTests/ImportHashGoldenTests.swift ]; then
+  echo "GOLDEN FAIL: ImportHashGoldenTests.swift exists on develop but is missing on this branch"
+else
   LOG=$(mktemp -t gate9-golden)
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
@@ -204,13 +211,11 @@ if git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/de
   PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.* passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase .* failed" "$LOG")
   [ "$RC" -eq 0 ] && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "GOLDEN PASS ($PASSED tests executed)" || echo "GOLDEN FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
-else
-  echo "GOLDEN SKIP: ImportHashGoldenTests not on develop yet (merge-order dependency) — report as [–], not [✓]"
 fi
 ```
-Pass: `GOLDEN PASS` with more than zero tests executed, or a visible `GOLDEN SKIP` because the suite has not
-reached `develop` yet. Fail: any `GOLDEN FAIL` — including the suite file missing on a branch whose
-`develop` already has it, which is what a deleted or renamed golden test looks like. Never fix a failing
+Pass: `GOLDEN PASS` with more than zero tests executed. `GOLDEN SKIP` is reported as `[–]` with its reason
+(never `[✓]`). Fail: any `GOLDEN FAIL` — including the suite file missing on a branch whose `develop`
+already has it, which is what a deleted or renamed golden test looks like. Never fix a failing
 golden test by editing the expected value on a `feature/*` branch: an intentional hash-format change is a
 `chore/*`/`fix/*` decision and needs a migration plan (invariants.md #2). The zero-test guard matters: a
 misspelled or renamed suite passes `xcodebuild` with exit 0 and no tests.
@@ -366,11 +371,14 @@ of bundling it with feature work. If `scripts/check_gate_integrity.py` does not 
 ## After all gates pass — open the PR
 
 ### Write candidate invariants (conditional)
-If any gate caught a violation pattern that is NOT already listed in `.claude/context/invariants.md`, append a candidate comment at the bottom of that file:
+If any gate caught a violation pattern that is NOT already listed in `.claude/context/invariants.md`, write it as a candidate comment:
 
 ```
 <!-- [CANDIDATE] YYYY-MM-DD: <describe the violation pattern — e.g. "ViewModel imported SwiftDataRepository directly in feature/X"> -->
 ```
+
+- **On a `feature/*` branch, do not write to `invariants.md`** — `.claude/hooks/guard_protected_paths.py` blocks the edit and Gate 13 flags it, and the write would also change the tree after the SHA was pinned. Put the comment line under a `## Candidate invariants` heading in the PR body instead; it gets appended to the file from a `chore/*` branch.
+- On any other branch, append it at the bottom of that file.
 
 Do not promote it to a numbered invariant — that is a human decision made during the next `/pipeline-review`.
 
@@ -405,8 +413,8 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 Gates 0–13 are agent-instruction-driven checks — read the prompt, run the described commands, evaluate. An agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit this file's gate definition instead of fixing the underlying violation, then report a clean gate summary afterward. Two layers now cut against that, neither complete:
 
-- **Live (partial):** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` against `.claude/commands/*.md`, `scripts/check_*.py`, `CLAUDE.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the current branch matches `feature/*` (exit 2, with the remedy printed). Limits: Bash-command detection is best-effort (redirects, `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`rm`; `python -c`, interpreter heredocs and the like get through); the hook and its settings entry are themselves editable on any non-`feature/*` branch, and nothing blocks an edit on a `chore/*`/`fix/*` branch (that is the intended route for real maintenance, reviewed as its own PR); it fails open on a detached HEAD or malformed input; it only runs in sessions that load this repo's `.claude/settings.json`; `.github/workflows/*` and `.githooks/*` are not on the protected list. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix.
-- **After the fact:** Gate 13 (`scripts/check_gate_integrity.py`) and `/review`'s re-run of it at the PR HEAD SHA catch a gate-definition edit on a `feature/*` branch in the diff, and the `gates` CI job repeats it outside the session.
+- **Live (partial):** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` against `.claude/commands/*.md`, `scripts/check_*.py`, `CLAUDE.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the current branch matches `feature/*` (exit 2, with the remedy printed). Limits: Bash-command detection is best-effort (redirects, `tee`, `sed -i`/`perl -i`, `cp`/`ln`/`mv`/`rm` including a whole protected directory, `truncate`, `dd of=`, `bash -c`, `cd dir && ...`; `python -c`, interpreter heredocs, variable/glob expansion and git plumbing get through); the hook and its `settings.json` entry are themselves editable on any non-`feature/*` branch, and nothing blocks an edit on a `chore/*`/`fix/*` branch (that is the intended route for real maintenance, reviewed as its own PR — including a `fewer-permission-prompts` prune of `settings.json`); it fails open on a detached HEAD, a missing script, or malformed input; it only runs in sessions that load this repo's `.claude/settings.json` (a session launched from a parent directory may not — unverified); `.claude/settings.local.json` (which can carry `disableAllHooks`), `.github/workflows/*`, and `.githooks/*` are not on the protected list. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix.
+- **After the fact:** Gate 13 (`scripts/check_gate_integrity.py`) catches an edit to the files it lists (`gates.md`, `CLAUDE.md`, `invariants.md`, `scripts/check_*.py`) on a `feature/*` branch, in the diff, and the `gates` CI job repeats it outside the session using the base branch's copy of the script. `/review` re-runs it too. The hook covers a wider set than Gate 13 does (the other command files, `settings.json`, the hook itself, the golden test): an edit to those that slips past the hook is not caught after the fact by any script today.
 
 `/pipeline-review`'s Settings hygiene check (item 7) still reads `.claude/settings.json` for hook-config hygiene, but that is a periodic audit. The hook pattern is sourced from a practitioner design (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
 

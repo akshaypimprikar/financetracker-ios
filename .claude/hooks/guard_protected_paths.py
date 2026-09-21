@@ -12,11 +12,14 @@ Hook contract (Claude Code hooks reference, code.claude.com/docs/en/hooks):
   exit 0 allows; any other exit code is a non-blocking error (tool proceeds)
 
 Limits (deliberate — see the PR that added this file):
-  - Bash detection is a best-effort parse of redirects, tee, sed/perl -i,
-    cp/mv/rm; `python -c`, heredoc-into-interpreter, git plumbing and the
-    like are not detected.
-  - This file is itself protected only on feature/* — it is editable on any
-    other branch, and a chore/* edit is not blocked at all.
+  - Bash detection is a best-effort parse: redirects (> >> &> >| >&), tee,
+    sed/perl -i, cp/install/ln (destination), mv/rm (incl. a directory holding
+    protected files), truncate, dd of=, `bash -c '...'` and `cd dir && ...`.
+    `python -c`, interpreter heredocs, variable/glob expansion, git plumbing
+    (`git checkout <ref> -- file`) and the like are not detected.
+  - This file and its settings.json entry are protected only on feature/*:
+    editable on any other branch, and a chore/* edit is not blocked at all.
+    `.claude/settings.local.json` is not on the protected list.
   - Fails open: bad stdin, no git repo, or a detached HEAD allow the call.
 
 Usage: guard_protected_paths.py            (reads hook JSON on stdin)
@@ -66,8 +69,16 @@ def nearest_existing_dir(path):
     return d if os.path.isdir(d) else None
 
 
-def protected_relpath(abs_path):
-    """(repo_root, relpath) if abs_path is a protected file inside a git repo, else None."""
+# Directories that contain protected files: rm/mv of one of these removes them too.
+PROTECTED_DIRS = set()
+for _g in PROTECTED_GLOBS:
+    _parts = _g.split("/")[:-1]
+    PROTECTED_DIRS.update("/".join(_parts[: n + 1]) for n in range(len(_parts)))
+
+
+def protected_relpath(abs_path, destructive=False):
+    """(repo_root, relpath) if abs_path is a protected file inside a git repo, else None.
+    With destructive=True (rm/mv), a directory holding protected files also counts."""
     d = nearest_existing_dir(abs_path)
     if not d:
         return None
@@ -79,6 +90,8 @@ def protected_relpath(abs_path):
     for glob in PROTECTED_GLOBS:
         if fnmatch.fnmatchcase(rel.lower(), glob.lower()):
             return root, rel
+    if destructive and rel.lower() in {x.lower() for x in PROTECTED_DIRS}:
+        return root, rel
     return None
 
 
@@ -86,45 +99,90 @@ def resolve(path, cwd):
     return os.path.normpath(os.path.join(cwd, os.path.expanduser(path)))
 
 
-def split_words(segment):
-    # punctuation_chars splits `x>f` into x, >, f while keeping quoted text intact.
+def unquote(word):
+    if len(word) >= 2 and word[0] == word[-1] and word[0] in "'\"":
+        return word[1:-1]
+    return word
+
+
+def strip_heredocs_and_newlines(command):
+    """Drop heredoc bodies (data, not commands); turn unquoted newlines into `;`."""
+    lines, out, delim = command.split("\n"), [], None
+    for line in lines:
+        if delim is not None:
+            if line.strip() == delim:
+                delim = None
+            continue
+        out.append(line)
+        m = re.search(r"<<-?\s*(['\"]?)([A-Za-z_][A-Za-z_0-9]*)\1", line)
+        if m:
+            delim = m.group(2)
+    return " ; ".join(out)
+
+
+def tokenize(command):
+    # Non-posix keeps quotes on tokens, so a quoted '>' stays distinguishable from a redirect.
     try:
-        lex = shlex.shlex(segment, posix=True, punctuation_chars=True)
+        lex = shlex.shlex(strip_heredocs_and_newlines(command), posix=False, punctuation_chars=True)
         lex.whitespace_split = False
         return list(lex)
     except ValueError:
-        return segment.split()
+        return None
 
 
-def bash_write_targets(command):
-    """Best-effort list of paths a shell command writes to."""
-    targets = []
-    for segment in re.split(r"\n|;|&&|\|\||\|", command):
-        words = split_words(segment)
+def bash_write_targets(command, cwd, _depth=0):
+    """Best-effort [(absolute path, is_delete_or_move)] a shell command writes to or removes."""
+    tokens = tokenize(command)
+    if tokens is None:
+        return []
+    segments, segment = [], []
+    for t in tokens + [";"]:
+        if t in (";", "&&", "||", "|", "&", "|&"):
+            segments.append(segment)
+            segment = []
+        else:
+            segment.append(t)
+    results, cur = [], cwd  # `cd dir && ...` moves cur for later segments
+    for words in segments:
+        found, destructive = [], False
         for i, w in enumerate(words):
-            if w in (">", ">>", "&>", "&>>", ">|") and i + 1 < len(words):  # `>&` (fd dup) is not a file
-                targets.append(words[i + 1])
+            if w in (">", ">>", "&>", "&>>", ">|") and i + 1 < len(words):
+                found.append(unquote(words[i + 1]))
+            elif w == ">&" and i + 1 < len(words) and not re.match(r"^(\d+|-)$", words[i + 1]):
+                found.append(unquote(words[i + 1]))  # `>& file` redirects both streams
         cmd_idx = next(
             (i for i, w in enumerate(words) if "=" not in w and w not in WRAPPER_WORDS), None
         )
-        if cmd_idx is None:
-            continue
-        cmd = os.path.basename(words[cmd_idx])
-        args = [w for w in words[cmd_idx + 1 :] if not w.startswith("-")]
-        flags = [w for w in words[cmd_idx + 1 :] if w.startswith("-")]
-        if cmd == "tee":
-            targets += args
-        elif cmd in ("sed", "gsed", "perl") and any(
-            f.startswith("--in-place") or re.match(r"^-[A-Za-z]*i", f) for f in flags
-        ):
-            targets += args
-        elif cmd in ("cp", "install") and args:
-            targets.append(args[-1])
-        elif cmd == "mv":
-            targets += args
-        elif cmd == "rm":
-            targets += args
-    return targets
+        if cmd_idx is not None:
+            cmd = os.path.basename(unquote(words[cmd_idx]))
+            rest = [unquote(w) for w in words[cmd_idx + 1 :]]
+            args = [w for w in rest if not w.startswith("-") and not re.match(r"^[<>&|]", w)]
+            flags = [w for w in rest if w.startswith("-")]
+            if cmd == "cd":
+                if args:
+                    cur = resolve(args[0], cur)
+                continue
+            if cmd in ("bash", "sh", "zsh") and "-c" in rest and _depth < 3:
+                idx = rest.index("-c")
+                if idx + 1 < len(rest):
+                    results += bash_write_targets(rest[idx + 1], cur, _depth + 1)
+            elif cmd == "tee":
+                found += args
+            elif cmd in ("sed", "gsed", "perl") and any(
+                f.startswith("--in-place") or re.match(r"^-[A-Za-z]*i", f) for f in flags
+            ):
+                found += args
+            elif cmd in ("cp", "install", "ln") and args:
+                found.append(args[-1])
+            elif cmd in ("mv", "rm"):
+                found += args
+                destructive = True
+            elif cmd == "truncate":
+                found += args
+            elif cmd == "dd":
+                found += [w[3:] for w in rest if w.startswith("of=")]
+        results += [(resolve(t, cur), destructive) for t in found]
+    return results
 
 
 def evaluate(payload):
@@ -134,16 +192,14 @@ def evaluate(payload):
     cwd = payload.get("cwd") or os.getcwd()
 
     if tool in FILE_TOOLS:
-        candidates = [tool_input.get("file_path")]
+        candidates = [(resolve(tool_input["file_path"], cwd), False)] if tool_input.get("file_path") else []
     elif tool == "Bash":
-        candidates = bash_write_targets(tool_input.get("command") or "")
+        candidates = bash_write_targets(tool_input.get("command") or "", cwd)
     else:
         return None
 
-    for raw in candidates:
-        if not raw:
-            continue
-        hit = protected_relpath(resolve(raw, cwd))
+    for abs_path, destructive in candidates:
+        hit = protected_relpath(abs_path, destructive)
         if not hit:
             continue
         root, rel = hit
@@ -232,6 +288,19 @@ def self_test():
             ("feature: Bash sed without -i", bash("feat", "sed 's/a/b/' CLAUDE.md"), False),
             ("feature: Bash redirect to ordinary file", bash("feat", "echo x > FinanceTracker/A.swift"), False),
             ("chore: Bash redirect", bash("chore", "echo x > CLAUDE.md"), False),
+            ("feature: Bash cd into dir then redirect", bash("feat", "cd .claude/commands && echo x > gates.md"), True),
+            ("feature: Bash bash -c redirect", bash("feat", "bash -c 'echo x > CLAUDE.md'"), True),
+            ("feature: Bash sed -i with quoted |", bash("feat", "sed -i 's/a|b/c/' CLAUDE.md"), True),
+            ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/commands"), True),
+            ("feature: Bash mv protected dir away", bash("feat", "mv scripts /tmp/s"), True),
+            ("feature: Bash >| clobber", bash("feat", "echo x >| CLAUDE.md"), True),
+            ("feature: Bash >& file", bash("feat", "echo x >& CLAUDE.md"), True),
+            ("feature: Bash truncate", bash("feat", "truncate -s 0 CLAUDE.md"), True),
+            ("feature: Bash dd of=", bash("feat", "dd if=/dev/null of=CLAUDE.md"), True),
+            ("feature: Bash grep '>' file is read-only", bash("feat", "grep '>' CLAUDE.md"), False),
+            ("feature: Bash heredoc body mentioning rm CLAUDE.md", bash("feat", "cat > /tmp/n.md <<'EOF'\nrm CLAUDE.md\nEOF"), False),
+            ("feature: Bash cd elsewhere then redirect to same-named ordinary file", bash("feat", "cd FinanceTracker && echo x > CLAUDE.md"), False),
+            ("feature: Bash rm of an ordinary dir", bash("feat", "rm -rf FinanceTracker/build"), False),
         ]
         for label, payload, expect_block in cases:
             proc = subprocess.run(
