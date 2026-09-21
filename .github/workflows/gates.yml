@@ -1,0 +1,63 @@
+name: Gates
+
+# No `paths:` filter on purpose: a gate that can be skipped by touching only
+# excluded paths (.github/**, .claude/**, docs) is not a gate. develop only:
+# release/hotfix PRs to main diff the whole release delta and have no waiver path;
+# every commit in them already passed this job on its develop PR.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [develop]
+
+concurrency:
+  group: gates-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: gates
+    runs-on: ubuntu-latest
+    steps:
+      # The scripts that judge the PR come from the BASE branch, so a PR cannot
+      # edit the scripts that judge it. Limit: this workflow file itself is read
+      # from the PR merge ref, so a PR can still edit the workflow; closing that
+      # needs branch rules / CODEOWNERS review on .github/**.
+      - name: Checkout PR head (full history)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          path: head
+
+      - name: Checkout base branch (trusted scripts)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - name: Run deterministic gates
+        working-directory: head
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -o pipefail
+          status=0
+          for script in check_tdd_commit_order.py check_gate_integrity.py; do
+            trusted="$GITHUB_WORKSPACE/base/scripts/$script"
+            if [ ! -f "$trusted" ]; then
+              # Bootstrap exception: only the PR that first introduces a script
+              # has no base copy to run; once merged, the base copy always wins.
+              echo "::warning::scripts/$script does not exist on origin/$BASE_REF; falling back to the PR head copy, which the PR itself controls. This is only valid for the PR that first introduces the script."
+              trusted="$GITHUB_WORKSPACE/head/scripts/$script"
+            fi
+            echo "::group::$script"
+            if [ "$script" = "check_gate_integrity.py" ]; then
+              # HEAD is detached in CI, so pass the PR's head branch explicitly.
+              python3 "$trusted" "origin/$BASE_REF" "$HEAD_REF" || status=1
+            else
+              python3 "$trusted" "origin/$BASE_REF" || status=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $status
