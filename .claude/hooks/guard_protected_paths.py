@@ -48,12 +48,18 @@ PROTECTED_GLOBS = (
 GUARDED_BRANCH = re.compile(r"^feature/")
 FILE_TOOLS = ("Write", "Edit", "MultiEdit")
 WRAPPER_WORDS = ("sudo", "env", "command", "time", "nohup", "exec")
-# Flags for the wrapper words above that consume a following argument token
-# (not just the flag itself) — e.g. `-u` in `sudo -u foo` or `exec -a name`.
-# Without tracking these, the argument ("foo") is mistaken for the real
-# command and detection silently stops working the moment a wrapper word is
-# followed by any flag at all, not just an argument-taking one.
-WRAPPER_ARG_FLAGS = {"-u", "-g", "-a", "-p"}
+# Per-wrapper flags that consume a following argument token (not just the
+# flag itself) — e.g. `-u` in `sudo -u foo` or `exec -a name`. Keyed by
+# wrapper word, not a single flat set: `-p` takes an argument for sudo
+# (custom prompt) but is a bare no-arg flag for `time -p`/`command -p` —
+# a flat set would misidentify `time -p rm CLAUDE.md`'s "rm" as -p's
+# argument and never reach the real command at all. A wrapper with no
+# entry here (command/time/nohup) has no argument-taking flags.
+WRAPPER_ARG_FLAGS = {
+    "sudo": {"-u", "-g", "-p", "-h", "-r", "-t", "-C", "-a"},
+    "env": {"-u", "-C", "-S"},
+    "exec": {"-a"},
+}
 
 
 def git(cwd, *args):
@@ -201,9 +207,10 @@ def real_command_index(words):
             i += 1  # a VAR=val prefix (env-style or a literal assignment)
             continue
         if w in WRAPPER_WORDS:
+            arg_flags = WRAPPER_ARG_FLAGS.get(w, set())
             i += 1
             while i < n and (words[i].startswith("-") or "=" in words[i]):
-                if words[i] in WRAPPER_ARG_FLAGS:
+                if words[i] in arg_flags:
                     i += 1  # also skip this flag's own argument token
                 i += 1
             continue
@@ -375,6 +382,9 @@ def self_test():
             ("feature: Bash env -i rm (wrapper flag)", bash("feat", "env -i rm CLAUDE.md"), True),
             ("feature: Bash env VAR=val rm (wrapper assignment)", bash("feat", "env VAR=val rm CLAUDE.md"), True),
             ("feature: Bash sudo rm, no flags (already worked)", bash("feat", "sudo rm CLAUDE.md"), True),
+            ("feature: Bash time -p rm (no-arg -p for time)", bash("feat", "time -p rm CLAUDE.md"), True),
+            ("feature: Bash command -p rm (no-arg -p for command)", bash("feat", "command -p rm CLAUDE.md"), True),
+            ("feature: Bash sudo -p prompt rm (arg-taking -p for sudo)", bash("feat", "sudo -p prompt rm CLAUDE.md"), True),
             ("feature: Bash sed -i with quoted |", bash("feat", "sed -i 's/a|b/c/' CLAUDE.md"), True),
             ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/skills/gates"), True),
             ("feature: Bash mv protected dir away", bash("feat", "mv scripts /tmp/s"), True),
