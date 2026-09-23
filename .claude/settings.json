@@ -158,7 +158,7 @@
       "/Users/akshaypimprikar/.claude/skills",
       "/Users/akshaypimprikar/Desktop/Claude/ActionTracker",
       "/Users/akshaypimprikar/.claude",
-      "/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/commands",
+      "/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/skills",
       "/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki",
       "/Users/akshaypimprikar/Desktop",
       "/tmp",
@@ -177,7 +177,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/skills/' && echo '{\"systemMessage\": \"REMINDER: .claude/skills/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
           }
         ]
       }

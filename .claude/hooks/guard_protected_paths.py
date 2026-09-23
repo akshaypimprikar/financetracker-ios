@@ -36,8 +36,9 @@ import tempfile
 
 # Repo-relative globs. fnmatch's `*` also crosses `/`, so nested paths match.
 PROTECTED_GLOBS = (
-    ".claude/commands/*.md",
+    ".claude/skills/*/SKILL.md",
     "scripts/check_*.py",
+    "AGENTS.md",
     "CLAUDE.md",
     ".claude/context/invariants.md",
     ".claude/settings.json",
@@ -47,6 +48,18 @@ PROTECTED_GLOBS = (
 GUARDED_BRANCH = re.compile(r"^feature/")
 FILE_TOOLS = ("Write", "Edit", "MultiEdit")
 WRAPPER_WORDS = ("sudo", "env", "command", "time", "nohup", "exec")
+# Per-wrapper flags that consume a following argument token (not just the
+# flag itself) — e.g. `-u` in `sudo -u foo` or `exec -a name`. Keyed by
+# wrapper word, not a single flat set: `-p` takes an argument for sudo
+# (custom prompt) but is a bare no-arg flag for `time -p`/`command -p` —
+# a flat set would misidentify `time -p rm CLAUDE.md`'s "rm" as -p's
+# argument and never reach the real command at all. A wrapper with no
+# entry here (command/time/nohup) has no argument-taking flags.
+WRAPPER_ARG_FLAGS = {
+    "sudo": {"-u", "-g", "-p", "-h", "-r", "-t", "-C", "-a"},
+    "env": {"-u", "-C", "-S"},
+    "exec": {"-a"},
+}
 
 
 def git(cwd, *args):
@@ -69,16 +82,64 @@ def nearest_existing_dir(path):
     return d if os.path.isdir(d) else None
 
 
-# Directories that contain protected files: rm/mv of one of these removes them too.
-PROTECTED_DIRS = set()
-for _g in PROTECTED_GLOBS:
-    _parts = _g.split("/")[:-1]
-    PROTECTED_DIRS.update("/".join(_parts[: n + 1]) for n in range(len(_parts)))
+# Directory-component lists (glob's dirname portion, "*" kept as a wildcard
+# component — not flattened to a literal string) for the destructive-removal
+# check below. A plain string-membership set can't handle a glob like
+# ".claude/skills/*/SKILL.md" whose wildcard sits mid-path, not at the
+# filename: "rm -rf .claude/skills/gates" must still match "*" against the
+# real directory name "gates", not against the literal three-character
+# string "*".
+PROTECTED_DIR_PARTS = [_g.split("/")[:-1] for _g in PROTECTED_GLOBS]
+
+
+def is_protected_dir_prefix(rel_dir):
+    """True if removing/moving rel_dir (a directory) would necessarily take a
+    protected file with it — rel_dir is itself, or an ancestor of, some
+    PROTECTED_GLOBS entry's directory."""
+    rel_parts = [p.lower() for p in rel_dir.split("/")]
+    for glob_parts in PROTECTED_DIR_PARTS:
+        if not glob_parts or len(rel_parts) > len(glob_parts):
+            continue
+        if all(
+            gp == "*" or gp.lower() == rp
+            for gp, rp in zip(glob_parts, rel_parts)
+        ):
+            return True
+    return False
+
+
+# Cheap substring fragments that must appear somewhere in a path for it to
+# possibly match a PROTECTED_GLOBS entry — checked before any subprocess.
+# Not a full match test (fnmatch below still does that precisely); this is
+# purely an early-exit so ordinary Write/Edit/MultiEdit calls (the vast
+# majority in any session — this hook fires on every one) skip the git
+# rev-parse + directory walk entirely instead of paying that cost on every
+# single edit regardless of what it touches. Only applied to the
+# non-destructive path: a destructive rm/mv of a protected *directory*
+# (".claude/skills/gates", not "SKILL.md") doesn't contain any of these
+# fragments in its own path, so that check must still go through in full —
+# destructive calls (mv/rm) are a small minority of writes, unlike
+# Write/Edit/MultiEdit and tee/redirect/sed-i/cp, so this still captures
+# the dominant cost.
+_PROTECTED_FRAGMENTS = tuple(
+    frag.lower() for frag in (
+        "skill.md", "scripts/check_", "agents.md", "claude.md",
+        "invariants.md", "settings.json", ".claude/hooks/",
+        "importhashgoldentests.swift",
+    )
+)
+
+
+def could_be_protected(abs_path):
+    low = abs_path.lower()
+    return any(frag in low for frag in _PROTECTED_FRAGMENTS)
 
 
 def protected_relpath(abs_path, destructive=False):
     """(repo_root, relpath) if abs_path is a protected file inside a git repo, else None.
     With destructive=True (rm/mv), a directory holding protected files also counts."""
+    if not destructive and not could_be_protected(abs_path):
+        return None
     d = nearest_existing_dir(abs_path)
     if not d:
         return None
@@ -90,7 +151,7 @@ def protected_relpath(abs_path, destructive=False):
     for glob in PROTECTED_GLOBS:
         if fnmatch.fnmatchcase(rel.lower(), glob.lower()):
             return root, rel
-    if destructive and rel.lower() in {x.lower() for x in PROTECTED_DIRS}:
+    if destructive and is_protected_dir_prefix(rel):
         return root, rel
     return None
 
@@ -130,6 +191,33 @@ def tokenize(command):
         return None
 
 
+def real_command_index(words):
+    """Index of the actual command token in one `;`/`&&`-separated segment,
+    skipping past wrapper words (sudo/env/command/time/nohup/exec) AND their
+    own flags and flag-arguments — not just the wrapper word itself. A
+    single `w not in WRAPPER_WORDS` check stops at the first token after a
+    wrapper word regardless of what it is, so `sudo -u foo rm CLAUDE.md`
+    picked up "-u" as the command and never looked at `rm`; verified by
+    direct reproduction. Returns None if every token is a wrapper/flag/
+    assignment (nothing left to be a real command)."""
+    i, n = 0, len(words)
+    while i < n:
+        w = words[i]
+        if "=" in w:
+            i += 1  # a VAR=val prefix (env-style or a literal assignment)
+            continue
+        if w in WRAPPER_WORDS:
+            arg_flags = WRAPPER_ARG_FLAGS.get(w, set())
+            i += 1
+            while i < n and (words[i].startswith("-") or "=" in words[i]):
+                if words[i] in arg_flags:
+                    i += 1  # also skip this flag's own argument token
+                i += 1
+            continue
+        return i
+    return None
+
+
 def bash_write_targets(command, cwd, _depth=0):
     """Best-effort [(absolute path, is_delete_or_move)] a shell command writes to or removes."""
     tokens = tokenize(command)
@@ -150,9 +238,7 @@ def bash_write_targets(command, cwd, _depth=0):
                 found.append(unquote(words[i + 1]))
             elif w == ">&" and i + 1 < len(words) and not re.match(r"^(\d+|-)$", words[i + 1]):
                 found.append(unquote(words[i + 1]))  # `>& file` redirects both streams
-        cmd_idx = next(
-            (i for i, w in enumerate(words) if "=" not in w and w not in WRAPPER_WORDS), None
-        )
+        cmd_idx = real_command_index(words)
         if cmd_idx is not None:
             cmd = os.path.basename(unquote(words[cmd_idx]))
             rest = [unquote(w) for w in words[cmd_idx + 1 :]]
@@ -235,11 +321,11 @@ def self_test():
         repos = {}
         for name, branch in (("feat", "feature/demo"), ("chore", "chore/demo"), ("detached", None)):
             d = os.path.join(tmp, name)
-            os.makedirs(os.path.join(d, ".claude", "commands"))
+            os.makedirs(os.path.join(d, ".claude", "skills", "gates"))
             os.makedirs(os.path.join(d, "scripts"))
             os.makedirs(os.path.join(d, "FinanceTracker"))
             subprocess.run(["git", "-C", d, "init", "-q"], check=True)
-            for f in (".claude/commands/gates.md", "scripts/check_x.py", "CLAUDE.md", "FinanceTracker/A.swift"):
+            for f in (".claude/skills/gates/SKILL.md", "scripts/check_x.py", "AGENTS.md", "CLAUDE.md", "FinanceTracker/A.swift"):
                 open(os.path.join(d, f), "w").close()
             subprocess.run(["git", "-C", d, "add", "-A"], check=True)
             subprocess.run(
@@ -260,9 +346,10 @@ def self_test():
 
         cases = [
             # (label, payload, expect_block)
-            ("feature: Write gates.md", write("Write", "feat", ".claude/commands/gates.md"), True),
-            ("feature: Edit gates.md", write("Edit", "feat", ".claude/commands/gates.md"), True),
+            ("feature: Write gates SKILL.md", write("Write", "feat", ".claude/skills/gates/SKILL.md"), True),
+            ("feature: Edit gates SKILL.md", write("Edit", "feat", ".claude/skills/gates/SKILL.md"), True),
             ("feature: MultiEdit CLAUDE.md", write("MultiEdit", "feat", "CLAUDE.md"), True),
+            ("feature: Write AGENTS.md", write("Write", "feat", "AGENTS.md"), True),
             ("feature: Write CLAUDE.md, wrong case", write("Write", "feat", "claude.md"), True),
             ("feature: Write scripts/check_x.py", write("Write", "feat", "scripts/check_x.py"), True),
             ("feature: Write .claude/settings.json (new)", write("Write", "feat", ".claude/settings.json"), True),
@@ -271,27 +358,35 @@ def self_test():
             ("feature: Write ImportHashGoldenTests (new dirs)", write("Write", "feat", "FinanceTrackerTests/ImportHashGoldenTests.swift"), True),
             ("feature: Write ordinary .swift", write("Write", "feat", "FinanceTracker/A.swift"), False),
             ("feature: Read tool is ignored", write("Read", "feat", "CLAUDE.md"), False),
-            ("chore: Write gates.md", write("Write", "chore", ".claude/commands/gates.md"), False),
+            ("chore: Write gates SKILL.md", write("Write", "chore", ".claude/skills/gates/SKILL.md"), False),
             ("chore: Edit CLAUDE.md", write("Edit", "chore", "CLAUDE.md"), False),
-            ("detached HEAD: Write gates.md (fail open)", write("Write", "detached", ".claude/commands/gates.md"), False),
-            ("feature: Bash redirect >", bash("feat", "echo x > .claude/commands/gates.md"), True),
+            ("detached HEAD: Write gates SKILL.md (fail open)", write("Write", "detached", ".claude/skills/gates/SKILL.md"), False),
+            ("feature: Bash redirect >", bash("feat", "echo x > .claude/skills/gates/SKILL.md"), True),
             ("feature: Bash append >>", bash("feat", "echo x >> CLAUDE.md"), True),
             ("feature: Bash cat > file <<EOF", bash("feat", "cat > CLAUDE.md <<'EOF'\nhello\nEOF"), True),
             ("feature: Bash tee", bash("feat", "echo x | tee -a scripts/check_x.py"), True),
-            ("feature: Bash sed -i", bash("feat", "sed -i '' 's/a/b/' .claude/commands/gates.md"), True),
+            ("feature: Bash sed -i", bash("feat", "sed -i '' 's/a/b/' .claude/skills/gates/SKILL.md"), True),
             ("feature: Bash chained after &&", bash("feat", "ls && echo x>CLAUDE.md"), True),
             ("feature: Bash mv onto protected", bash("feat", "mv /tmp/x scripts/check_x.py"), True),
             ("feature: Bash rm protected", bash("feat", "rm CLAUDE.md"), True),
+            ("feature: Bash rm AGENTS.md", bash("feat", "rm AGENTS.md"), True),
             ("feature: Bash read-only cat", bash("feat", "cat CLAUDE.md"), False),
             ("feature: Bash protected path as SOURCE of redirect", bash("feat", "cat CLAUDE.md > /tmp/out.txt"), False),
             ("feature: Bash 2>&1 is not a redirect target", bash("feat", "ls CLAUDE.md 2>&1"), False),
             ("feature: Bash sed without -i", bash("feat", "sed 's/a/b/' CLAUDE.md"), False),
             ("feature: Bash redirect to ordinary file", bash("feat", "echo x > FinanceTracker/A.swift"), False),
             ("chore: Bash redirect", bash("chore", "echo x > CLAUDE.md"), False),
-            ("feature: Bash cd into dir then redirect", bash("feat", "cd .claude/commands && echo x > gates.md"), True),
+            ("feature: Bash cd into dir then redirect", bash("feat", "cd .claude/skills/gates && echo x > SKILL.md"), True),
             ("feature: Bash bash -c redirect", bash("feat", "bash -c 'echo x > CLAUDE.md'"), True),
+            ("feature: Bash sudo -u foo rm (wrapper flag+arg)", bash("feat", "sudo -u foo rm CLAUDE.md"), True),
+            ("feature: Bash env -i rm (wrapper flag)", bash("feat", "env -i rm CLAUDE.md"), True),
+            ("feature: Bash env VAR=val rm (wrapper assignment)", bash("feat", "env VAR=val rm CLAUDE.md"), True),
+            ("feature: Bash sudo rm, no flags (already worked)", bash("feat", "sudo rm CLAUDE.md"), True),
+            ("feature: Bash time -p rm (no-arg -p for time)", bash("feat", "time -p rm CLAUDE.md"), True),
+            ("feature: Bash command -p rm (no-arg -p for command)", bash("feat", "command -p rm CLAUDE.md"), True),
+            ("feature: Bash sudo -p prompt rm (arg-taking -p for sudo)", bash("feat", "sudo -p prompt rm CLAUDE.md"), True),
             ("feature: Bash sed -i with quoted |", bash("feat", "sed -i 's/a|b/c/' CLAUDE.md"), True),
-            ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/commands"), True),
+            ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/skills/gates"), True),
             ("feature: Bash mv protected dir away", bash("feat", "mv scripts /tmp/s"), True),
             ("feature: Bash >| clobber", bash("feat", "echo x >| CLAUDE.md"), True),
             ("feature: Bash >& file", bash("feat", "echo x >& CLAUDE.md"), True),
