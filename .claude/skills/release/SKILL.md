@@ -1,4 +1,10 @@
 ---
+name: release
+description: Prepare and tag a release — pre-flight checks, version bump, CHANGELOG, and tag. Invoke with a version number.
+disable-model-invocation: true
+---
+
+---
 model: claude-haiku-4-5-20251001
 ---
 
@@ -18,7 +24,7 @@ Invoked with a version number (e.g. `/release 1.0.0`).
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     > "$LOG" 2>&1; RC=$?
   xcsift < "$LOG"
-  PASSED=$(grep -cE "^Test [Cc]ase '.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
+  PASSED=$(grep -cE "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
   [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "TESTS PASS ($PASSED tests executed)" || echo "TESTS FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
   ```
@@ -74,7 +80,7 @@ git push -u origin release/<version>
 ```
 
 ### 5. Verify the release branch only touches release files
-CLAUDE.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
+AGENTS.md/CLAUDE.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
 ```bash
 git diff develop...HEAD --name-only
 ```

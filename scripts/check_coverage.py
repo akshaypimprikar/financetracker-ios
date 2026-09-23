@@ -11,18 +11,39 @@ import sys
 FAIL_THRESHOLD = 0.60
 WARN_THRESHOLD = 0.80
 
-# Requires live Apple Intelligence-eligible hardware or an Apple Intelligence-enabled
-# host Mac's Simulator — cannot run in CI. Verified via manual on-device testing
-# instead (see decisions.md 2026-07-21). ImportViewModelTests exercises the
-# surrounding ViewModel logic against FakeCategorySuggesting, which IS covered here.
+# Files that genuinely can't be covered by a CI simulator run — e.g. code that
+# requires live hardware-eligible capability (Apple Intelligence, ARKit, a
+# real device sensor) and is verified by manual/on-device testing instead.
+# Add a repo-relative path (e.g. "App/Services/ARKitTracker.swift", not a bare
+# name) with a comment naming the real constraint and how it's verified
+# instead — this is an escape hatch for a genuine coverage-tooling gap, not a
+# way to silence a file that's just under-tested. Matched by path suffix on a
+# "/"-boundary, not name or exact path: xccov's own "path" field is the
+# absolute filesystem path at build time, which differs between machines and
+# CI runners — an exact-match would silently never fire outside whichever
+# environment it was copied from. The "/"-boundary keeps a suffix match from
+# over-matching an unrelated file that merely ends with the same characters
+# (e.g. "FakeFoo/Bar.swift" would otherwise match an exception for "Foo/Bar.swift").
+#
+# FoundationModelsCategorySuggester.swift: requires live Apple
+# Intelligence-eligible hardware or an Apple Intelligence-enabled host Mac's
+# Simulator — cannot run in CI. Verified via manual on-device testing instead
+# (see decisions.md 2026-07-21). ImportViewModelTests exercises the
+# surrounding ViewModel logic against FakeCategorySuggesting, which IS
+# covered here.
 HARDWARE_DEPENDENT_EXCEPTIONS = {
-    "FoundationModelsCategorySuggester.swift",
+    "FinanceTracker/Services/FoundationModelsCategorySuggester.swift",
 }
 
 with open(sys.argv[1]) as f:
     report = json.load(f)
 
+def _matches_exception(path, rel):
+    return path == rel or path.endswith("/" + rel)
+
+
 source_files = []
+schema_drift_files = []
 for target in report.get("targets", []):
     if "Tests" in target.get("name", ""):
         continue
@@ -35,16 +56,41 @@ for target in report.get("targets", []):
         if (name.endswith("View.swift") or name.endswith("Sheet.swift") or
                 name.endswith("Row.swift") or name.startswith("Color+")):
             continue
-        if name in HARDWARE_DEPENDENT_EXCEPTIONS:
+        if any(_matches_exception(path, rel) for rel in HARDWARE_DEPENDENT_EXCEPTIONS):
+            continue
+        if "lineCoverage" not in file:
+            schema_drift_files.append(name)
             continue
         source_files.append({
             "name": name,
-            "coverage": file.get("lineCoverage", 0.0),
+            "coverage": file["lineCoverage"],
         })
+
+# xccov's JSON schema dropped/renamed the field this script reads — a tooling
+# problem, not a coverage problem. Defaulting silently to 0.0 here would have
+# reported every file as untested. Checked before the `not source_files` exit
+# below: schema drift is uniform across a report, so it typically empties
+# `source_files` entirely rather than leaving some files behind — that exit
+# must not run first, or it would silently report success instead.
+if schema_drift_files:
+    print(f"ERROR: {len(schema_drift_files)} file(s) have no 'lineCoverage' key in the xccov report:")
+    for name in schema_drift_files:
+        print(f"  {name}")
+    print("\nThis usually means xccov's JSON schema changed. Update this script's field name before trusting its output.")
+    sys.exit(2)
 
 if not source_files:
     print("No source files found in coverage report.")
     sys.exit(0)
+
+# Every source file reporting exactly 0% is the fingerprint of coverage not
+# being collected at all (e.g. `xcodebuild test` run without
+# `-enableCodeCoverage YES`), not of an entire codebase being untested.
+if len(source_files) > 1 and all(f["coverage"] == 0.0 for f in source_files):
+    print(f"ERROR: all {len(source_files)} source file(s) report exactly 0% coverage.")
+    print("This is almost always a misconfigured test run, not genuinely untested code.")
+    print("Check that `xcodebuild test` was invoked with `-enableCodeCoverage YES`.")
+    sys.exit(2)
 
 failing = [f for f in source_files if f["coverage"] < FAIL_THRESHOLD]
 warning = [f for f in source_files if FAIL_THRESHOLD <= f["coverage"] < WARN_THRESHOLD]

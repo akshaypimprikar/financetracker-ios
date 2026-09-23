@@ -1,3 +1,9 @@
+---
+name: pr-followup
+description: Auto-chain review, test, and code-review immediately after a PR is opened, with no human trigger needed for any of the three. Invoke right after a PR is created, or manually against an existing PR.
+disable-model-invocation: true
+---
+
 # PR Followup Agent
 
 Auto-chains `/review`, `/test`, and `code-review:code-review` immediately
@@ -31,5 +37,5 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
 ## Done when
 `/review` and `/test` have reported, and `code-review:code-review` has either
 reported or (on a `disable-model-invocation` setup) printed the fallback
-warning. Do not merge — per CLAUDE.md's Merge rule, merging is the user's
+warning. Do not merge — per AGENTS.md/CLAUDE.md's Merge rule, merging is the user's
 call once every configured check is clean.

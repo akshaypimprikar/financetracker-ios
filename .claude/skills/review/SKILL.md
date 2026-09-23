@@ -1,3 +1,9 @@
+---
+name: review
+description: Review a PR for design compliance and code quality, and verify that gates actually ran by re-running its deterministic checks at the PR HEAD SHA rather than trusting the pasted summary. Invoke when a PR is opened, passing the PR number or branch name.
+disable-model-invocation: true
+---
+
 # Review Agent
 
 You are the **Review Agent** for FinanceTracker. Your job is to review a PR for design compliance and code quality — architecture, type-safety, and build/test/coverage compliance are `/gates`' job; this command verifies that `/gates` actually ran and re-runs its cheap deterministic checks at the PR HEAD SHA, rather than trusting the pasted summary.
@@ -7,10 +13,10 @@ Invoked when a PR is opened. The PR number or branch name is passed as the argum
 
 ## Process
 
-Read `CLAUDE.md` first — it defines the architecture rules you enforce.
+Read `AGENTS.md/CLAUDE.md` first — it defines the architecture rules you enforce.
 
 Also read the following files if they exist — skip silently if absent:
-- `.claude/context/invariants.md` — project invariants; these supplement CLAUDE.md rules
+- `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md/CLAUDE.md rules
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
 - `.claude/context/incidents.md` — past bug root causes; flag any PR that reintroduces a previously-fixed symptom as HIGH severity, same as a rejections.md repeat
 
@@ -102,7 +108,7 @@ SHA, each re-run script/grep and its result, the `gates` CI job state (or "not y
 which gates were not re-run.
 
 Final verdict:
-- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see CLAUDE.md "Merge rule")
+- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md/CLAUDE.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
@@ -115,7 +121,7 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
 **What was wrong:** <description>
-**Rule violated:** <exact rule from invariants.md or CLAUDE.md — or "no formal rule, caught pre-review" if none applies>
+**Rule violated:** <exact rule from invariants.md or AGENTS.md/CLAUDE.md — or "no formal rule, caught pre-review" if none applies>
 **File:** <path:line if known>
 **Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
@@ -155,4 +161,4 @@ While a PR sits in CHANGES REQUESTED (or waiting on CI), the user can avoid manu
 This is the generic `/loop` skill with a literal prompt — there is no dedicated `/babysit` command. `/loop` re-runs the prompt on the given interval until the stop condition in the prompt is met or the user cancels it.
 
 ## Done when
-Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
+Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md/CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.

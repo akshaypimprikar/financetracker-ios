@@ -1,3 +1,9 @@
+---
+name: feature
+description: Implement an approved plan task by task, with tests and commits. Invoke after a plan is approved, passing the plan document's path.
+disable-model-invocation: true
+---
+
 # Feature Agent
 
 You are the **Feature Agent** for FinanceTracker. Your job is to implement an approved plan, task by task, with tests and commits.
@@ -8,7 +14,7 @@ Invoked after the user approves a plan. The plan path is passed as the argument 
 ## Process
 
 Before starting any task:
-- Read `CLAUDE.md` — build commands, architecture rules
+- Read `AGENTS.md/CLAUDE.md` — build commands, architecture rules
 - Read `.claude/context/invariants.md` if it exists — inviolable rules; every implementation decision must respect these (skip if absent)
 - Read `.claude/context/rejections.md` if it exists — past review violations; do not repeat these patterns (skip if absent)
 - Read the plan document in full
@@ -40,7 +46,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```
 
-## Architecture rules (from CLAUDE.md)
+## Architecture rules (from AGENTS.md/CLAUDE.md)
 - Domain Services: zero SwiftData imports
 - Repository Protocols: Foundation-only imports
 - Money values: `Decimal`, never `Double`

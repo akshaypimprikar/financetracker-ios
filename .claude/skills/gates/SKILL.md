@@ -1,4 +1,10 @@
 ---
+name: gates
+description: Verify a feature branch meets all pre-PR criteria (build, tests, coverage, gate integrity, and more) before opening the pull request. Invoke at the end of a feature session, passing the branch name.
+disable-model-invocation: true
+---
+
+---
 model: claude-haiku-4-5-20251001
 ---
 
@@ -121,7 +127,7 @@ git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportAct
 Pass: first grep returns no output (no `@MainActor` outside comments — the actor isn't main-actor-isolated); second grep count is `0` (no `@Model` type — `Account`/`Transaction`/`Category`/`Budget`/`ImportRecord` — appears as a parameter or return type on the protocol-conformance methods, i.e. nothing `@Model`-typed crosses the actor's public boundary; internal caching of a resolved `@Model` instance that never leaves the actor is fine and won't trigger this); third grep count is exactly `1` (one `modelContext.save()` per chunk, never per row).
 Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
-### Gate 9 — Architecture & layer-rule compliance (CLAUDE.md-enforced rules)
+### Gate 9 — Architecture & layer-rule compliance (AGENTS.md/CLAUDE.md-enforced rules)
 This is the single authoritative check for all layer-separation, type-safety, and
 pattern rules. `/review` re-runs this gate's grep-only commands at the PR HEAD SHA and
 compares the result to your gate summary (it does not re-run `xcodebuild`). If any command
@@ -135,7 +141,7 @@ git diff develop...HEAD --name-only -- '*.swift' | grep '/Repositories/Protocols
 
 # ViewModels must depend on repository protocols, never concrete SwiftData*Repository types
 # (Tests/ excluded — FinanceTrackerTests/ViewModels/*.swift legitimately constructs concrete
-# SwiftData*Repository instances against an in-memory ModelContainer, per CLAUDE.md's own
+# SwiftData*Repository instances against an in-memory ModelContainer, per AGENTS.md/CLAUDE.md's own
 # documented test pattern; that's not a production ViewModel violating the rule.)
 git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | grep -v 'Tests/' | xargs grep -n 'SwiftData\w*Repository' 2>/dev/null
 
@@ -416,8 +422,8 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
 
 Gates 0–13 are agent-instruction-driven checks — read the prompt, run the described commands, evaluate. An agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit this file's gate definition instead of fixing the underlying violation, then report a clean gate summary afterward. Two layers now cut against that, neither complete:
 
-- **Live (partial):** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` against `.claude/commands/*.md`, `scripts/check_*.py`, `CLAUDE.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the current branch matches `feature/*` (exit 2, with the remedy printed). Limits: Bash-command detection is best-effort (redirects, `tee`, `sed -i`/`perl -i`, `cp`/`ln`/`mv`/`rm` including a whole protected directory, `truncate`, `dd of=`, `bash -c`, `cd dir && ...`; `python -c`, interpreter heredocs, variable/glob expansion and git plumbing get through); the hook and its `settings.json` entry are themselves editable on any non-`feature/*` branch, and nothing blocks an edit on a `chore/*`/`fix/*` branch (that is the intended route for real maintenance, reviewed as its own PR — including a `fewer-permission-prompts` prune of `settings.json`); it fails open on a detached HEAD, a missing script, or malformed input; it only runs in sessions that load this repo's `.claude/settings.json` (a session launched from a parent directory may not — unverified); `.claude/settings.local.json` (which can carry `disableAllHooks`), `.github/workflows/*`, and `.githooks/*` are not on the protected list. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix.
-- **After the fact:** Gate 13 (`scripts/check_gate_integrity.py`) catches an edit to the files it lists (`gates.md`, `CLAUDE.md`, `invariants.md`, `scripts/check_*.py`) on a `feature/*` branch, in the diff, and the `gates` CI job repeats it outside the session using the base branch's copy of the script. `/review` re-runs it too. The hook covers a wider set than Gate 13 does (the other command files, `settings.json`, the hook itself, the golden test): an edit to those that slips past the hook is not caught after the fact by any script today.
+- **Live (partial):** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` against `.claude/skills/*/SKILL.md`, `scripts/check_*.py`, `AGENTS.md/CLAUDE.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the current branch matches `feature/*` (exit 2, with the remedy printed). Limits: Bash-command detection is best-effort (redirects, `tee`, `sed -i`/`perl -i`, `cp`/`ln`/`mv`/`rm` including a whole protected directory, `truncate`, `dd of=`, `bash -c`, `cd dir && ...`; `python -c`, interpreter heredocs, variable/glob expansion and git plumbing get through); the hook and its `settings.json` entry are themselves editable on any non-`feature/*` branch, and nothing blocks an edit on a `chore/*`/`fix/*` branch (that is the intended route for real maintenance, reviewed as its own PR — including a `fewer-permission-prompts` prune of `settings.json`); it fails open on a detached HEAD, a missing script, or malformed input; it only runs in sessions that load this repo's `.claude/settings.json` (a session launched from a parent directory may not — unverified); `.claude/settings.local.json` (which can carry `disableAllHooks`), `.github/workflows/*`, and `.githooks/*` are not on the protected list. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix.
+- **After the fact:** Gate 13 (`scripts/check_gate_integrity.py`) catches an edit to the files named in its own `GATE_DEFINITION_FILES` (not repeated here so this can't drift out of sync with that list) on a `feature/*` branch, in the diff, and the `gates` CI job repeats it outside the session using the base branch's copy of the script. `/review` re-runs it too. The hook covers a wider set than Gate 13 does (the other skill files, `settings.json`, the hook itself, the golden test): an edit to those that slips past the hook is not caught after the fact by any script today.
 
 `/pipeline-review`'s Settings hygiene check (item 7) still reads `.claude/settings.json` for hook-config hygiene, but that is a periodic audit. The hook pattern is sourced from a practitioner design (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.
 
