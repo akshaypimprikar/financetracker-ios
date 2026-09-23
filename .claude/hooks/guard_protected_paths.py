@@ -48,6 +48,12 @@ PROTECTED_GLOBS = (
 GUARDED_BRANCH = re.compile(r"^feature/")
 FILE_TOOLS = ("Write", "Edit", "MultiEdit")
 WRAPPER_WORDS = ("sudo", "env", "command", "time", "nohup", "exec")
+# Flags for the wrapper words above that consume a following argument token
+# (not just the flag itself) — e.g. `-u` in `sudo -u foo` or `exec -a name`.
+# Without tracking these, the argument ("foo") is mistaken for the real
+# command and detection silently stops working the moment a wrapper word is
+# followed by any flag at all, not just an argument-taking one.
+WRAPPER_ARG_FLAGS = {"-u", "-g", "-a", "-p"}
 
 
 def git(cwd, *args):
@@ -96,9 +102,38 @@ def is_protected_dir_prefix(rel_dir):
     return False
 
 
+# Cheap substring fragments that must appear somewhere in a path for it to
+# possibly match a PROTECTED_GLOBS entry — checked before any subprocess.
+# Not a full match test (fnmatch below still does that precisely); this is
+# purely an early-exit so ordinary Write/Edit/MultiEdit calls (the vast
+# majority in any session — this hook fires on every one) skip the git
+# rev-parse + directory walk entirely instead of paying that cost on every
+# single edit regardless of what it touches. Only applied to the
+# non-destructive path: a destructive rm/mv of a protected *directory*
+# (".claude/skills/gates", not "SKILL.md") doesn't contain any of these
+# fragments in its own path, so that check must still go through in full —
+# destructive calls (mv/rm) are a small minority of writes, unlike
+# Write/Edit/MultiEdit and tee/redirect/sed-i/cp, so this still captures
+# the dominant cost.
+_PROTECTED_FRAGMENTS = tuple(
+    frag.lower() for frag in (
+        "skill.md", "scripts/check_", "agents.md", "claude.md",
+        "invariants.md", "settings.json", ".claude/hooks/",
+        "importhashgoldentests.swift",
+    )
+)
+
+
+def could_be_protected(abs_path):
+    low = abs_path.lower()
+    return any(frag in low for frag in _PROTECTED_FRAGMENTS)
+
+
 def protected_relpath(abs_path, destructive=False):
     """(repo_root, relpath) if abs_path is a protected file inside a git repo, else None.
     With destructive=True (rm/mv), a directory holding protected files also counts."""
+    if not destructive and not could_be_protected(abs_path):
+        return None
     d = nearest_existing_dir(abs_path)
     if not d:
         return None
@@ -150,6 +185,32 @@ def tokenize(command):
         return None
 
 
+def real_command_index(words):
+    """Index of the actual command token in one `;`/`&&`-separated segment,
+    skipping past wrapper words (sudo/env/command/time/nohup/exec) AND their
+    own flags and flag-arguments — not just the wrapper word itself. A
+    single `w not in WRAPPER_WORDS` check stops at the first token after a
+    wrapper word regardless of what it is, so `sudo -u foo rm CLAUDE.md`
+    picked up "-u" as the command and never looked at `rm`; verified by
+    direct reproduction. Returns None if every token is a wrapper/flag/
+    assignment (nothing left to be a real command)."""
+    i, n = 0, len(words)
+    while i < n:
+        w = words[i]
+        if "=" in w:
+            i += 1  # a VAR=val prefix (env-style or a literal assignment)
+            continue
+        if w in WRAPPER_WORDS:
+            i += 1
+            while i < n and (words[i].startswith("-") or "=" in words[i]):
+                if words[i] in WRAPPER_ARG_FLAGS:
+                    i += 1  # also skip this flag's own argument token
+                i += 1
+            continue
+        return i
+    return None
+
+
 def bash_write_targets(command, cwd, _depth=0):
     """Best-effort [(absolute path, is_delete_or_move)] a shell command writes to or removes."""
     tokens = tokenize(command)
@@ -170,9 +231,7 @@ def bash_write_targets(command, cwd, _depth=0):
                 found.append(unquote(words[i + 1]))
             elif w == ">&" and i + 1 < len(words) and not re.match(r"^(\d+|-)$", words[i + 1]):
                 found.append(unquote(words[i + 1]))  # `>& file` redirects both streams
-        cmd_idx = next(
-            (i for i, w in enumerate(words) if "=" not in w and w not in WRAPPER_WORDS), None
-        )
+        cmd_idx = real_command_index(words)
         if cmd_idx is not None:
             cmd = os.path.basename(unquote(words[cmd_idx]))
             rest = [unquote(w) for w in words[cmd_idx + 1 :]]
@@ -312,6 +371,10 @@ def self_test():
             ("chore: Bash redirect", bash("chore", "echo x > CLAUDE.md"), False),
             ("feature: Bash cd into dir then redirect", bash("feat", "cd .claude/skills/gates && echo x > SKILL.md"), True),
             ("feature: Bash bash -c redirect", bash("feat", "bash -c 'echo x > CLAUDE.md'"), True),
+            ("feature: Bash sudo -u foo rm (wrapper flag+arg)", bash("feat", "sudo -u foo rm CLAUDE.md"), True),
+            ("feature: Bash env -i rm (wrapper flag)", bash("feat", "env -i rm CLAUDE.md"), True),
+            ("feature: Bash env VAR=val rm (wrapper assignment)", bash("feat", "env VAR=val rm CLAUDE.md"), True),
+            ("feature: Bash sudo rm, no flags (already worked)", bash("feat", "sudo rm CLAUDE.md"), True),
             ("feature: Bash sed -i with quoted |", bash("feat", "sed -i 's/a|b/c/' CLAUDE.md"), True),
             ("feature: Bash rm -rf protected dir", bash("feat", "rm -rf .claude/skills/gates"), True),
             ("feature: Bash mv protected dir away", bash("feat", "mv scripts /tmp/s"), True),
