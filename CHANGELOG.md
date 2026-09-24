@@ -6,6 +6,9 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Fixed
+- **README CI badge showed "failing" while every PR Checks run passed.** The badge had no query parameter, so GitHub showed the latest `pr-checks.yml` run on `main`: a push run from 2026-05-13 (`dce387c`) that failed. The workflow now triggers only on `pull_request`, and PR runs are recorded under their head branch, so `main` never got a newer run. The badge now uses `?event=pull_request`, which shows the latest PR run.
+
 ## [1.4.0] — 2026-09-24
 
 ### Added
