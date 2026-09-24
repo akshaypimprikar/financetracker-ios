@@ -70,7 +70,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   > "$LOG" 2>&1; RC=$?
 xcsift < "$LOG"
-PASSED=$(grep -cE "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
+PASSED=$(grep -E "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
 [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
   && echo "GATE 2 PASS ($PASSED tests executed)" || echo "GATE 2 FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 ```
@@ -217,7 +217,7 @@ else
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     -only-testing:FinanceTrackerTests/ImportHashGoldenTests > "$LOG" 2>&1; RC=$?
-  PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.*' passed|^[✔✓] Test .*passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
+  PASSED=$(grep -E "^Test [Cc]ase 'ImportHashGoldenTests/.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
   [ "$RC" -eq 0 ] && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "GOLDEN PASS ($PASSED tests executed)" || echo "GOLDEN FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 fi
@@ -418,7 +418,7 @@ EOF
 If `/gates` is re-run after the PR is open (a fix cycle changes HEAD), update the PR body's gate section with the new summary — `gh pr edit <PR> --body-file <file>` — so its `Gates run at <sha>` matches the new HEAD; `/review` rejects a stale one.
 
 **Always pass `--base develop`** — `gh pr create` defaults to `main` (repo default), which bypasses gitflow.
-Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
+Exceptions: `release/*` and `hotfix/*` branches use `--base main`, except a hotfix's second PR back to `develop`, which uses `--base develop` (see `/bugfix`).
 
 ## Guard against self-modifying guardrail files
 
