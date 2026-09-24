@@ -6,7 +6,13 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Changed
+- **2026-09-24 pipeline-review fixes (pulled from pragma).** `/feature` gains pragma's doubt-driven review step before the GREEN commit, for new protocols (Gate 10) and `@Model` mutations (Gate 9). Its `/loop` stop conditions now list every blocking gate instead of "all 13", because Gates 10 and 12 are advisory. `/bugfix` splits the regular and hotfix paths: both hotfix PRs need `/review`, `/test` and `code-review:code-review`. `/review` reports exit 2 from the TDD script as "template default, not a pass", and gains an advisory layout-adaptivity check. Gate 1 links pragma's Xcode 27 SDK-migration note. Gate 2 and the golden-test counter also match Swift Testing's `✔`/`✘` lines, like `/test`; Xcode 27 prints `Test case '…' passed` for this repo's Swift Testing suites, so the count does not change (191 on the 2026-09-24 run). The pseudo-path `AGENTS.md/CLAUDE.md` is replaced with `AGENTS.md` in 39 places, and `/review`'s stale `gates.md`/`gates.yml` references now name `gates/SKILL.md` and the `gates` job in `pr-checks.yml`. Eight one-off session entries moved from `.claude/settings.json` to the gitignored `settings.local.json`.
+
 ### Fixed
+- **`/gates` and `/release` ignored their Haiku model routing.** Each skill put `model: claude-haiku-4-5-20251001` in a second `---` block after the real frontmatter, which is read as body text. `model:` is now in the first frontmatter block.
+- **AGENTS.md's Merge rule exempted `hotfix/*` PRs from `/review` and `code-review:code-review`** because "every commit already passed both when it merged into `develop`". That is false for hotfixes, which branch off `main`. Only `release/*` PRs are exempt now.
+- **`/pipeline-review`'s valid-skills list was missing `deterministic-pr-gates`**, which `/sync-workflow` names, so every run raised a false Critical.
 - **README CI badge showed "failing" while every PR Checks run passed.** The badge had no query parameter, so GitHub showed the latest `pr-checks.yml` run on `main`: a push run from 2026-05-13 (`dce387c`) that failed. The workflow now triggers only on `pull_request`, and PR runs are recorded under their head branch, so `main` never got a newer run. The badge now uses `?event=pull_request`, which shows the latest PR run.
 
 ## [1.4.0] — 2026-09-24

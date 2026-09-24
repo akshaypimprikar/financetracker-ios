@@ -16,7 +16,7 @@ Test files pushed to the feature branch.
 
 ## Process
 
-Read `AGENTS.md/CLAUDE.md` first for build commands, simulator name, and test framework details.
+Read `AGENTS.md` first for build commands, simulator name, and test framework details.
 
 Also read `.claude/context/invariants.md` if it exists — skip silently if absent. Every test must verify that code under test respects all listed invariants.
 

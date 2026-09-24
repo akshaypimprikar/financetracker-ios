@@ -2,9 +2,6 @@
 name: release
 description: Prepare and tag a release — pre-flight checks, version bump, CHANGELOG, and tag. Invoke with a version number.
 disable-model-invocation: true
----
-
----
 model: claude-haiku-4-5-20251001
 ---
 
@@ -80,7 +77,7 @@ git push -u origin release/<version>
 ```
 
 ### 5. Verify the release branch only touches release files
-AGENTS.md/CLAUDE.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
+AGENTS.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
 ```bash
 git diff develop...HEAD --name-only
 ```

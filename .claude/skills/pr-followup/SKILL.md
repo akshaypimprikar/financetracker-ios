@@ -37,5 +37,5 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
 ## Done when
 `/review` and `/test` have reported, and `code-review:code-review` has either
 reported or (on a `disable-model-invocation` setup) printed the fallback
-warning. Do not merge — per AGENTS.md/CLAUDE.md's Merge rule, merging is the user's
+warning. Do not merge — per AGENTS.md's Merge rule, merging is the user's
 call once every configured check is clean.

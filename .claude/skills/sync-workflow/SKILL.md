@@ -9,7 +9,7 @@ disable-model-invocation: true
 Sync the pragma template repo so it stays consistent with FinanceTracker's current conventions.
 
 ## Trigger
-Run manually after any change to AGENTS.md/CLAUDE.md, branch strategy, build commands, or agent conventions: `/sync-workflow`
+Run manually after any change to AGENTS.md, branch strategy, build commands, or agent conventions: `/sync-workflow`
 
 ## Process
 
@@ -26,7 +26,7 @@ If `checkout develop` itself fails (e.g. mid-rebase), resolve or abort that firs
 work around it by editing on the wrong branch.
 
 ### 1. Read the source of truth
-- Read `AGENTS.md/CLAUDE.md` from FinanceTracker — branch strategy, build commands, simulator name, architecture rules
+- Read `AGENTS.md` from FinanceTracker — branch strategy, build commands, simulator name, architecture rules
 - Read all files in `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/skills/` — the project-specific versions
 
 ### 2. Read the template
@@ -37,10 +37,10 @@ Check for drift in these areas (keep `<AppName>` placeholders — pragma is a te
 
 | What to check | Source of truth |
 |---|---|
-| Branch strategy (`main` vs `develop`) | FinanceTracker AGENTS.md/CLAUDE.md |
-| Simulator name | FinanceTracker AGENTS.md/CLAUDE.md |
-| Build command structure | FinanceTracker AGENTS.md/CLAUDE.md |
-| Test framework (`import Testing` vs XCTest) | FinanceTracker AGENTS.md/CLAUDE.md |
+| Branch strategy (`main` vs `develop`) | FinanceTracker AGENTS.md |
+| Simulator name | FinanceTracker AGENTS.md |
+| Build command structure | FinanceTracker AGENTS.md |
+| Test framework (`import Testing` vs XCTest) | FinanceTracker AGENTS.md |
 | Pre-flight check commands in `/release` | FinanceTracker `/release` skill |
 | Architecture rules checklist in `/review` | FinanceTracker `/review` skill |
 | New gates in `/gates` — **only if generalizable** | FinanceTracker `/gates` skill |
@@ -54,7 +54,7 @@ For new gates in FinanceTracker's `/gates`, judge each one individually — do n
 - **App-specific** (checks something only FinanceTracker's domain has — e.g. the CSV import concurrency-shape gate tied to `TransactionImportActor.swift`): leave it out of pragma entirely. It has no equivalent in a template repo.
 
 ### 5. Self-review the diff before committing
-Pragma has no `AGENTS.md/CLAUDE.md` and no equivalent to FinanceTracker's `/review` — this is the
+Pragma has no `AGENTS.md` and no equivalent to FinanceTracker's `/review` — this is the
 only check that runs before a sync PR opens. Keep it lightweight: it exists to catch the
 specific ways a *template* repo can drift, not to re-litigate content already reviewed once
 in FinanceTracker. Run against the staged diff, before `git commit` — stage first, since the
@@ -115,7 +115,7 @@ gh pr create --repo akshaypimprikar/pragma \
 
 If nothing changed, do not create a branch or PR — report "no changes needed" instead.
 
-**Verify before trusting the PR:** `--repo` alone does not fix the head branch — see AGENTS.md/CLAUDE.md's Cross-repo rule. Always confirm with:
+**Verify before trusting the PR:** `--repo` alone does not fix the head branch — see AGENTS.md's Cross-repo rule. Always confirm with:
 ```bash
 gh pr view <N> --repo akshaypimprikar/pragma --json headRefName,baseRefName,files
 ```
