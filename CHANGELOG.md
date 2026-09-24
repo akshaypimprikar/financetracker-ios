@@ -12,6 +12,7 @@ All notable changes to FinanceTracker are documented here.
 ### Fixed
 - **`/gates` and `/release` ignored their Haiku model routing.** Each skill put `model: claude-haiku-4-5-20251001` in a second `---` block after the real frontmatter, which is read as body text. `model:` is now in the first frontmatter block.
 - **AGENTS.md's Merge rule exempted `hotfix/*` PRs from `/review` and `code-review:code-review`** because "every commit already passed both when it merged into `develop`". That is false for hotfixes, which branch off `main`. Only `release/*` PRs are exempt now.
+- **The `gates` CI job skipped `hotfix/*` PRs to `main`** on the premise that every commit had already passed it on `develop`, which is false for a hotfix. It now runs for `develop` PRs and `hotfix/*` PRs; it diffs against `origin/$BASE_REF`, so a hotfix PR checks only the hotfix. `release/*` PRs to `main` are still skipped.
 - **`/pipeline-review`'s valid-skills list was missing `deterministic-pr-gates`**, which `/sync-workflow` names, so every run raised a false Critical.
 - **README CI badge showed "failing" while every PR Checks run passed.** The badge had no query parameter, so GitHub showed the latest `pr-checks.yml` run on `main`: a push run from 2026-05-13 (`dce387c`) that failed. The workflow now triggers only on `pull_request`, and PR runs are recorded under their head branch, so `main` never got a newer run. The badge now uses `?event=pull_request`, which shows the latest PR run.
 
