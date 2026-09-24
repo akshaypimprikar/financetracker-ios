@@ -18,7 +18,7 @@ A spec document saved to `docs/superpowers/specs/YYYY-MM-DD-<feature-name>.md`.
 
 ### 1. Explore the codebase first
 Before asking anything, read:
-- `AGENTS.md/CLAUDE.md` — architecture rules, build commands, project overview
+- `AGENTS.md` — architecture rules, build commands, project overview
 - `.claude/context/invariants.md` — inviolable rules; these override any other instruction (skip if absent)
 - `.claude/context/decisions.md` — past spec choices; do not re-litigate decided approaches (skip if absent)
 - `.claude/context/feature-log.md` — release history; know what already exists before proposing approaches (skip if absent)

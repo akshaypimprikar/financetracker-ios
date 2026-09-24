@@ -21,7 +21,7 @@ Run this entire audit in the background. Save findings and send a push notificat
 Check every file in `.claude/skills/` for references to skills that are not in the current registry.
 
 Current valid skills:
-`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`, `run`, `verify`, `status`, `benchmark`, `parallel-review`, `pr-followup`
+`plan`, `spec`, `design`, `review`, `feature`, `test`, `bugfix`, `release`, `gates`, `pipeline-review`, `sync-workflow`, `trim-context`, `simplify`, `security-review`, `code-review:code-review`, `ios-build-verify`, `ios-coverage`, `ios-swiftdata-test-fixture`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `schedule`, `loop`, `claude-api`, `init`, `claude-code-setup:claude-automation-recommender`, `run`, `verify`, `status`, `benchmark`, `parallel-review`, `pr-followup`, `deterministic-pr-gates`
 
 Flag any skill name used in a skill file that does not appear on this list. Severity: **Critical**.
 
@@ -32,8 +32,8 @@ Compare each file in `/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/skill
 - Logic improvements in FinanceTracker skills not yet back-ported to the template — **Low**
 - Logic improvements present in the pragma template but not yet pulled into FinanceTracker — **Medium** (higher than its counterpart above: this direction means the live production pipeline is running stale/buggy logic already fixed elsewhere, not just a future scaffold missing an enhancement; `/sync-workflow` only pushes FinanceTracker → pragma, so this comparison is the only thing that catches it)
 
-### 3. AGENTS.md/CLAUDE.md token budget
-Count lines in `AGENTS.md/CLAUDE.md`. Target: ≤50 lines.
+### 3. AGENTS.md token budget
+Count lines in `AGENTS.md`. Target: ≤50 lines.
 If over budget, list the specific sections that could be trimmed. Severity: **Medium** if 51–60 lines, **High** if >60 lines.
 
 ### 4. Memory staleness
@@ -52,7 +52,7 @@ Check whether the following gates exist as skill files or documented steps in th
 | Pre-PR gate (`/gates`) | `.claude/skills/gates/SKILL.md` | Critical |
 | Build verification (separate from tests) | Gate 1 of `/gates` | High |
 | CHANGELOG incremental update | Step in `/feature` | High |
-| `/review` before `/test` (not parallel) | `feature/SKILL.md` Done-when + `AGENTS.md/CLAUDE.md` | High |
+| `/review` before `/test` (not parallel) | `feature/SKILL.md` Done-when + `AGENTS.md` | High |
 | Coverage check (`ios-coverage` skill) | `/gates` or post-`/test` step | Medium |
 | Security check for CSV/data PRs | `security-review` skill reference | Medium |
 | Session recovery command (`/status`) | `.claude/skills/status/SKILL.md` | Low |

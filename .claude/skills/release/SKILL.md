@@ -2,9 +2,6 @@
 name: release
 description: Prepare and tag a release — pre-flight checks, version bump, CHANGELOG, and tag. Invoke with a version number.
 disable-model-invocation: true
----
-
----
 model: claude-haiku-4-5-20251001
 ---
 
@@ -24,7 +21,7 @@ Invoked with a version number (e.g. `/release 1.0.0`).
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     > "$LOG" 2>&1; RC=$?
   xcsift < "$LOG"
-  PASSED=$(grep -cE "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
+  PASSED=$(grep -E "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
   [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "TESTS PASS ($PASSED tests executed)" || echo "TESTS FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
   ```
@@ -33,9 +30,9 @@ Invoked with a version number (e.g. `/release 1.0.0`).
   ```bash
   git diff <last-tag>..develop -- '*.swift' | grep -E "TODO|FIXME"
   ```
-- [ ] No force-unwraps in production code added since last release:
+- [ ] No force-unwraps in production code added since last release (heuristic: an identifier or closing bracket followed by `!`, so `try!`/`as!` match and `!flag`/`!=` don't; a `!` inside a string literal is a false positive, so check each hit):
   ```bash
-  git diff <last-tag>..develop -- 'FinanceTracker/*.swift' | grep -E '^\+.*[^!]![^=]'
+  git diff <last-tag>..develop -- 'FinanceTracker/*.swift' | grep -E '^\+.*[A-Za-z0-9_)\]]!([^=]|$)'
   ```
 
 If any check fails, stop and report what must be fixed.
@@ -80,7 +77,7 @@ git push -u origin release/<version>
 ```
 
 ### 5. Verify the release branch only touches release files
-AGENTS.md/CLAUDE.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
+AGENTS.md's Merge rule exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
 ```bash
 git diff develop...HEAD --name-only
 ```

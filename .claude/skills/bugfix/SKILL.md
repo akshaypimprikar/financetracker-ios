@@ -17,7 +17,7 @@ Invoked with a bug report: description + reproduction steps (e.g. `/bugfix "CSV 
 - Regular bug: branch `fix/<bug-name>` off `develop`
 - Hotfix (production bug on `main`): branch `hotfix/<bug-name>` off `main`, then merge to both `main` and `develop`
 
-Read `AGENTS.md/CLAUDE.md` before touching any file.
+Read `AGENTS.md` before touching any file.
 
 Also read if they exist — skip silently if absent:
 - `.claude/context/invariants.md` — inviolable rules; ensure the fix does not violate any
@@ -76,10 +76,11 @@ git add <changed files>
 git commit -m "fix: <short description of what was wrong>"
 ```
 
-Open PR to `develop` (or `main` for hotfixes — also open a second PR to `develop`). The Review Agent (`/review`) runs on the PR.
+**Regular bug:** Open PR to `develop`. The Review Agent (`/review`) runs on the PR.
+**Hotfix:** Open PR to `main` — also open a second PR to `develop`. Both go through `/review`/`/test`/`code-review:code-review` before merging. Unlike `release/SKILL.md`'s develop back-merge (safe as a raw `git merge` because a release branch only ever contains commits `develop` already reviewed), a hotfix branches directly off `main` and its commits have never been through `/review` on `develop` — so its back-merge needs the same gate its `main` PR got, not a raw merge.
 
 ## Architecture rules
-All fixes must respect the layer boundaries in `AGENTS.md/CLAUDE.md`:
+All fixes must respect the layer boundaries in `AGENTS.md`:
 - Domain Service fixes stay in `FinanceTracker/Services/`
 - Repository fixes stay in `FinanceTracker/Repositories/SwiftData/`
 - No business logic moved into Views to work around a bug

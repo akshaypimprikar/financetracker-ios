@@ -16,7 +16,7 @@ Test files pushed to the feature branch.
 
 ## Process
 
-Read `AGENTS.md/CLAUDE.md` first for build commands, simulator name, and test framework details.
+Read `AGENTS.md` first for build commands, simulator name, and test framework details.
 
 Also read `.claude/context/invariants.md` if it exists — skip silently if absent. Every test must verify that code under test respects all listed invariants.
 
@@ -68,7 +68,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   > "$LOG" 2>&1; RC=$?
 xcsift < "$LOG"
-PASSED=$(grep -cE "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
+PASSED=$(grep -E "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
 [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
   && echo "TESTS PASS ($PASSED tests executed)" || echo "TESTS FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 ```

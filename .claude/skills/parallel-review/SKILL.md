@@ -15,10 +15,10 @@ Invoked manually after `/feature` completes and before `/gates` (e.g. `/parallel
 
 ## Process
 
-Read `AGENTS.md/CLAUDE.md` first — it defines the architecture rules enforced below.
+Read `AGENTS.md` first — it defines the architecture rules enforced below.
 
 Also read the following files if they exist — skip silently if absent:
-- `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md/CLAUDE.md rules
+- `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md rules
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
 
 ### Check 1 — Architecture compliance (`/gates`' Gate 9, pre-gates mode)

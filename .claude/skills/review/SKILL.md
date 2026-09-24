@@ -13,10 +13,10 @@ Invoked when a PR is opened. The PR number or branch name is passed as the argum
 
 ## Process
 
-Read `AGENTS.md/CLAUDE.md` first — it defines the architecture rules you enforce.
+Read `AGENTS.md` first — it defines the architecture rules you enforce.
 
 Also read the following files if they exist — skip silently if absent:
-- `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md/CLAUDE.md rules
+- `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md rules
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
 - `.claude/context/incidents.md` — past bug root causes; flag any PR that reintroduces a previously-fixed symptom as HIGH severity, same as a rejections.md repeat
 
@@ -46,7 +46,7 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    whether to trust it".
 2. **Re-run the deterministic gates at that SHA and compare to the summary.** Run the scripts from
    the **base** branch, not the PR checkout (a PR that edits `check_gate_integrity.py` must not be
-   judged by its own edited copy — `gates.yml` does the same), and pass the PR's branch name because
+   judged by its own edited copy — the `gates` job in `pr-checks.yml` does the same), and pass the PR's branch name because
    a `gh pr checkout`/worktree HEAD may be detached, which makes the integrity script silently skip
    its `feature/*` check:
    ```bash
@@ -63,8 +63,9 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    ```
    A script that is not on the base branch yet (the PR introducing it, or before it merges) is reported
    as `NOT VERIFIED: <script> not on <base>` and, for a PR that adds it, run from the PR copy
-   with that caveat stated — never counted as a clean pass. Also re-run the grep-only gates exactly
-   as written in `gates.md`, substituting `$BASE` (the fetched `origin/<base>`) for `develop` in every command (local
+   with that caveat stated — never counted as a clean pass. Exit 2 from the TDD script means no file in the repo matches its
+   `SCOPED_LAYER_DIRS` (the layer folders were renamed or moved): report that, not a pass. Also re-run the grep-only gates exactly
+   as written in `gates/SKILL.md`, substituting `$BASE` (the fetched `origin/<base>`) for `develop` in every command (local
    `develop` may be stale after `git fetch`): Gate 3 (TODO/FIXME/HACK), Gate 4 (branch name — check `$BR`, since `git branch --show-current` is empty on a detached checkout), Gate 5
    (CHANGELOG), Gate 8 (only if `TransactionImportActor.swift` changed), and Gate 9's grep commands
    (not its `ImportHashGoldenTests` step, which runs `xcodebuild`). Each grep prints nothing on a
@@ -91,6 +92,7 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 - [ ] No new visual patterns introduced without a corresponding token in `Theme/`
 - [ ] New charts or data visualisation components use `Theme.Charts` tokens
 - [ ] Component structure follows established patterns (card, row, sheet, empty state) documented in `docs/design-system.md`
+- [ ] (advisory) Layout adapts rather than assuming one screen: no hardcoded widths/heights/offsets where the layout should size from its container, safe areas respected, and any API newer than the project's deployment target is gated with `#available` (or `@available`) with a fallback
 
 ### Code quality checks
 
@@ -108,7 +110,7 @@ SHA, each re-run script/grep and its result, the `gates` CI job state (or "not y
 which gates were not re-run.
 
 Final verdict:
-- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md/CLAUDE.md "Merge rule")
+- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
@@ -121,7 +123,7 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
 **What was wrong:** <description>
-**Rule violated:** <exact rule from invariants.md or AGENTS.md/CLAUDE.md — or "no formal rule, caught pre-review" if none applies>
+**Rule violated:** <exact rule from invariants.md or AGENTS.md — or "no formal rule, caught pre-review" if none applies>
 **File:** <path:line if known>
 **Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
@@ -130,7 +132,7 @@ Skip this step only if there is truly nothing to log — no CHANGES REQUESTED is
 
 ## A known tradeoff: context continuity, not context isolation
 
-By default `/review` runs in the same session as `/feature` and `/gates` — `gates.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after, with no instruction to start fresh in between. So the reviewer is **not** independent of the implementer's context: it has seen the implementer's reasoning, and a genuinely isolated reviewer role (an architecture some other pipelines use: an orchestrator, an implementer, and a reviewer that structurally cannot see the implementer's transcript, only a diff/plan/config) would not have.
+By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after, with no instruction to start fresh in between. So the reviewer is **not** independent of the implementer's context: it has seen the implementer's reasoning, and a genuinely isolated reviewer role (an architecture some other pipelines use: an orchestrator, an implementer, and a reviewer that structurally cannot see the implementer's transcript, only a diff/plan/config) would not have.
 
 What this command does about it: it now verifies the deterministic gates by re-running them at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by evidence, not by the reviewer's impression. That narrows the gap for the gates that can be re-run cheaply; it does not remove the shared-context influence on the judgment-based checks (design compliance, code quality).
 
@@ -161,4 +163,4 @@ While a PR sits in CHANGES REQUESTED (or waiting on CI), the user can avoid manu
 This is the generic `/loop` skill with a literal prompt — there is no dedicated `/babysit` command. `/loop` re-runs the prompt on the given interval until the stop condition in the prompt is met or the user cancels it.
 
 ## Done when
-Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md/CLAUDE.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
+Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
