@@ -6,6 +6,8 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+## [1.4.0] — 2026-09-24
+
 ### Added
 - **`/gates` and `/review` now verify instead of trust** — `/review` re-runs the deterministic gates (`check_gate_integrity.py`, `check_tdd_commit_order.py`, the grep-only gates) at the PR HEAD SHA, rejects a gate summary whose `Gates run at <sha>` line does not match, and requires the `gates` CI job to pass (or notes it is not yet configured). `/gates` gains a clean-tree + `git rev-parse HEAD` pre-step, a widened Gate 0 trigger (`*.pbxproj`, `*.xcconfig`, `Info.plist`, `*.entitlements`, `Package.resolved`, `Package.swift`, `*.xcscheme`, `*.xctestplan`), Gates 1-2 that fail on a non-zero `xcodebuild` exit, an empty log, or zero executed tests, a wider Gate 9 money-`Double` heuristic plus an `ImportHashGoldenTests` step, and a new Gate 13 (gate integrity).
 - **`.claude/hooks/guard_protected_paths.py`** — `PreToolUse` hook that blocks `Write`/`Edit`/`MultiEdit` (and best-effort Bash writes) to gate-definition files while on a `feature/*` branch. Partial by design; limits documented in `gates.md`.
