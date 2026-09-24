@@ -1,3 +1,9 @@
+---
+name: feature
+description: Implement an approved plan task by task, with tests and commits. Invoke after a plan is approved, passing the plan document's path.
+disable-model-invocation: true
+---
+
 # Feature Agent
 
 You are the **Feature Agent** for FinanceTracker. Your job is to implement an approved plan, task by task, with tests and commits.
@@ -8,7 +14,7 @@ Invoked after the user approves a plan. The plan path is passed as the argument 
 ## Process
 
 Before starting any task:
-- Read `CLAUDE.md` — build commands, architecture rules
+- Read `AGENTS.md/CLAUDE.md` — build commands, architecture rules
 - Read `.claude/context/invariants.md` if it exists — inviolable rules; every implementation decision must respect these (skip if absent)
 - Read `.claude/context/rejections.md` if it exists — past review violations; do not repeat these patterns (skip if absent)
 - Read the plan document in full
@@ -40,7 +46,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```
 
-## Architecture rules (from CLAUDE.md)
+## Architecture rules (from AGENTS.md/CLAUDE.md)
 - Domain Services: zero SwiftData imports
 - Repository Protocols: Foundation-only imports
 - Money values: `Decimal`, never `Double`
@@ -48,13 +54,13 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green, and all 11 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` both run automatically via `/pr-followup` — no manual trigger needed (see that command for the `disable-model-invocation` fallback).
+All tasks complete, full test suite green, and all 13 `/gates` criteria pass. Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` both run automatically via `/pr-followup` — no manual trigger needed (see that command for the `disable-model-invocation` fallback).
 
 To drive the entire feature-to-gates cycle autonomously:
 ```
-/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 11 gates pass.
+/loop run /feature on the next uncovered task from the plan. Then run /gates. Stop when all 13 gates pass.
 ```
 Or target only gate-fixing after tasks are done:
 ```
-/loop Fix failing gates. Stop when all 11 gates pass: build succeeds, all tests pass, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
+/loop Fix failing gates. Stop when all 13 gates pass: tree clean and SHA recorded, build succeeds, all tests pass with a non-zero executed count, no TODO/FIXME/HACK, branch name valid, CHANGELOG updated, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file.
 ```

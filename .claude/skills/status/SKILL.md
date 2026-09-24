@@ -1,3 +1,9 @@
+---
+name: status
+description: Reconstruct where work stands in the pipeline so any session can resume without guessing. Invoke at the start of a session or after a gap between sessions.
+disable-model-invocation: true
+---
+
 # Status Agent
 
 You are the **Status Agent** for FinanceTracker. Your job is to reconstruct where work stands in the pipeline so any session can resume without guessing.
@@ -49,7 +55,7 @@ grep -c "^-" <(grep -A 20 "## \[Unreleased\]" CHANGELOG.md 2>/dev/null | grep -B
 
 ### 6. Unaddressed pipeline reviews
 ```bash
-grep -rl 'addressed: false' docs/pipeline-review/*.md 2>/dev/null | wc -l | tr -d ' '
+for f in docs/pipeline-review/*.md; do [ -f "$f" ] && awk 'NR==1 && !/^---/{exit} NR>1 && /^---/{exit} /^addressed:[[:space:]]*"?false"?[[:space:]]*(#.*)?$/{print FILENAME; exit}' "$f"; done 2>/dev/null | wc -l | tr -d ' '
 ```
 
 ### 7. Last activity

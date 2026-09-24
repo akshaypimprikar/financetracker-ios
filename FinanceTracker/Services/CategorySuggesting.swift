@@ -14,6 +14,23 @@ struct CategoryCandidate: Sendable {
 }
 
 /// Domain Service protocol — zero SwiftData imports.
+// See the compiler(>=6.4) note on `TransactionImportWriting` — same Swift 6.4/Xcode 27
+// actor-isolation-inference issue, same fix.
+#if compiler(>=6.4)
+nonisolated protocol CategorySuggesting: Sendable {
+    /// Backed by SystemLanguageModel.default.availability == .available.
+    /// Checked once per import session (preview step), not per row.
+    var isAvailable: Bool { get }
+
+    /// Suggests a category for one payee from the given candidates. Returns nil if
+    /// unavailable, if the model errors, or if its raw suggestion is the literal
+    /// "Uncategorized" fallback (no plausible match, not even a proposal). Otherwise
+    /// always returns a result — matchedCategoryID is nil when the suggested name
+    /// doesn't near-duplicate-match any candidate, meaning "propose creating this,"
+    /// not "no suggestion."
+    func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult?
+}
+#else
 protocol CategorySuggesting: Sendable {
     /// Backed by SystemLanguageModel.default.availability == .available.
     /// Checked once per import session (preview step), not per row.
@@ -27,6 +44,7 @@ protocol CategorySuggesting: Sendable {
     /// not "no suggestion."
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult?
 }
+#endif
 
 @Generable
 struct CategorySuggestion: Sendable {

@@ -10,7 +10,15 @@
       "Bash(find /Users/akshaypimprikar/.claude/plugins/cache/claude-plugins-official/superpowers/*/skills -type f -name \"*.md\" | head -20)",
       "Bash(awk '{print $NF}')",
       "Bash(gh auth *)",
-      "Bash(gh pr *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh pr review *)",
       "Bash(gh release *)",
       "Bash(gh --version)",
       "Bash(claude --version)",
@@ -82,7 +90,6 @@
       "Bash(grep -v \"^--$\")",
       "Bash(uvx code-review-graph *)",
       "Bash(sqlite3 /Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.code-review-graph/graph.db ' *)",
-      "Bash(gh api *)",
       "Bash(python3 -)",
       "Bash(osascript -e 'tell application \"Safari\" to activate')",
       "Bash(npm list *)",
@@ -134,6 +141,8 @@
       "Bash(git merge *)"
     ],
     "ask": [
+      "Bash(gh api *)",
+      "Bash(gh pr merge *)",
       "Bash(mcporter call linkedin.connect_with_person *)",
       "Bash(mcporter call linkedin.send_message *)",
       "Bash(rdt comment *)",
@@ -149,7 +158,7 @@
       "/Users/akshaypimprikar/.claude/skills",
       "/Users/akshaypimprikar/Desktop/Claude/ActionTracker",
       "/Users/akshaypimprikar/.claude",
-      "/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/commands",
+      "/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/skills",
       "/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki",
       "/Users/akshaypimprikar/Desktop",
       "/tmp",
@@ -168,7 +177,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/commands/' && echo '{\"systemMessage\": \"REMINDER: .claude/commands/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/skills/' && echo '{\"systemMessage\": \"REMINDER: .claude/skills/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
           }
         ]
       }
@@ -180,6 +189,15 @@
           {
             "type": "command",
             "command": "SETTINGS='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/settings.json'; jq -r '.tool_input.command // empty' | { read -r cmd; echo \"$cmd\" | grep -qE '^gh pr create' && jq -r '.permissions.allow[]' \"$SETTINGS\" 2>/dev/null | grep -qE '/private/tmp/claude-|/tmp/claude-|\"pid\":[0-9]|\"window_id\":[0-9]' && echo '{\"systemMessage\": \"REMINDER: .claude/settings.json still has session-specific junk (tmp paths, PIDs) \u2014 run the fewer-permission-prompts skill (prune mode) before this PR ships it.\"}' || true; } 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_protected_paths.py\"; [ -f \"$f\" ] || exit 0; exec python3 \"$f\""
           }
         ]
       }
@@ -199,7 +217,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "REVIEW_DIR='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/docs/pipeline-review'; UNADDRESSED=$(grep -rl 'addressed: false' \"$REVIEW_DIR\"/*.md 2>/dev/null); if [ -n \"$UNADDRESSED\" ]; then COUNT=$(echo \"$UNADDRESSED\" | wc -l | tr -d ' '); LATEST=$(echo \"$UNADDRESSED\" | sort | tail -1 | xargs basename 2>/dev/null); jq -n --arg count \"$COUNT\" --arg file \"$LATEST\" '{\"systemMessage\": \"PIPELINE REVIEW ALERT: \\($count) unaddressed pipeline review report(s) exist in docs/pipeline-review/. Latest: \\($file). Before starting any planned work, ask the user whether they want to address these findings first.\"}'; fi 2>/dev/null || true"
+            "command": "REVIEW_DIR='/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/docs/pipeline-review'; UNADDRESSED=$(for f in \"$REVIEW_DIR\"/*.md; do [ -f \"$f\" ] && awk 'NR==1 && !/^---/{exit} NR>1 && /^---/{exit} /^addressed:[[:space:]]*\"?false\"?[[:space:]]*(#.*)?$/{print FILENAME; exit}' \"$f\"; done 2>/dev/null); if [ -n \"$UNADDRESSED\" ]; then COUNT=$(echo \"$UNADDRESSED\" | wc -l | tr -d ' '); LATEST=$(echo \"$UNADDRESSED\" | sort | tail -1 | xargs basename 2>/dev/null); jq -n --arg count \"$COUNT\" --arg file \"$LATEST\" '{\"systemMessage\": \"PIPELINE REVIEW ALERT: \\($count) unaddressed pipeline review report(s) exist in docs/pipeline-review/. Latest: \\($file). Before starting any planned work, ask the user whether they want to address these findings first.\"}'; fi 2>/dev/null || true"
           }
         ]
       }

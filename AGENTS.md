@@ -1,0 +1,49 @@
+# AGENTS.md
+
+FinanceTracker — iOS 26.4 personal finance app (SwiftUI + SwiftData). Users track spending across accounts, set monthly budgets per category, and import transactions from CSV.
+
+## Build & Test
+
+All commands run from `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/` (git root, contains `FinanceTracker.xcodeproj`).
+
+```bash
+# Build
+xcodebuild build -project FinanceTracker.xcodeproj -scheme FinanceTracker -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1'
+
+# Full test suite
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1'
+
+# Single suite / single test
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' -only-testing:FinanceTrackerTests/<SuiteName>
+xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' -only-testing:FinanceTrackerTests/<SuiteName>/<testName>
+```
+
+> **Simulator:** `iPhone 17` on iOS 26.4 — pin `OS=26.4.1` explicitly (update to match `xcrun simctl list runtimes` if the patch version drifts; `xcodebuild` requires an exact match). Both iOS 26.4 and 26.5 runtimes are installed, each with its own "iPhone 17" device, so a bare `name=iPhone 17` destination is ambiguous. If a UI test fails with `RequestDenied ... SBMainWorkspace`, the simulator's SpringBoard state is corrupt — `xcrun simctl erase <device-id>` and reboot it; killing `Simulator.app`/`CoreSimulatorService` alone won't fix it.
+> **File inclusion:** `PBXFileSystemSynchronizedRootGroup` (Xcode 16) — drop a `.swift` file in the right folder and it compiles automatically. Never edit `project.pbxproj`.
+
+## Architecture
+
+**Layer rules (enforced):**
+- Views: no business logic, no direct SwiftData access
+- Domain Services: zero SwiftData imports — 100% unit-testable without a simulator
+- All money values: `Decimal`, never `Double`
+- ViewModels: depend on repository protocols, never concrete SwiftData implementations
+
+## Key constraints
+
+- `AccountType.creditCard` is a liability — negative balance reduces net worth (this is intentional)
+- `Transaction.importHash` = SHA256(date+amount+payee) — used for CSV dedup, must be preserved
+- Tests use `import Testing` with `@Suite` / `@Test` / `#expect()` — **not** XCTest for unit/integration tests
+
+## Agent commands
+
+Skills in `.claude/skills/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review` `/status` `/parallel-review` `/trim-context` `/benchmark`
+
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/gates` → PR targets `develop` → `/pr-followup` (auto-chains `/review` → `/test` → `code-review:code-review`) → `/release` → `main`
+
+UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
+
+**PR creation rule:** always pass `--base develop` to `gh pr create` for every branch type except `release/*` and `hotfix/*`. `gh pr create` defaults to `main` — omitting `--base` silently targets the wrong branch.
+**Merge rule:** no command merges a PR automatically. A PR targeting `develop` is mergeable only once `/review` returns APPROVED, `/test` passes, and `code-review:code-review` is clean — then the user merges it themselves. (GitHub review approval can't gate this: every PR here is authored under the user's own account, and GitHub blocks authors from approving their own PRs.) `release/*`/`hotfix/*` PRs targeting `main` are exempt from `/review` and `code-review:code-review` — every commit already passed both when it merged into `develop`; `/release`'s pre-flight test run is the only gate needed there. Agents report their verdict and stop.
+
+**Cross-repo rule:** never use `cd` for pragma operations — the shell working directory persists across tool calls and silently affects subsequent `gh`/`git` commands. Always use `git -C /Users/akshaypimprikar/Desktop/Claude/pragma <cmd>` and `gh pr create --repo akshaypimprikar/pragma --head <branch>`. `--repo` alone is not enough: `gh pr create` resolves the head branch from whatever's checked out in the shell's cwd, not from the target repo's state, so an unrelated branch name in cwd (e.g. FinanceTracker's own `develop`) can silently become the head of a pragma PR. Always pass `--head` explicitly, and verify with `gh pr view <N> --repo akshaypimprikar/pragma --json headRefName,baseRefName,files` before trusting the PR is correct.
