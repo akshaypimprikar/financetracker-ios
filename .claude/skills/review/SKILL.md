@@ -84,6 +84,30 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    approvable yet; say so. No check named `gates` at all → write `gates CI job: not yet configured` in
    the verdict as a visible note — never let its absence read as a pass.
 
+### Judgment checks — run by a fresh-context subagent, not this session
+
+The design compliance and code quality checklists below are judgment calls, so this session does not
+make them. Hand them to one fresh-context subagent and give it **only**:
+- the diff: `gh pr diff <PR>`
+- the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
+  `docs/superpowers/specs/`), if one exists
+- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `.claude/context/rejections.md`,
+  `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
+  when the diff touches `Views/` or adds a UI component
+- the two checklists below, verbatim
+
+Do **not** pass this session's conversation, the implementer's reasoning, the PR body, commit messages,
+or the gate summary — each is the implementer's account of the change, which is exactly what the reviewer
+must not see. Tell the subagent it is read-only (no edits, commits, or GitHub posts), and instruct it to
+report every checklist item as PASS or FAIL with file path + line number, plus any other defect it finds
+in the diff — or to state plainly that it found none.
+
+Merge its output into the verdict:
+- Every FAIL it reports goes into the verdict. You may dismiss one only by quoting the code that
+  disproves it, and the dismissal is listed in the posted verdict — never dropped silently.
+- If a subagent cannot be spawned in this runtime, run the checklists here instead and write
+  `Judgment checks: NOT isolated (subagent unavailable)` in the verdict.
+
 ### Design compliance checks
 *Only applies to PRs that touch `Views/` or add new UI components. Read `docs/design-system.md` and `FinanceTracker/Theme/` before running these checks.*
 
@@ -107,7 +131,9 @@ For each check: ✅ PASS or ❌ FAIL (with file path + line number).
 
 Lead the verdict with a **Gate verification** block: the PR HEAD SHA, whether it matched the summary's
 SHA, each re-run script/grep and its result, the `gates` CI job state (or "not yet configured"), and
-which gates were not re-run.
+which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
+reported, marked accepted or dismissed, with the quoted code for each dismissal (or the `NOT isolated`
+note).
 
 Final verdict:
 - **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
@@ -130,15 +156,18 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 
 Skip this step only if there is truly nothing to log — no CHANGES REQUESTED issues from this review *and* no documented pre-review fixes in the PR body.
 
-## A known tradeoff: context continuity, not context isolation
+## Context isolation: what is and isn't isolated
 
-By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after, with no instruction to start fresh in between. So the reviewer is **not** independent of the implementer's context: it has seen the implementer's reasoning, and a genuinely isolated reviewer role (an architecture some other pipelines use: an orchestrator, an implementer, and a reviewer that structurally cannot see the implementer's transcript, only a diff/plan/config) would not have.
+By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
 
-What this command does about it: it now verifies the deterministic gates by re-running them at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by evidence, not by the reviewer's impression. That narrows the gap for the gates that can be re-run cheaply; it does not remove the shared-context influence on the judgment-based checks (design compliance, code quality).
+- **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
+- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent that sees only the diff, the plan's acceptance criteria, and the project rules — never the implementer's transcript, the PR body, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
+
+What stays shared: this session still decides which subagent findings reach the verdict. That is why a dismissal must quote the disproving code and appear in the posted verdict — anyone auditing the PR can see every finding the isolated reviewer raised and why any were rejected.
 
 FinanceTracker also gets **external auditability**: posting the verdict as a real, separate GitHub review object (below) means anyone auditing the repo from outside the session can see review happened and compare its content against the diff.
 
-For context isolation, run `/review` in a fresh Claude Code session against the PR number rather than continuing from `/feature`'s session — nothing about this command requires session continuity, it's just the default flow's convenience.
+Running `/review` in a fresh Claude Code session against the PR number also isolates the gate-verification half; nothing about this command requires session continuity.
 
 ## Posting the verdict to GitHub
 
