@@ -223,3 +223,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:103
 **Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 28: the HIGH floor overrode the style-only repeat exception
+**What was wrong:** The floors sentence said "a repeat … stays HIGH" with no exception, which contradicted the new rule that a repeat of a wording- or style-only entry keeps its own severity. A session applying the floor could raise a style repeat to a blocking HIGH.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md (severity floors)
+**Caught by:** this review (isolated subagent, round 28)

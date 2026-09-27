@@ -126,8 +126,8 @@ Merge its output into the verdict:
 - An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
   except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
   block is still reported. Keep the severity the subagent assigned. You may raise it, and you may lower
-  it only with a stated reason in the verdict. Two floors never move: a repeat, a regression of a
-  blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at
+  it only with a stated reason in the verdict. Two floors never move: a repeat rated HIGH under the
+  rule above, a regression of a blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at
   least MEDIUM.
 - Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
   not rate them. Compare each finding with the fixes the PR body documents, with this PR's own entries
