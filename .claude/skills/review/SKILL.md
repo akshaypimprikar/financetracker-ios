@@ -92,11 +92,14 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 The design compliance and code quality checklists below are judgment calls, so this session does not
 make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
 implementer's account of the change (listed below):
-- the PR number, so it can tell which `rejections.md` entries belong to this PR
-- the diff: `gh pr diff <PR>`
+- the PR number
+- the diff without the review log: `git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md'` (this
+  PR's own log entries describe the change, so they are withheld)
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
-- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `.claude/context/rejections.md`,
+- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `rejections.md` as it is on the base
+  branch (save `git show "${BASE}:.claude/context/rejections.md"` to a file for it, since the PR's copy holds
+  this PR's own entries),
   `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
@@ -119,6 +122,9 @@ commits, or GitHub posts), and instruct it to report every checklist item as PAS
 line number, or as N/A with the reason it does not apply, plus any other defect it finds in the diff,
 each with a severity, or to state plainly that it found none.
 
+The subagent does not see this PR's `rejections.md` changes, so check them yourself: they must only append
+to the base branch's file (`git diff "${BASE}...HEAD" -- .claude/context/rejections.md` shows no removed lines).
+
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
@@ -136,7 +142,8 @@ Merge its output into the verdict:
   own: rate it on the severity scale above from its description and from the verdict that found it, if
   one was posted, and state that rating in the verdict. If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
   MEDIUM) that came back, it is a regression: raise it to HIGH and name that fix (and its entry, if one
-  exists). A returning LOW or advisory item keeps its own severity, and a finding that was never fixed
+  exists). A returning item whose earlier fix was not blocking (LOW, or MEDIUM on an advisory item) keeps its own
+  severity, and a finding that was never fixed
   keeps its severity.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
@@ -206,7 +213,7 @@ an entry for this PR that the skip rule above covers.
 By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
 
 - **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
-- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the PR number, the diff, the plan's acceptance criteria, the project rules, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
+- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the PR number, the diff (without this PR's `rejections.md` entries), the plan's acceptance criteria, the project rules as they are on the base branch for `rejections.md`, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
 
 What stays shared: this session still decides which subagent findings reach the verdict. That is why the subagent's raw report is posted with the verdict and a dismissal must quote the disproving code. Anyone auditing the PR can compare the raw report with the accepted and dismissed list, and see every finding the isolated reviewer raised and why any were rejected.
 

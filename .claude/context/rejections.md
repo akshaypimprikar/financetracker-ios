@@ -241,3 +241,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:178
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 29)
+
+## 2026-09-27 — PR#130 — The isolated reviewer could read this PR's own log entries
+**What was wrong:** The subagent read the PR branch's rejections.md and got the PR number, so it could find this PR's round-by-round entries, which retell the implementer's account of the change. The PR's diff carried the same entries. It now gets the base branch's rejections.md and a diff without it, and the session checks that the log only appends.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:95-100
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 31)
