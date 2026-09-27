@@ -121,3 +121,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/feature/SKILL.md:27; .claude/skills/review/SKILL.md:23, :119
 **Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-27 — PR#130 — Round 3: severity tiers undefined, so a required FAIL could stop blocking
+**What was wrong:** Blocking depended only on HIGH/MEDIUM/LOW, but the tiers were never defined and a required checklist FAIL had no minimum severity. A FAIL rated LOW would not block, a regression from the old rule, where any non-advisory FAIL blocked.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:104, :119-122, :157
+**Caught by:** this review (isolated subagent, round 3)

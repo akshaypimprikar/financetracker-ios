@@ -101,7 +101,10 @@ implementer's account of the change (listed below):
 - the two checklists below, verbatim
 - this rule, verbatim: a finding that repeats a violation in `rejections.md` or reintroduces a symptom in
   `incidents.md` is **HIGH** severity — name the entry it repeats
-- the severity scale: HIGH, MEDIUM or LOW for every finding
+- the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an
+  AGENTS.md or `invariants.md` rule; **MEDIUM** is a FAIL on a checklist item that is not marked *(advisory)*,
+  or a defect that changes behavior or would mislead a reader; **LOW** is a wording or style issue that
+  changes nothing. A FAIL on a required checklist item is never lower than MEDIUM.
 
 It may also read any source file in the repo (for example, the whole file around a hunk), since several
 checks need surrounding code. What it must not get is the implementer's account of the change: this
@@ -119,7 +122,8 @@ Merge its output into the verdict:
 - An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
   except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
   block is still reported. Keep the severity the subagent assigned; you may
-  raise it, and you may lower it only with a stated reason in the verdict.
+  raise it, and you may lower it only with a stated reason in the verdict, and never below the floors in
+  the severity scale above.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same
