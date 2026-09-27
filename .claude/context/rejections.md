@@ -82,12 +82,30 @@
 
 ## 2026-09-25 — PR#126 — Incomplete instruction contract
 **What was wrong:** Moving /review's judgment checks into a fresh-context subagent left two rules behind: only checklist FAILs had to reach the verdict (so the subagent's other defects could be dropped silently, contradicting the Isolated review block and CHANGELOG), and the subagent was never told that repeats of rejections.md/incidents.md entries are HIGH severity.
-**Rule violated:** no formal rule, caught pre-review
+**Rule violated:** no formal rule, caught pre-merge
 **File:** .claude/skills/review/SKILL.md:94-106
 **Caught by:** this review (isolated subagent) and code-review:code-review, independently
 
 ## 2026-09-25 — PR#126 — Ambiguous subagent input scope
 **What was wrong:** "Give it only" listed the diff and rule files but didn't say whether repo source beyond diff hunks is allowed, which checklist items like "functions do one thing" need.
-**Rule violated:** no formal rule, caught pre-review
+**Rule violated:** no formal rule, caught pre-merge
 **File:** .claude/skills/review/SKILL.md:90-99
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — Edited past log entries against the file's own rule
+**What was wrong:** Changed "caught pre-merge" to "caught pre-review" in two PR#126 entries, although this file's header says "Never edit past entries", and "pre-merge" was accurate for issues a review found. The real gap was the template, which only worded case 2.
+**Rule violated:** rejections.md header: "Never edit past entries."
+**File:** .claude/context/rejections.md:85,91
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — False claim about another skill
+**What was wrong:** feature/SKILL.md:27 said /parallel-review "gives its checks to no fresh-context subagent", but its Check 2 runs code-review:code-review, which uses separate review agents.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/feature/SKILL.md:27
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — Rule gaps left by the #127 fixes
+**What was wrong:** "One wording" for the HIGH rule was claimed without scoping it to /review (parallel-review/SKILL.md:22 keeps its own copy); nothing said whether a HIGH finding on an advisory item blocks; N/A items were asked for a file and line; the fallback path was asked for a raw subagent report that can't exist.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:23, :110-120, :146, :151-152
 **Caught by:** this review (isolated subagent)

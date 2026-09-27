@@ -20,7 +20,7 @@ Also read the following files if they exist — skip silently if absent:
 - `.claude/context/rejections.md` — past violations on this project
 - `.claude/context/incidents.md` — past bug root causes
 
-Repeats of either file are HIGH severity. The rule's one wording is under "Judgment checks" below, and the subagent gets it verbatim.
+Repeats of either file are HIGH severity. Within this skill the rule has one wording, under "Judgment checks" below, and the subagent gets it verbatim.
 
 ### Architecture, type-safety, build/test/coverage compliance — verified against `/gates`, not trusted
 
@@ -107,8 +107,8 @@ checks need surrounding code. What it must not get is the implementer's account 
 session's conversation, the implementer's reasoning, the PR body, commit messages, or the gate summary.
 Tell it not to run any command that shows PR metadata or commit history: `gh pr view`, `gh pr checks`,
 `gh api` for the PR, `git log`, `git show` or `git blame`. Tell the subagent it is read-only (no edits,
-commits, or GitHub posts), and instruct it to report every checklist item as PASS, FAIL, or N/A (with
-the reason it does not apply) with file path + line number, plus any other defect it finds in the diff,
+commits, or GitHub posts), and instruct it to report every checklist item as PASS or FAIL with file path +
+line number, or as N/A with the reason it does not apply, plus any other defect it finds in the diff,
 each with a severity, or to state plainly that it found none.
 
 Merge its output into the verdict:
@@ -116,7 +116,7 @@ Merge its output into the verdict:
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
   is listed in the posted verdict — never dropped silently.
 - An accepted HIGH or MEDIUM finding blocks APPROVED. An accepted LOW finding, and a FAIL on an item
-  marked *(advisory)*, is reported but does not block. Keep the severity the subagent assigned; you may
+  marked *(advisory)*, is reported but does not block. A HIGH finding blocks even on an *(advisory)* item. Keep the severity the subagent assigned; you may
   raise it, and you may lower it only with a stated reason in the verdict.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
@@ -143,13 +143,13 @@ Merge its output into the verdict:
 
 ## Output format
 
-For each check: ✅ PASS, ❌ FAIL, or N/A with the reason (with file path + line number).
+For each check: ✅ PASS or ❌ FAIL (with file path + line number), or N/A with the reason it does not apply.
 
 Lead the verdict with a **Gate verification** block: the PR HEAD SHA, whether it matched the summary's
 SHA, each re-run script/grep and its result, the `gates` CI job state (or "not yet configured"), and
 which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
 reported, with its severity, marked accepted or dismissed, with the quoted code for each dismissal (or
-the `NOT isolated` note), followed by the subagent's raw report.
+the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
 Final verdict:
 - **APPROVED** — every gate-verification check passes and no accepted finding blocks (accepted LOW findings and advisory FAILs do not; see "Merge its output" above), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
@@ -165,7 +165,7 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
 **What was wrong:** <description>
-**Rule violated:** <exact rule from invariants.md or AGENTS.md — or "no formal rule, caught pre-review" if none applies>
+**Rule violated:** <exact rule from invariants.md or AGENTS.md — or, if none applies, "no formal rule, caught in review" (case 1) or "no formal rule, caught pre-review" (case 2)>
 **File:** <path:line if known>
 **Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
