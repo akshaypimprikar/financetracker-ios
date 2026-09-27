@@ -109,3 +109,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:23, :110-120, :146, :151-152
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — Round 2: blocking rule still ambiguous for advisory items
+**What was wrong:** The round 1 fix ("a HIGH finding blocks even on an advisory item") left a MEDIUM finding on an advisory item with opposite answers, and the APPROVED line still said "advisory FAILs do not" block with no exception. This partly repeats this PR's own round 1 "Rule gaps" entry.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:118-119, :155
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-27 — PR#130 — Round 2: wording slips from the round 1 fixes
+**What was wrong:** feature/SKILL.md:27 dropped "else", which made "nothing in the standard pipeline" untrue (the doubt-driven review in the same bullet is in it). The "one wording" pointer at review/SKILL.md:23 was itself a paraphrase of the rule. One new line broke the file's wrap width.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/feature/SKILL.md:27; .claude/skills/review/SKILL.md:23, :119
+**Caught by:** this review (isolated subagent, round 2)

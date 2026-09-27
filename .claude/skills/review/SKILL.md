@@ -20,7 +20,8 @@ Also read the following files if they exist — skip silently if absent:
 - `.claude/context/rejections.md` — past violations on this project
 - `.claude/context/incidents.md` — past bug root causes
 
-Repeats of either file are HIGH severity. Within this skill the rule has one wording, under "Judgment checks" below, and the subagent gets it verbatim.
+How to rate a repeat of an entry in either file is stated once in this skill, under "Judgment checks" below, and the
+subagent gets that wording verbatim.
 
 ### Architecture, type-safety, build/test/coverage compliance — verified against `/gates`, not trusted
 
@@ -115,8 +116,9 @@ Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
   is listed in the posted verdict — never dropped silently.
-- An accepted HIGH or MEDIUM finding blocks APPROVED. An accepted LOW finding, and a FAIL on an item
-  marked *(advisory)*, is reported but does not block. A HIGH finding blocks even on an *(advisory)* item. Keep the severity the subagent assigned; you may
+- An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
+  except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
+  block is still reported. Keep the severity the subagent assigned; you may
   raise it, and you may lower it only with a stated reason in the verdict.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
@@ -152,7 +154,7 @@ reported, with its severity, marked accepted or dismissed, with the quoted code 
 the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
 Final verdict:
-- **APPROVED** — every gate-verification check passes and no accepted finding blocks (accepted LOW findings and advisory FAILs do not; see "Merge its output" above), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check passes and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
