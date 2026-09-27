@@ -205,3 +205,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:128, :131-135
 **Caught by:** this review (isolated subagent, round 19)
+
+## 2026-09-27 — PR#130 — Round 25: incidents.md entries had no severity for the regression check
+**What was wrong:** The session's regression check compared findings with this PR's incidents.md entries but raised only returning "blocking" fixes, and incidents.md entries carry no severity, so the check could never fire or had to guess. incidents.md records real bugs, so its entries now count as blocking fixes.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:132-135
+**Caught by:** this review (isolated subagent, round 25)
