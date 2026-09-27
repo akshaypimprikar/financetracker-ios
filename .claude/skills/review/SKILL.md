@@ -17,8 +17,10 @@ Read `AGENTS.md` first — it defines the architecture rules you enforce.
 
 Also read the following files if they exist — skip silently if absent:
 - `.claude/context/invariants.md` — project invariants; these supplement AGENTS.md rules
-- `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity
-- `.claude/context/incidents.md` — past bug root causes; flag any PR that reintroduces a previously-fixed symptom as HIGH severity, same as a rejections.md repeat
+- `.claude/context/rejections.md` — past violations on this project
+- `.claude/context/incidents.md` — past bug root causes
+
+Repeats of either file are HIGH severity. The rule's one wording is under "Judgment checks" below, and the subagent gets it verbatim.
 
 ### Architecture, type-safety, build/test/coverage compliance — verified against `/gates`, not trusted
 
@@ -87,7 +89,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 ### Judgment checks — run by a fresh-context subagent, not this session
 
 The design compliance and code quality checklists below are judgment calls, so this session does not
-make them. Hand them to one fresh-context subagent and give it **only**:
+make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
+implementer's account of the change (listed below):
 - the diff: `gh pr diff <PR>`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
@@ -95,24 +98,31 @@ make them. Hand them to one fresh-context subagent and give it **only**:
   `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
-- this rule, verbatim: a finding that repeats a violation in `rejections.md` or a symptom in `incidents.md`
-  is **HIGH** severity — name the entry it repeats
+- this rule, verbatim: a finding that repeats a violation in `rejections.md` or reintroduces a symptom in
+  `incidents.md` is **HIGH** severity — name the entry it repeats
+- the severity scale: HIGH, MEDIUM or LOW for every finding
 
 It may also read any source file in the repo (for example, the whole file around a hunk), since several
 checks need surrounding code. What it must not get is the implementer's account of the change: this
-session's conversation, the implementer's reasoning, the PR body, commit messages (tell it not to run
-`git log`/`git show` on the PR's commits), or the gate summary. Tell the subagent it is read-only (no
-edits, commits, or GitHub posts), and instruct it to report every checklist item as PASS or FAIL with file
-path + line number, plus any other defect it finds in the diff — or to state plainly that it found none.
+session's conversation, the implementer's reasoning, the PR body, commit messages, or the gate summary.
+Tell it not to run any command that shows PR metadata or commit history: `gh pr view`, `gh pr checks`,
+`gh api` for the PR, `git log`, `git show` or `git blame`. Tell the subagent it is read-only (no edits,
+commits, or GitHub posts), and instruct it to report every checklist item as PASS, FAIL, or N/A (with
+the reason it does not apply) with file path + line number, plus any other defect it finds in the diff,
+each with a severity, or to state plainly that it found none.
 
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
   is listed in the posted verdict — never dropped silently.
-- An accepted finding blocks APPROVED unless it is a FAIL on an item marked *(advisory)*, which is
-  reported but does not block. Keep any HIGH severity the subagent assigned.
-- If a subagent cannot be spawned in this runtime, run the checklists here instead and write
-  `Judgment checks: NOT isolated (subagent unavailable)` in the verdict.
+- An accepted HIGH or MEDIUM finding blocks APPROVED. An accepted LOW finding, and a FAIL on an item
+  marked *(advisory)*, is reported but does not block. Keep the severity the subagent assigned; you may
+  raise it, and you may lower it only with a stated reason in the verdict.
+- Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
+  dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
+- If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same
+  severity, blocking and advisory rules, and write `Judgment checks: NOT isolated (subagent
+  unavailable)` in the verdict.
 
 ### Design compliance checks
 *Only applies to PRs that touch `Views/` or add new UI components. Read `docs/design-system.md` and `FinanceTracker/Theme/` before running these checks.*
@@ -133,16 +143,16 @@ Merge its output into the verdict:
 
 ## Output format
 
-For each check: ✅ PASS or ❌ FAIL (with file path + line number).
+For each check: ✅ PASS, ❌ FAIL, or N/A with the reason (with file path + line number).
 
 Lead the verdict with a **Gate verification** block: the PR HEAD SHA, whether it matched the summary's
 SHA, each re-run script/grep and its result, the `gates` CI job state (or "not yet configured"), and
 which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
-reported, marked accepted or dismissed, with the quoted code for each dismissal (or the `NOT isolated`
-note).
+reported, with its severity, marked accepted or dismissed, with the quoted code for each dismissal (or
+the `NOT isolated` note), followed by the subagent's raw report.
 
 Final verdict:
-- **APPROVED** — all checks pass and no accepted isolated-review finding blocks (see "Merge its output" above), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check passes and no accepted finding blocks (accepted LOW findings and advisory FAILs do not; see "Merge its output" above), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
@@ -167,9 +177,9 @@ Skip this step only if there is truly nothing to log — no CHANGES REQUESTED is
 By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
 
 - **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
-- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent that sees only the diff, the plan's acceptance criteria, and the project rules — never the implementer's transcript, the PR body, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
+- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the diff, the plan's acceptance criteria, the project rules, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
 
-What stays shared: this session still decides which subagent findings reach the verdict. That is why a dismissal must quote the disproving code and appear in the posted verdict — anyone auditing the PR can see every finding the isolated reviewer raised and why any were rejected.
+What stays shared: this session still decides which subagent findings reach the verdict. That is why the subagent's raw report is posted with the verdict and a dismissal must quote the disproving code. Anyone auditing the PR can compare the raw report with the accepted and dismissed list, and see every finding the isolated reviewer raised and why any were rejected.
 
 FinanceTracker also gets **external auditability**: posting the verdict as a real, separate GitHub review object (below) means anyone auditing the repo from outside the session can see review happened and compare its content against the diff.
 

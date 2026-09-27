@@ -82,12 +82,12 @@
 
 ## 2026-09-25 — PR#126 — Incomplete instruction contract
 **What was wrong:** Moving /review's judgment checks into a fresh-context subagent left two rules behind: only checklist FAILs had to reach the verdict (so the subagent's other defects could be dropped silently, contradicting the Isolated review block and CHANGELOG), and the subagent was never told that repeats of rejections.md/incidents.md entries are HIGH severity.
-**Rule violated:** no formal rule, caught pre-merge
+**Rule violated:** no formal rule, caught pre-review
 **File:** .claude/skills/review/SKILL.md:94-106
 **Caught by:** this review (isolated subagent) and code-review:code-review, independently
 
 ## 2026-09-25 — PR#126 — Ambiguous subagent input scope
 **What was wrong:** "Give it only" listed the diff and rule files but didn't say whether repo source beyond diff hunks is allowed, which checklist items like "functions do one thing" need.
-**Rule violated:** no formal rule, caught pre-merge
+**Rule violated:** no formal rule, caught pre-review
 **File:** .claude/skills/review/SKILL.md:90-99
 **Caught by:** this review (isolated subagent)
