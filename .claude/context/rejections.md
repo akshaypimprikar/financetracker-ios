@@ -181,3 +181,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:102-104, :168
 **Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 13: case 1 stopped logging gate-verification failures
+**What was wrong:** Narrowing case 1 to "accepted findings that block" (a code-review fix) dropped CHANGES REQUESTED verdicts caused only by gate-verification failures (a stale SHA, a TODO hit, a missing CHANGELOG entry, TDD order), which the old "log each issue found here" covered.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:170-172
+**Caught by:** this review (isolated subagent, round 13)

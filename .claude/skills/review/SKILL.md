@@ -167,9 +167,9 @@ Final verdict:
 
 Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
 
-1. This review's own verdict is CHANGES REQUESTED — log each accepted finding that blocks (HIGH, or MEDIUM
-   on an item not marked *(advisory)*). Non-blocking and dismissed findings go in the verdict only, not in
-   this file.
+1. This review's own verdict is CHANGES REQUESTED — log each failed gate-verification check and each
+   accepted finding that blocks (HIGH, or MEDIUM on an item not marked *(advisory)*). Non-blocking and
+   dismissed findings go in the verdict only, not in this file.
 2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 
 In both cases, check `rejections.md` first. If the item already has an entry for this PR, skip it,
