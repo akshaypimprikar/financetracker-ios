@@ -151,3 +151,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Round 2: wording slips from the round 1 fixes
 **File:** .claude/skills/review/SKILL.md:23-24, :124
 **Caught by:** this review (isolated subagent, round 7)
+
+## 2026-09-27 — PR#130 — Round 8: the skip rule covered only case 2
+**What was wrong:** The "already has an entry" skip applied only to case 2, so a later CHANGES REQUESTED round that found a still-unfixed issue would log it again under case 1. This repeats this PR's round 6 "skip rule too narrow" entry.
+**Rule violated:** repeats 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
+**File:** .claude/skills/review/SKILL.md:168-169, :179
+**Caught by:** this review (isolated subagent, round 8)
