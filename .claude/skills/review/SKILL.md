@@ -83,8 +83,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    ```bash
    gh pr checks <PR> --json name,bucket
    ```
-   Require a check named `gates` with bucket `pass`. `fail` → **CHANGES REQUESTED**. `pending` → not
-   approvable yet; say so. No check named `gates` at all → write `gates CI job: not yet configured` in
+   Require a check named `gates` with bucket `pass`. `fail` → **CHANGES REQUESTED**. `pending` → wait for it
+   to finish before posting a verdict. No check named `gates` at all → write `gates CI job: not yet configured` in
    the verdict as a visible note — never let its absence read as a pass.
 
 ### Judgment checks — run by a fresh-context subagent, not this session
@@ -124,6 +124,7 @@ each with a severity, or to state plainly that it found none.
 
 The subagent does not see this PR's `rejections.md` changes, so check them yourself: they must only append
 to the base branch's file (`git diff "${BASE}...HEAD" -- .claude/context/rejections.md` shows no removed lines).
+A removed or changed line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
 
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked

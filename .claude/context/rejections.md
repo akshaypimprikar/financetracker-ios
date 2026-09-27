@@ -247,3 +247,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:95-100
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 31)
+
+## 2026-09-27 — PR#130 — Round 32: the new append-only check had no failure outcome
+**What was wrong:** The session's check that rejections.md only appends did not say what a failure meant: it was not a gate-verification check, a subagent finding or a case-1 item, so a PR that edits past log entries could still be APPROVED. A failure is now a failed gate-verification check (CHANGES REQUESTED).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:125-126
+**Caught by:** this review (isolated subagent, round 32)
