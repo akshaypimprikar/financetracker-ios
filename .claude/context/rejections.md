@@ -157,3 +157,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
 **File:** .claude/skills/review/SKILL.md:168-169, :179
 **Caught by:** this review (isolated subagent, round 8)
+
+## 2026-09-27 — PR#130 — Round 9: skip condition out of step, and regressions could be skipped
+**What was wrong:** After round 8 extended the skip to case 1, the "skip this step only if" line still required logging any CHANGES REQUESTED issue, which contradicted the skip. This repeats this PR's round 6 entry. "Already has an entry" also didn't separate an unfixed issue (skip it) from a regression of a fixed one (log it).
+**Rule violated:** repeats 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
+**File:** .claude/skills/review/SKILL.md:171-173, :183
+**Caught by:** this review (isolated subagent, round 9)
