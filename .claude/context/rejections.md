@@ -139,3 +139,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:163-165
 **Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
+**What was wrong:** The skip rule only covered items logged by earlier /review rounds, so a fix logged by a code-review round would still be logged twice (a repeat of this PR's "Case 2 logging would duplicate" entry). The case-2 label "caught pre-review" was wrong for code-review rounds that run after /review. The "skip this step only if" line did not allow for fixes that are documented but already logged.
+**Rule violated:** repeats 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
+**File:** .claude/skills/review/SKILL.md:170, :175, :180
+**Caught by:** this review (isolated subagent, round 6)

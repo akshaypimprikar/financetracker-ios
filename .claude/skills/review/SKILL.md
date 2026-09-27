@@ -167,17 +167,17 @@ Final verdict:
 Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
 
 1. This review's own verdict is CHANGES REQUESTED — log each issue found here.
-2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log. Skip any item that an earlier `/review` round of this same PR already logged under case 1; it has an entry already, and logging it again would double the history that repeat detection reads.
+2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log. Skip any item that already has an entry for this PR in `rejections.md`, however it was logged (an earlier `/review` round, a code-review round, or by hand). Logging it again would double the history that repeat detection reads.
 
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
 **What was wrong:** <description>
-**Rule violated:** <exact rule from invariants.md or AGENTS.md — or, if none applies, "no formal rule, caught in review" (case 1) or "no formal rule, caught pre-review" (case 2)>
+**Rule violated:** <exact rule from invariants.md or AGENTS.md — or, if none applies, "no formal rule, caught in review" (case 1) or "no formal rule, caught before this review" (case 2)>
 **File:** <path:line if known>
 **Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
 
-Skip this step only if there is truly nothing to log — no CHANGES REQUESTED issues from this review *and* no documented pre-review fixes in the PR body.
+Skip this step only if there is truly nothing new to log: no CHANGES REQUESTED issues from this review, *and* no fix documented in the PR body that lacks an entry for this PR.
 
 ## Context isolation: what is and isn't isolated
 
