@@ -131,7 +131,9 @@ Merge its output into the verdict:
 - Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
   not rate them. Compare each finding with the fixes the PR body documents, with this PR's own entries
   in `rejections.md`, and with the `incidents.md` entries this PR's diff adds (an `incidents.md` entry
-  records a real bug, so treat it as a blocking fix). If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
+  records a real bug, so treat it as a blocking fix). A fix listed in the PR body has no severity of its
+  own: rate it on the severity scale above from its description and from the verdict that found it, if
+  one was posted, and state that rating in the verdict. If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
   MEDIUM) that came back, it is a regression: raise it to HIGH and name that fix (and its entry, if one
   exists). A returning LOW or advisory item keeps its own severity, and a finding that was never fixed
   keeps its severity.
@@ -179,7 +181,7 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 1. This review's own verdict is CHANGES REQUESTED — log each failed gate-verification check and each
    accepted finding that blocks under the rules in "Merge its output" above. Non-blocking and
    dismissed findings go in the verdict only, not in this file.
-2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log. Log only fixes that would have blocked under the rules in "Merge its output" above (HIGH, or a blocking MEDIUM); a fixed LOW or advisory item is not a violation to log.
+2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log. Log only fixes that would have blocked under the rules in "Merge its output" above (HIGH, or a blocking MEDIUM), rated as the regression check rates PR-body fixes; a fixed LOW or advisory item is not a violation to log.
 
 In both cases, check `rejections.md` first. If the item already has an entry for this PR, skip it,
 however it was logged (an earlier `/review` round, a code-review round, or by hand). Logging it again

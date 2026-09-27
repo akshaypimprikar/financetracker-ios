@@ -211,3 +211,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:132-135
 **Caught by:** this review (isolated subagent, round 25)
+
+## 2026-09-27 — PR#130 — Round 26: PR-body fixes had no severity for the regression check or case 2
+**What was wrong:** The regression check and case 2 act only on blocking fixes, but a fix listed in the PR body carries no severity, and nothing told the session how to rate one. Whether a returning fix was raised, or a fix was logged, depended on a guess.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:115-119, :176
+**Caught by:** this review (isolated subagent, round 26)
