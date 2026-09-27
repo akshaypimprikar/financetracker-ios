@@ -163,3 +163,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
 **File:** .claude/skills/review/SKILL.md:171-173, :183
 **Caught by:** this review (isolated subagent, round 9)
+
+## 2026-09-27 — PR#130 — Round 10: the skip condition's wording inverted its intent
+**What was wrong:** "Skip an item that already has an entry and has not been fixed since" can never skip a case-2 item, because those are fixes by definition. A final APPROVED review would log every earlier-round finding again. This repeats this PR's "Case 2 logging would duplicate earlier review rounds" entry.
+**Rule violated:** repeats 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
+**File:** .claude/skills/review/SKILL.md:171-172
+**Caught by:** this review (isolated subagent, round 10)

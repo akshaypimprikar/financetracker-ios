@@ -168,10 +168,10 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 1. This review's own verdict is CHANGES REQUESTED — log each issue found here.
 2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 
-In both cases, skip an item that already has an entry for this PR in `rejections.md` and has not been fixed
-since, however it was logged (an earlier `/review` round, a code-review round, or by hand). Logging it
-again would double the history that repeat detection reads. If an issue that was fixed comes back, that
-is a regression: log it as a new entry that names the entry it repeats.
+In both cases, check `rejections.md` first. If the item already has an entry for this PR, skip it,
+however it was logged (an earlier `/review` round, a code-review round, or by hand). Logging it again
+would double the history that repeat detection reads. The one exception is a regression: if an issue was
+fixed in this PR and then came back, log its return as a new entry that names the entry it repeats.
 
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
