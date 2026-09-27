@@ -253,3 +253,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:125-126
 **Caught by:** this review (isolated subagent, round 32)
+
+## 2026-09-27 — PR#130 — Round 33: this PR's incidents.md entries still reached the isolated reviewer
+**What was wrong:** Only this PR's rejections.md entries were withheld. Its incidents.md entries, which /feature writes during the PR, still reached the subagent through the diff and the branch copy, which leaked the implementer's account. Both logs are now given as base-branch copies, with a diff that leaves both out.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:93-106
+**Caught by:** this review (isolated subagent, round 33)

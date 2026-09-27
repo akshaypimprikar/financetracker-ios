@@ -93,21 +93,19 @@ The design compliance and code quality checklists below are judgment calls, so t
 make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
 implementer's account of the change (listed below):
 - the PR number
-- the diff without the review log: `git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md'` (this
-  PR's own log entries describe the change, so they are withheld)
+- the diff without the two logs: `git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md'
+  ':!.claude/context/incidents.md'` (this PR's own log entries describe the change, so they are withheld)
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
-- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `rejections.md` as it is on the base
-  branch (save `git show "${BASE}:.claude/context/rejections.md"` to a file for it, since the PR's copy holds
-  this PR's own entries),
-  `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
+- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `rejections.md` and `incidents.md` as they
+  are on the base branch (save `git show "${BASE}:.claude/context/<file>"` to a file for each that exists,
+  since the PR's copies hold this PR's own entries), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
 - this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR, or
   reintroduces a symptom in `incidents.md`, is **HIGH** severity — name the entry it repeats. A repeat of
-  a `rejections.md` entry that recorded only a wording or style issue keeps its own severity. Entries
-  that belong to this PR are not repeats: in `rejections.md`, those with this PR's number; in
-  `incidents.md`, those this PR's diff adds. Do not rate against them
+  a `rejections.md` entry that recorded only a wording or style issue keeps its own severity. Both logs
+  you get are the base branch's copies, so every entry in them is from an earlier PR
 - the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an
   AGENTS.md or `invariants.md` rule; **MEDIUM** is a FAIL on a checklist item that is not marked *(advisory)*,
   or a defect that changes behavior or would mislead a reader; **LOW** is a wording or style issue that
@@ -122,8 +120,9 @@ commits, or GitHub posts), and instruct it to report every checklist item as PAS
 line number, or as N/A with the reason it does not apply, plus any other defect it finds in the diff,
 each with a severity, or to state plainly that it found none.
 
-The subagent does not see this PR's `rejections.md` changes, so check them yourself: they must only append
-to the base branch's file (`git diff "${BASE}...HEAD" -- .claude/context/rejections.md` shows no removed lines).
+The subagent does not see this PR's changes to `rejections.md` or `incidents.md`, so check them yourself: each
+must only append to the base branch's file (`git diff "${BASE}...HEAD" -- .claude/context/rejections.md
+.claude/context/incidents.md` shows no removed lines).
 A removed or changed line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
 
 Merge its output into the verdict:
@@ -214,7 +213,7 @@ an entry for this PR that the skip rule above covers.
 By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
 
 - **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
-- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the PR number, the diff (without this PR's `rejections.md` entries), the plan's acceptance criteria, the project rules as they are on the base branch for `rejections.md`, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
+- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the PR number, the diff (without this PR's `rejections.md` and `incidents.md` entries), the plan's acceptance criteria, the project rules (with both logs as they are on the base branch), and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
 
 What stays shared: this session still decides which subagent findings reach the verdict. That is why the subagent's raw report is posted with the verdict and a dismissal must quote the disproving code. Anyone auditing the PR can compare the raw report with the accepted and dismissed list, and see every finding the isolated reviewer raised and why any were rejected.
 
