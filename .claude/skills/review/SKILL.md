@@ -93,18 +93,27 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 
 The design compliance and code quality checklists below are judgment calls, so this session does not
 make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
-implementer's account of the change (listed below):
+implementer's account of the change (listed below). This PR's own entries in `rejections.md` and
+`incidents.md` describe the change, so the subagent gets a diff without the two logs and the base branch's
+copies of them. Prepare those in one shell call (`BASE` does not carry over from step 2), with the copies
+outside the repo so the working tree stays clean:
+```bash
+BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
+T=$(mktemp -d)
+git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md' ':!.claude/context/incidents.md' > "$T/pr.diff"
+for f in rejections incidents; do
+  if git cat-file -e "${BASE}:.claude/context/$f.md" 2>/dev/null; then
+    git show "${BASE}:.claude/context/$f.md" > "$T/$f.md"
+  fi
+done
+```
+Then give it:
 - the PR number
-- the diff without the two logs. Set `BASE` in the same command, since it does not carry over from step 2:
-  `BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName) && git diff "${BASE}...HEAD" -- .
-  ':!.claude/context/rejections.md' ':!.claude/context/incidents.md'` (this PR's own log entries describe the change, so they are withheld)
+- the diff: `$T/pr.diff`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
-- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `rejections.md` and `incidents.md` as they
-  are on the base branch (save `git show "${BASE}:.claude/context/<file>"` for each that exists to a file in a temporary
-  directory outside the repo, such as `$(mktemp -d)`, so the working tree stays clean, with `BASE` set in
-  that same command as above,
-  since the PR's copies hold this PR's own entries), plus `docs/design-system.md` and `FinanceTracker/Theme/`
+- the files to read: `AGENTS.md`, `.claude/context/invariants.md`, the base-branch log copies in `$T`
+  (`rejections.md`, and `incidents.md` if it exists), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
 - this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR, or
@@ -127,9 +136,11 @@ line number, or as N/A with the reason it does not apply, plus any other defect 
 each with a severity, or to state plainly that it found none.
 
 The subagent does not see this PR's changes to `rejections.md` or `incidents.md`, so check them yourself: each
-must only append to the base branch's file. Set `BASE` in the same command, as above: `BASE=origin/$(gh pr
-view <PR> --json baseRefName -q .baseRefName) && git diff "${BASE}...HEAD" -- .claude/context/rejections.md
-.claude/context/incidents.md` must show no removed lines.
+must only append to the base branch's file. This must print nothing:
+```bash
+BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
+git diff "${BASE}...HEAD" -- .claude/context/rejections.md .claude/context/incidents.md | grep -E '^-[^-]'
+```
 A removed or changed line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
 
 Merge its output into the verdict:

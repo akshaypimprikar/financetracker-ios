@@ -283,3 +283,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** CHANGELOG.md:15
 **Caught by:** this review (isolated subagent, round 37)
+
+## 2026-09-27 — PR#130 — Round 38: inline commands broke across lines; the copy loop used an unguarded rm
+**What was wrong:** The subagent-input and append-check commands were inline code wrapped at unsafe points, so copied into a shell they ran the wrong diff and set BASE wrong. Moving them into fenced blocks also showed that the base-log copy loop's `rm -f "$T/$f.md"` is blocked by Claude Code's safety check, so /review would have failed there. The loop now writes a copy only when the file exists on the base branch.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:99-100, :157-159
+**Caught by:** this review (isolated subagent, round 38) and the session's dry run
