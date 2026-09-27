@@ -104,22 +104,10 @@
 **File:** .claude/skills/feature/SKILL.md:27
 **Caught by:** this review (isolated subagent)
 
-## 2026-09-27 — PR#130 — Rule gaps left by the #127 fixes
-**What was wrong:** "One wording" for the HIGH rule was claimed without scoping it to /review (parallel-review/SKILL.md:22 keeps its own copy); nothing said whether a HIGH finding on an advisory item blocks; N/A items were asked for a file and line; the fallback path was asked for a raw subagent report that can't exist.
-**Rule violated:** no formal rule, caught in review
-**File:** .claude/skills/review/SKILL.md:23, :110-120, :146, :151-152
-**Caught by:** this review (isolated subagent)
-
 ## 2026-09-27 — PR#130 — Round 2: blocking rule still ambiguous for advisory items
 **What was wrong:** The round 1 fix ("a HIGH finding blocks even on an advisory item") left a MEDIUM finding on an advisory item with opposite answers, and the APPROVED line still said "advisory FAILs do not" block with no exception. This partly repeats this PR's own round 1 "Rule gaps" entry.
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:118-119, :155
-**Caught by:** this review (isolated subagent, round 2)
-
-## 2026-09-27 — PR#130 — Round 2: wording slips from the round 1 fixes
-**What was wrong:** feature/SKILL.md:27 dropped "else", which made "nothing in the standard pipeline" untrue (the doubt-driven review in the same bullet is in it). The "one wording" pointer at review/SKILL.md:23 was itself a paraphrase of the rule. One new line broke the file's wrap width.
-**Rule violated:** no formal rule, caught in review
-**File:** .claude/skills/feature/SKILL.md:27; .claude/skills/review/SKILL.md:23, :119
 **Caught by:** this review (isolated subagent, round 2)
 
 ## 2026-09-27 — PR#130 — Round 3: severity tiers undefined, so a required FAIL could stop blocking
@@ -145,12 +133,6 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
 **File:** .claude/skills/review/SKILL.md:170, :175, :180
 **Caught by:** this review (isolated subagent, round 6)
-
-## 2026-09-27 — PR#130 — Round 7: wrap width broken again by the round 2 pointer fix
-**What was wrong:** The round 2 rewrite of the HIGH-rule pointer (review/SKILL.md:23-24) and the round 4 floor sentence (:124) broke the section's wrap width again. This repeats this PR's round 2 "wording slips" entry. It changes no behavior.
-**Rule violated:** repeats 2026-09-27 — PR#130 — Round 2: wording slips from the round 1 fixes
-**File:** .claude/skills/review/SKILL.md:23-24, :124
-**Caught by:** this review (isolated subagent, round 7)
 
 ## 2026-09-27 — PR#130 — Round 8: the skip rule covered only case 2
 **What was wrong:** The "already has an entry" skip applied only to case 2, so a later CHANGES REQUESTED round that found a still-unfixed issue would log it again under case 1. This repeats this PR's round 6 "skip rule too narrow" entry.
@@ -211,3 +193,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:103-105
 **Caught by:** this review (isolated subagent, round 17)
+
+## 2026-09-27 — PR#130 — Case 2 logged non-blocking fixes into repeat history
+**What was wrong:** Case 2 logged every fix the PR body listed, whatever its severity, so a fixed LOW (for example a wrap-width nit) would enter rejections.md and make the same slip in a later PR a blocking HIGH repeat. This PR's own log also held three LOW-only entries; they were removed before merge.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:180; .claude/context/rejections.md (this PR's entries)
+**Caught by:** code-review pass (code-review:code-review on PR#130)
