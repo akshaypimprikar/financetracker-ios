@@ -95,16 +95,22 @@ make them. Hand them to one fresh-context subagent and give it **only**:
   `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
+- this rule, verbatim: a finding that repeats a violation in `rejections.md` or a symptom in `incidents.md`
+  is **HIGH** severity — name the entry it repeats
 
-Do **not** pass this session's conversation, the implementer's reasoning, the PR body, commit messages,
-or the gate summary — each is the implementer's account of the change, which is exactly what the reviewer
-must not see. Tell the subagent it is read-only (no edits, commits, or GitHub posts), and instruct it to
-report every checklist item as PASS or FAIL with file path + line number, plus any other defect it finds
-in the diff — or to state plainly that it found none.
+It may also read any source file in the repo (for example, the whole file around a hunk), since several
+checks need surrounding code. What it must not get is the implementer's account of the change: this
+session's conversation, the implementer's reasoning, the PR body, commit messages (tell it not to run
+`git log`/`git show` on the PR's commits), or the gate summary. Tell the subagent it is read-only (no
+edits, commits, or GitHub posts), and instruct it to report every checklist item as PASS or FAIL with file
+path + line number, plus any other defect it finds in the diff — or to state plainly that it found none.
 
 Merge its output into the verdict:
-- Every FAIL it reports goes into the verdict. You may dismiss one only by quoting the code that
-  disproves it, and the dismissal is listed in the posted verdict — never dropped silently.
+- Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
+  accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
+  is listed in the posted verdict — never dropped silently.
+- An accepted finding blocks APPROVED unless it is a FAIL on an item marked *(advisory)*, which is
+  reported but does not block. Keep any HIGH severity the subagent assigned.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead and write
   `Judgment checks: NOT isolated (subagent unavailable)` in the verdict.
 
@@ -136,7 +142,7 @@ reported, marked accepted or dismissed, with the quoted code for each dismissal 
 note).
 
 Final verdict:
-- **APPROVED** — all checks pass, eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — all checks pass and no accepted isolated-review finding blocks (see "Merge its output" above), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
