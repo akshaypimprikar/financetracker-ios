@@ -133,3 +133,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:125-126
 **Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
+**What was wrong:** Once a PR's body listed fixes under "Found in review and fixed", a final APPROVED /review would log them again under case 2, labeled "caught pre-review". But earlier /review rounds had already logged them under case 1 ("caught in review"). The duplicates would inflate the history that repeat detection reads.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:163-165
+**Caught by:** code-review pass (code-review:code-review on PR#130)
