@@ -99,10 +99,9 @@ implementer's account of the change (listed below):
   `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
-- this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR,
-  reintroduces a symptom in `incidents.md`, or comes back after being fixed earlier in this PR is
-  **HIGH** severity — name the entry it repeats. A finding that is still unfixed from an earlier round of
-  this PR is not a repeat; it keeps its own severity
+- this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR, or
+  reintroduces a symptom in `incidents.md`, is **HIGH** severity — name the entry it repeats. Entries
+  for this PR are not repeats; do not rate against them
 - the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an
   AGENTS.md or `invariants.md` rule; **MEDIUM** is a FAIL on a checklist item that is not marked *(advisory)*,
   or a defect that changes behavior or would mislead a reader; **LOW** is a wording or style issue that
@@ -124,11 +123,13 @@ Merge its output into the verdict:
 - An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
   except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
   block is still reported. Keep the severity the subagent assigned. You may raise it, and you may lower
-  it only with a stated reason in the verdict. Two floors never move: a repeat or a break of an
-  AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at least MEDIUM.
-- Check for regressions yourself: the subagent cannot see the PR body. If a finding matches a fix the PR
-  body documents from an earlier round, it is a regression. Raise it to HIGH and name that fix (and its
-  `rejections.md` entry, if one exists).
+  it only with a stated reason in the verdict. Two floors never move: a repeat, a regression, or a
+  break of an AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at least MEDIUM.
+- Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
+  not rate them. Compare each finding with the fixes the PR body documents and with this PR's own entries
+  in `rejections.md`. If a finding matches something that was fixed earlier in this PR and came back, it
+  is a regression: raise it to HIGH and name that fix (and its entry, if one exists). A finding that was
+  never fixed keeps its severity.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same

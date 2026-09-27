@@ -193,3 +193,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:102-104, :175-178
 **Caught by:** this review (isolated subagent, round 14)
+
+## 2026-09-27 — PR#130 — Round 15: the subagent was asked to rate regressions it couldn't see
+**What was wrong:** The subagent's repeat rule included "comes back after being fixed earlier in this PR", but without the PR body or history it couldn't tell a regression from a still-unfixed item. The session's backstop checked only the PR body, not this PR's own rejections.md entries.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102-105, :129-131
+**Caught by:** this review (isolated subagent, round 15)
