@@ -124,7 +124,7 @@
 
 ## 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
 **What was wrong:** Once a PR's body listed fixes under "Found in review and fixed", a final APPROVED /review would log them again under case 2, labeled "caught pre-review". But earlier /review rounds had already logged them under case 1 ("caught in review"). The duplicates would inflate the history that repeat detection reads.
-**Rule violated:** no formal rule, caught in review
+**Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:163-165
 **Caught by:** code-review pass (code-review:code-review on PR#130)
 
@@ -160,7 +160,7 @@
 
 ## 2026-09-27 — PR#130 — Repeat rule and case-1 logging turned non-blocking findings into blocking HIGHs
 **What was wrong:** The repeat rule counted this PR's own earlier-round entries, so an unfixed LOW logged in one round became a HIGH repeat the next round and blocked (as happened with the round 7 wrap-width entry). Case 1 logged every finding, including non-blocking and dismissed ones, which filled repeat history with non-violations.
-**Rule violated:** no formal rule, caught in review
+**Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:102-104, :168
 **Caught by:** code-review pass (code-review:code-review on PR#130)
 
@@ -195,7 +195,13 @@
 **Caught by:** this review (isolated subagent, round 17)
 
 ## 2026-09-27 — PR#130 — Case 2 logged non-blocking fixes into repeat history
-**What was wrong:** Case 2 logged every fix the PR body listed, whatever its severity, so a fixed LOW (for example a wrap-width nit) would enter rejections.md and make the same slip in a later PR a blocking HIGH repeat. This PR's own log also held three LOW-only entries; they were removed before merge.
-**Rule violated:** no formal rule, caught in review
+**What was wrong:** Case 2 logged every fix the PR body listed, whatever its severity, so a fixed LOW (for example a wrap-width nit) would enter rejections.md and make the same slip in a later PR a blocking HIGH repeat.
+**Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:180; .claude/context/rejections.md (this PR's entries)
 **Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 19: regressions of LOW fixes were still raised to a blocking HIGH
+**What was wrong:** The session's regression check and the HIGH floor covered any fix that came back, including a fixed LOW, so a returning style nit would block APPROVED and enter repeat history. That contradicted case 2 and the CHANGELOG. Now only a regression of a blocking fix is raised.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:128, :131-135
+**Caught by:** this review (isolated subagent, round 19)
