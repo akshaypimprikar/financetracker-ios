@@ -289,3 +289,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:99-100, :157-159
 **Caught by:** this review (isolated subagent, round 38) and the session's dry run
+
+## 2026-09-27 — PR#130 — Round 39: the append-only check missed insertions into earlier entries
+**What was wrong:** The check grepped the diff for removed lines, so a line inserted into an earlier log entry (shown only as "+") or a removed blank separator got through, and "must only append" was not enforced. It now checks that the base file is an exact prefix of the PR's copy (dry-run: a real append passes and an insertion is caught). `gh pr diff` was also missing from the subagent's barred list, although it shows the withheld log entries.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:110, :141-142
+**Caught by:** this review (isolated subagent, round 39)

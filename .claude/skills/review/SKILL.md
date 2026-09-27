@@ -108,7 +108,7 @@ for f in rejections incidents; do
 done
 ```
 Then give it:
-- the PR number
+- the PR number, to name in its findings (not to fetch anything with)
 - the diff: `$T/pr.diff`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
@@ -129,19 +129,26 @@ It may also read any source file in the repo (for example, the whole file around
 checks need surrounding code, except the working-tree copies of `.claude/context/rejections.md` and
 `.claude/context/incidents.md`, which hold this PR's own entries: tell it not to open them or diff them. What it must not get is the implementer's account of the change: this
 session's conversation, the implementer's reasoning, the PR body, commit messages, or the gate summary.
-Tell it not to run any command that shows PR metadata or commit history: `gh pr view`, `gh pr checks`,
-`gh api` for the PR, `git log`, `git show` or `git blame`. Tell the subagent it is read-only (no edits,
+Tell it not to run any command that shows PR metadata or commit history: `gh pr view`, `gh pr diff`,
+`gh pr checks`, `gh api` for the PR, `git log`, `git show` or `git blame`. Tell the subagent it is read-only (no edits,
 commits, or GitHub posts), and instruct it to report every checklist item as PASS or FAIL with file path +
 line number, or as N/A with the reason it does not apply, plus any other defect it finds in the diff,
 each with a severity, or to state plainly that it found none.
 
 The subagent does not see this PR's changes to `rejections.md` or `incidents.md`, so check them yourself: each
-must only append to the base branch's file. This must print nothing:
+must only append: the base branch's file has to be an exact prefix of the PR's file, so an insertion, an
+edit or a removed line anywhere in an earlier entry is caught. This must print nothing:
 ```bash
 BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
-git diff "${BASE}...HEAD" -- .claude/context/rejections.md .claude/context/incidents.md | grep -E '^-[^-]'
+for f in rejections incidents; do
+  p=".claude/context/$f.md"
+  if git cat-file -e "${BASE}:$p" 2>/dev/null; then
+    n=$(git show "${BASE}:$p" | wc -l)
+    cmp -s <(git show "${BASE}:$p") <(git show "HEAD:$p" | head -n "$n") || echo "EDITED: $p"
+  fi
+done
 ```
-A removed or changed line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
+An `EDITED:` line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
 
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
