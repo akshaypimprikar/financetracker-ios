@@ -127,3 +127,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:104, :119-122, :157
 **Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-27 — PR#130 — Round 4: the HIGH floor was implied, not stated
+**What was wrong:** "Never below the floors in the severity scale" stated only the MEDIUM floor for required FAILs, so a HIGH repeat could be lowered to MEDIUM with a reason and stop blocking on an advisory item. That undid "HIGH always blocks".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:125-126
+**Caught by:** this review (isolated subagent, round 4)
