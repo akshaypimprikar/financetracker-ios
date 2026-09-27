@@ -187,3 +187,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:170-172
 **Caught by:** this review (isolated subagent, round 13)
+
+## 2026-09-27 — PR#130 — Round 14: the regression half of the repeat rule had no enforcer
+**What was wrong:** The subagent can't see the PR body, and code-review or non-blocking fixes aren't in rejections.md until case 2 runs. So a mid-PR regression of such a fix looked new, and nothing told the session (the only party that sees the body) to check. The regression exception also pointed at an entry that might not exist yet.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102-104, :175-178
+**Caught by:** this review (isolated subagent, round 14)

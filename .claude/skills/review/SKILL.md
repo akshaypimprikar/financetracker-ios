@@ -126,6 +126,9 @@ Merge its output into the verdict:
   block is still reported. Keep the severity the subagent assigned. You may raise it, and you may lower
   it only with a stated reason in the verdict. Two floors never move: a repeat or a break of an
   AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at least MEDIUM.
+- Check for regressions yourself: the subagent cannot see the PR body. If a finding matches a fix the PR
+  body documents from an earlier round, it is a regression. Raise it to HIGH and name that fix (and its
+  `rejections.md` entry, if one exists).
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same
@@ -175,7 +178,8 @@ Append one entry per violation to `.claude/context/rejections.md` in **two** cas
 In both cases, check `rejections.md` first. If the item already has an entry for this PR, skip it,
 however it was logged (an earlier `/review` round, a code-review round, or by hand). Logging it again
 would double the history that repeat detection reads. The one exception is a regression: if an issue was
-fixed in this PR and then came back, log its return as a new entry that names the entry it repeats.
+fixed in this PR and then came back, log its return as a new entry that names the entry it repeats, or
+the PR-body fix if that fix has no entry yet.
 
 ```
 ## YYYY-MM-DD — PR#<N> — <Violation Type>
