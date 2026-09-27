@@ -265,3 +265,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:96-101, :114
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 34)
+
+## 2026-09-27 — PR#130 — Round 35: append check could run with an empty BASE; unfinished CI could be logged
+**What was wrong:** The session's append-only log check used `${BASE}` without setting it, so in a fresh shell it diffed HEAD against itself and always passed. And a CHANGES REQUESTED for CI still pending after 30 minutes could be logged under case 1 as a failed check, although it is not a violation.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:86-88, :128
+**Caught by:** this review (isolated subagent, round 35)

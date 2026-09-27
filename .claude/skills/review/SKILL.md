@@ -85,7 +85,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    ```
    Require a check named `gates` with bucket `pass`. `fail` → **CHANGES REQUESTED**. `pending` → wait for it
    to finish, up to 30 minutes; if it is still pending then, post CHANGES REQUESTED noting only that CI has
-   not finished, and run `/review` again once it has. No check named `gates` at all → write `gates CI job: not yet configured` in
+   not finished, and run `/review` again once it has. Unfinished CI is not a violation: do not log it to
+   `rejections.md`. No check named `gates` at all → write `gates CI job: not yet configured` in
    the verdict as a visible note — never let its absence read as a pass.
 
 ### Judgment checks — run by a fresh-context subagent, not this session
@@ -125,8 +126,9 @@ line number, or as N/A with the reason it does not apply, plus any other defect 
 each with a severity, or to state plainly that it found none.
 
 The subagent does not see this PR's changes to `rejections.md` or `incidents.md`, so check them yourself: each
-must only append to the base branch's file (`git diff "${BASE}...HEAD" -- .claude/context/rejections.md
-.claude/context/incidents.md` shows no removed lines).
+must only append to the base branch's file. Set `BASE` in the same command, as above: `BASE=origin/$(gh pr
+view <PR> --json baseRefName -q .baseRefName) && git diff "${BASE}...HEAD" -- .claude/context/rejections.md
+.claude/context/incidents.md` must show no removed lines.
 A removed or changed line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
 
 Merge its output into the verdict:
