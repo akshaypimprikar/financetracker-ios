@@ -271,3 +271,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:86-88, :128
 **Caught by:** this review (isolated subagent, round 35)
+
+## 2026-09-27 — PR#130 — Round 36: CI-pending verdict could drop results; base-log copies had no location
+**What was wrong:** "Post CHANGES REQUESTED noting only that CI has not finished" could be read as dropping failures already found, and skipping the judgment checks. "Save … to a file" named no location, so a copy inside the repo would fail the next run's clean-tree check.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:86-88, :104
+**Caught by:** this review (isolated subagent, round 36)
