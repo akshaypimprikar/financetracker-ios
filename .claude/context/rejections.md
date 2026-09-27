@@ -135,31 +135,31 @@
 **Caught by:** this review (isolated subagent, round 6)
 
 ## 2026-09-27 — PR#130 — Round 8: the skip rule covered only case 2
-**What was wrong:** The "already has an entry" skip applied only to case 2, so a later CHANGES REQUESTED round that found a still-unfixed issue would log it again under case 1. This repeats this PR's round 6 "skip rule too narrow" entry.
+**What was wrong:** The "already has an entry" skip applied only to case 2, so a later CHANGES REQUESTED round that found a still-unfixed issue would log it again under case 1.
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:168-169, :179
 **Caught by:** this review (isolated subagent, round 8)
 
 ## 2026-09-27 — PR#130 — Round 9: skip condition out of step, and regressions could be skipped
-**What was wrong:** After round 8 extended the skip to case 1, the "skip this step only if" line still required logging any CHANGES REQUESTED issue, which contradicted the skip. This repeats this PR's round 6 entry. "Already has an entry" also didn't separate an unfixed issue (skip it) from a regression of a fixed one (log it).
+**What was wrong:** After round 8 extended the skip to case 1, the "skip this step only if" line still required logging any CHANGES REQUESTED issue, which contradicted the skip. "Already has an entry" also didn't separate an unfixed issue (skip it) from a regression of a fixed one (log it).
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:171-173, :183
 **Caught by:** this review (isolated subagent, round 9)
 
 ## 2026-09-27 — PR#130 — Round 10: the skip condition's wording inverted its intent
-**What was wrong:** "Skip an item that already has an entry and has not been fixed since" can never skip a case-2 item, because those are fixes by definition. A final APPROVED review would log every earlier-round finding again. This repeats this PR's "Case 2 logging would duplicate earlier review rounds" entry.
+**What was wrong:** "Skip an item that already has an entry and has not been fixed since" can never skip a case-2 item, because those are fixes by definition. A final APPROVED review would log every earlier-round finding again.
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:171-172
 **Caught by:** this review (isolated subagent, round 10)
 
 ## 2026-09-27 — PR#130 — Round 11: the skip line required logging that no case asks for
-**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires. This repeats this PR's round 9 entry. The CHANGELOG summary also left out the regression exception.
+**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires. The CHANGELOG summary also left out the regression exception.
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:184-185; CHANGELOG.md:15
 **Caught by:** this review (isolated subagent, round 11)
 
 ## 2026-09-27 — PR#130 — Repeat rule and case-1 logging turned non-blocking findings into blocking HIGHs
-**What was wrong:** The repeat rule counted this PR's own earlier-round entries, so an unfixed LOW logged in one round became a HIGH repeat the next round and blocked (as happened with the round 7 wrap-width entry). Case 1 logged every finding, including non-blocking and dismissed ones, which filled repeat history with non-violations.
+**What was wrong:** The repeat rule counted this PR's own earlier-round entries, so an unfixed LOW logged in one round became a HIGH repeat the next round and blocked. Case 1 logged every finding, including non-blocking and dismissed ones, which filled repeat history with non-violations.
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:102-104, :168
 **Caught by:** code-review pass (code-review:code-review on PR#130)
