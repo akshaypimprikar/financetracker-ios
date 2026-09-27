@@ -202,7 +202,7 @@ an entry for this PR that the skip rule above covers.
 By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
 
 - **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
-- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the diff, the plan's acceptance criteria, the project rules, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
+- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent. It sees the PR number, the diff, the plan's acceptance criteria, the project rules, and any repo source file it needs, but never the implementer's transcript, the PR body, commit messages, or the gate summary. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
 
 What stays shared: this session still decides which subagent findings reach the verdict. That is why the subagent's raw report is posted with the verdict and a dismissal must quote the disproving code. Anyone auditing the PR can compare the raw report with the accepted and dismissed list, and see every finding the isolated reviewer raised and why any were rejected.
 
