@@ -105,7 +105,7 @@
 **Caught by:** this review (isolated subagent)
 
 ## 2026-09-27 — PR#130 — Round 2: blocking rule still ambiguous for advisory items
-**What was wrong:** The round 1 fix ("a HIGH finding blocks even on an advisory item") left a MEDIUM finding on an advisory item with opposite answers, and the APPROVED line still said "advisory FAILs do not" block with no exception. This partly repeats this PR's own round 1 "Rule gaps" entry.
+**What was wrong:** The round 1 fix ("a HIGH finding blocks even on an advisory item") left a MEDIUM finding on an advisory item with opposite answers, and the APPROVED line still said "advisory FAILs do not" block with no exception.
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:118-119, :155
 **Caught by:** this review (isolated subagent, round 2)
