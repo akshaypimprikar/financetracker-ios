@@ -169,3 +169,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
 **File:** .claude/skills/review/SKILL.md:171-172
 **Caught by:** this review (isolated subagent, round 10)
+
+## 2026-09-27 — PR#130 — Round 11: the skip line required logging that no case asks for
+**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires. This repeats this PR's round 9 entry. The CHANGELOG summary also left out the regression exception.
+**Rule violated:** repeats 2026-09-27 — PR#130 — Round 9: skip condition out of step, and regressions could be skipped
+**File:** .claude/skills/review/SKILL.md:184-185; CHANGELOG.md:15
+**Caught by:** this review (isolated subagent, round 11)

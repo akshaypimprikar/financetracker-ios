@@ -181,8 +181,8 @@ fixed in this PR and then came back, log its return as a new entry that names th
 **Caught by:** <this review | code-review pass | manual verification — from the PR body>
 ```
 
-Skip this step only if there is truly nothing new to log: every issue this review found, and every fix
-documented in the PR body, already has an entry for this PR that the skip rule above covers.
+Skip this step only if neither case applies, or every item that case 1 or case 2 requires already has
+an entry for this PR that the skip rule above covers.
 
 ## Context isolation: what is and isn't isolated
 
