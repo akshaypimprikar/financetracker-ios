@@ -229,3 +229,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md (severity floors)
 **Caught by:** this review (isolated subagent, round 28)
+
+## 2026-09-27 — PR#130 — Regression check ignored this PR's incidents.md entries
+**What was wrong:** The session's regression check compared findings only with the PR body and this PR's rejections.md entries. A regression of a fix recorded in an incidents.md entry that this PR added (for example by /feature's doubt-driven review) was never raised to HIGH.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:131
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 24)
+
+## 2026-09-27 — PR#130 — APPROVED unreachable when a gate is NOT VERIFIED
+**What was wrong:** APPROVED required "every gate-verification check passes", but a NOT VERIFIED script or an unconfigured gates CI job is never a pass and was not listed as CHANGES REQUESTED either, so the reviewer had to guess. They are now visible notes that do not block on their own.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:178
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 29)
