@@ -145,3 +145,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
 **File:** .claude/skills/review/SKILL.md:170, :175, :180
 **Caught by:** this review (isolated subagent, round 6)
+
+## 2026-09-27 — PR#130 — Round 7: wrap width broken again by the round 2 pointer fix
+**What was wrong:** The round 2 rewrite of the HIGH-rule pointer (review/SKILL.md:23-24) and the round 4 floor sentence (:124) broke the section's wrap width again. This repeats this PR's round 2 "wording slips" entry. It changes no behavior.
+**Rule violated:** repeats 2026-09-27 — PR#130 — Round 2: wording slips from the round 1 fixes
+**File:** .claude/skills/review/SKILL.md:23-24, :124
+**Caught by:** this review (isolated subagent, round 7)

@@ -20,7 +20,7 @@ Also read the following files if they exist — skip silently if absent:
 - `.claude/context/rejections.md` — past violations on this project
 - `.claude/context/incidents.md` — past bug root causes
 
-How to rate a repeat of an entry in either file is stated once in this skill, under "Judgment checks" below, and the
+How to rate a repeat of an entry in either file is stated under "Judgment checks" below, and the
 subagent gets that wording verbatim.
 
 ### Architecture, type-safety, build/test/coverage compliance — verified against `/gates`, not trusted
@@ -121,10 +121,9 @@ Merge its output into the verdict:
   is listed in the posted verdict — never dropped silently.
 - An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
   except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
-  block is still reported. Keep the severity the subagent assigned; you may
-  raise it, and you may lower it only with a stated reason in the verdict. Two floors never move: a repeat
-  or a break of an AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at
-  least MEDIUM.
+  block is still reported. Keep the severity the subagent assigned. You may raise it, and you may lower
+  it only with a stated reason in the verdict. Two floors never move: a repeat or a break of an
+  AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at least MEDIUM.
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same
