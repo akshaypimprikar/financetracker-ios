@@ -106,8 +106,9 @@ for f in rejections incidents; do
     git show "${BASE}:.claude/context/$f.md" > "$T/$f.md"
   fi
 done
+echo "subagent inputs in: $T"
 ```
-Then give it:
+Then give it these, using the directory the block printed as `$T`:
 - the PR number, to name in its findings (not to fetch anything with)
 - the diff: `$T/pr.diff`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
@@ -148,7 +149,8 @@ for f in rejections incidents; do
   fi
 done
 ```
-An `EDITED:` line is a failed gate-verification check: CHANGES REQUESTED, quoting the lines.
+An `EDITED:` line is a failed gate-verification check: CHANGES REQUESTED. Quote the edited lines, which
+`git diff "${BASE}...HEAD" -- <path>` shows for the path it names.
 
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked

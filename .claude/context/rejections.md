@@ -295,3 +295,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:110, :141-142
 **Caught by:** this review (isolated subagent, round 39)
+
+## 2026-09-27 — PR#130 — Round 40: the prep block never printed its temp directory
+**What was wrong:** The prep block set `T=$(mktemp -d)` but never printed it, and shell variables do not carry over between calls, so the session could not tell the subagent where its diff and log copies were.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102, :112
+**Caught by:** this review (isolated subagent, round 40)
