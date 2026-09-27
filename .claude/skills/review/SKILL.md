@@ -129,8 +129,8 @@ Merge its output into the verdict:
   blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays HIGH, and a required checklist FAIL stays at
   least MEDIUM.
 - Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
-  not rate them. Compare each finding with the fixes the PR body documents and with this PR's own entries
-  in `rejections.md`. If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
+  not rate them. Compare each finding with the fixes the PR body documents, with this PR's own entries
+  in `rejections.md`, and with the `incidents.md` entries this PR's diff adds. If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
   MEDIUM) that came back, it is a regression: raise it to HIGH and name that fix (and its entry, if one
   exists). A returning LOW or advisory item keeps its own severity, and a finding that was never fixed
   keeps its severity.

@@ -129,9 +129,9 @@
 **Caught by:** code-review pass (code-review:code-review on PR#130)
 
 ## 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
-**What was wrong:** The skip rule only covered items logged by earlier /review rounds, so a fix logged by a code-review round would still be logged twice (a follow-up to this PR's "Case 2 logging would duplicate" entry). The case-2 label "caught pre-review" was wrong for code-review rounds that run after /review. The "skip this step only if" line did not allow for fixes that are documented but already logged.
+**What was wrong:** The skip rule only covered items logged by earlier /review rounds, so a fix logged by a code-review round would still be logged twice (a follow-up to this PR's "Case 2 logging would duplicate" entry). The case-2 label "caught pre-review" was wrong for code-review rounds that run after /review.
 **Rule violated:** no formal rule, caught in review
-**File:** .claude/skills/review/SKILL.md:170, :175, :180
+**File:** .claude/skills/review/SKILL.md:170, :175
 **Caught by:** this review (isolated subagent, round 6)
 
 ## 2026-09-27 — PR#130 — Round 8: the skip rule covered only case 2
@@ -153,9 +153,9 @@
 **Caught by:** this review (isolated subagent, round 10)
 
 ## 2026-09-27 — PR#130 — Round 11: the skip line required logging that no case asks for
-**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires. The CHANGELOG summary also left out the regression exception.
+**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires.
 **Rule violated:** no formal rule, caught in review
-**File:** .claude/skills/review/SKILL.md:184-185; CHANGELOG.md:15
+**File:** .claude/skills/review/SKILL.md:184-185
 **Caught by:** this review (isolated subagent, round 11)
 
 ## 2026-09-27 — PR#130 — Repeat rule and case-1 logging turned non-blocking findings into blocking HIGHs
@@ -183,9 +183,9 @@
 **Caught by:** this review (isolated subagent, round 15)
 
 ## 2026-09-27 — PR#130 — Round 16: the subagent couldn't tell which entries were this PR's
-**What was wrong:** The subagent was told "Entries for this PR are not repeats" but was never given the PR number, and it is barred from gh pr view and gh api. Case 1 also restated "blocking" in a way that could leave out MEDIUM behavior defects.
+**What was wrong:** The subagent was told "Entries for this PR are not repeats" but was never given the PR number, and it is barred from gh pr view and gh api.
 **Rule violated:** no formal rule, caught in review
-**File:** .claude/skills/review/SKILL.md (subagent inputs; case 1)
+**File:** .claude/skills/review/SKILL.md (subagent inputs)
 **Caught by:** this review (isolated subagent, round 16)
 
 ## 2026-09-27 — PR#130 — Round 17: the same-PR exemption missed incidents.md
