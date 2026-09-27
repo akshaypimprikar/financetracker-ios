@@ -277,3 +277,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:86-88, :104
 **Caught by:** this review (isolated subagent, round 36)
+
+## 2026-09-27 — PR#130 — Round 37: CHANGELOG described the CI-pending verdict wrongly
+**What was wrong:** The CHANGELOG still said a CI-pending CHANGES REQUESTED "notes only the unfinished CI", after round 36 changed the skill to keep every other result.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:15
+**Caught by:** this review (isolated subagent, round 37)
