@@ -92,6 +92,7 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 The design compliance and code quality checklists below are judgment calls, so this session does not
 make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
 implementer's account of the change (listed below):
+- the PR number, so it can tell which `rejections.md` entries belong to this PR
 - the diff: `gh pr diff <PR>`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
@@ -173,7 +174,7 @@ Final verdict:
 Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
 
 1. This review's own verdict is CHANGES REQUESTED — log each failed gate-verification check and each
-   accepted finding that blocks (HIGH, or MEDIUM on an item not marked *(advisory)*). Non-blocking and
+   accepted finding that blocks under the rules in "Merge its output" above. Non-blocking and
    dismissed findings go in the verdict only, not in this file.
 2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 

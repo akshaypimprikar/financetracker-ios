@@ -199,3 +199,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:102-105, :129-131
 **Caught by:** this review (isolated subagent, round 15)
+
+## 2026-09-27 — PR#130 — Round 16: the subagent couldn't tell which entries were this PR's
+**What was wrong:** The subagent was told "Entries for this PR are not repeats" but was never given the PR number, and it is barred from gh pr view and gh api. Case 1 also restated "blocking" in a way that could leave out MEDIUM behavior defects.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md (subagent inputs; case 1)
+**Caught by:** this review (isolated subagent, round 16)
