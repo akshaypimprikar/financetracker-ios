@@ -99,8 +99,10 @@ implementer's account of the change (listed below):
   `.claude/context/incidents.md` (each if present), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
-- this rule, verbatim: a finding that repeats a violation in `rejections.md` or reintroduces a symptom in
-  `incidents.md` is **HIGH** severity — name the entry it repeats
+- this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR,
+  reintroduces a symptom in `incidents.md`, or comes back after being fixed earlier in this PR is
+  **HIGH** severity — name the entry it repeats. A finding that is still unfixed from an earlier round of
+  this PR is not a repeat; it keeps its own severity
 - the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an
   AGENTS.md or `invariants.md` rule; **MEDIUM** is a FAIL on a checklist item that is not marked *(advisory)*,
   or a defect that changes behavior or would mislead a reader; **LOW** is a wording or style issue that
@@ -165,7 +167,9 @@ Final verdict:
 
 Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
 
-1. This review's own verdict is CHANGES REQUESTED — log each issue found here.
+1. This review's own verdict is CHANGES REQUESTED — log each accepted finding that blocks (HIGH, or MEDIUM
+   on an item not marked *(advisory)*). Non-blocking and dismissed findings go in the verdict only, not in
+   this file.
 2. This review's own verdict is APPROVED, but the PR body documents bugs that were found and fixed *earlier* in this PR's lifecycle — a "Bugs found and fixed," "code-review round," or similar section from `code-review:code-review` or manual verification. Log each of those too. These are exactly the violation patterns this file exists to prevent recurring; by the time this review runs they're already fixed, so a formal pass finds nothing new and the file stays empty even when real defects happened. Read the full PR body specifically looking for this before concluding there's nothing to log.
 
 In both cases, check `rejections.md` first. If the item already has an entry for this PR, skip it,

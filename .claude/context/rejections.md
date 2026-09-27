@@ -175,3 +175,9 @@
 **Rule violated:** repeats 2026-09-27 — PR#130 — Round 9: skip condition out of step, and regressions could be skipped
 **File:** .claude/skills/review/SKILL.md:184-185; CHANGELOG.md:15
 **Caught by:** this review (isolated subagent, round 11)
+
+## 2026-09-27 — PR#130 — Repeat rule and case-1 logging turned non-blocking findings into blocking HIGHs
+**What was wrong:** The repeat rule counted this PR's own earlier-round entries, so an unfixed LOW logged in one round became a HIGH repeat the next round and blocked (as happened with the round 7 wrap-width entry). Case 1 logged every finding, including non-blocking and dismissed ones, which filled repeat history with non-violations.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102-104, :168
+**Caught by:** code-review pass (code-review:code-review on PR#130)
