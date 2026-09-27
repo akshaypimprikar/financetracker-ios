@@ -172,7 +172,7 @@ reported, with its severity, marked accepted or dismissed, with the quoted code 
 the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
 Final verdict:
-- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script or an unconfigured `gates` CI job is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job still means not approvable yet) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script or an unconfigured `gates` CI job is reported as a visible note, never as a pass, and does not block on its own; if the `gates` job is pending, wait for it to finish before posting either verdict) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
