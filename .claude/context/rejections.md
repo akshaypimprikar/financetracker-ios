@@ -259,3 +259,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:93-106
 **Caught by:** this review (isolated subagent, round 33)
+
+## 2026-09-27 — PR#130 — Log withholding could be bypassed or silently emptied
+**What was wrong:** The subagent could still open the working-tree copies of both logs under "read any source file". Its diff and base-log commands used `${BASE}`, which is set only inside step 2's shell block, so an empty BASE gave an empty diff (nothing reviewed) and made `git show` read the PR's own log. The commands now set BASE themselves, and the working-tree logs are off-limits.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:96-101, :114
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 34)

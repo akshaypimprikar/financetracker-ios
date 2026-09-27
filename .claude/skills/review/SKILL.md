@@ -84,7 +84,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    gh pr checks <PR> --json name,bucket
    ```
    Require a check named `gates` with bucket `pass`. `fail` → **CHANGES REQUESTED**. `pending` → wait for it
-   to finish before posting a verdict. No check named `gates` at all → write `gates CI job: not yet configured` in
+   to finish, up to 30 minutes; if it is still pending then, post CHANGES REQUESTED noting only that CI has
+   not finished, and run `/review` again once it has. No check named `gates` at all → write `gates CI job: not yet configured` in
    the verdict as a visible note — never let its absence read as a pass.
 
 ### Judgment checks — run by a fresh-context subagent, not this session
@@ -93,12 +94,14 @@ The design compliance and code quality checklists below are judgment calls, so t
 make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
 implementer's account of the change (listed below):
 - the PR number
-- the diff without the two logs: `git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md'
-  ':!.claude/context/incidents.md'` (this PR's own log entries describe the change, so they are withheld)
+- the diff without the two logs. Set `BASE` in the same command, since it does not carry over from step 2:
+  `BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName) && git diff "${BASE}...HEAD" -- .
+  ':!.claude/context/rejections.md' ':!.claude/context/incidents.md'` (this PR's own log entries describe the change, so they are withheld)
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
   `docs/superpowers/specs/`), if one exists
 - the files to read: `AGENTS.md`, `.claude/context/invariants.md`, `rejections.md` and `incidents.md` as they
-  are on the base branch (save `git show "${BASE}:.claude/context/<file>"` to a file for each that exists,
+  are on the base branch (save `git show "${BASE}:.claude/context/<file>"` to a file for each that exists, with `BASE` set in
+  that same command as above,
   since the PR's copies hold this PR's own entries), plus `docs/design-system.md` and `FinanceTracker/Theme/`
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
@@ -112,7 +115,8 @@ implementer's account of the change (listed below):
   changes nothing. A FAIL on a required checklist item is never lower than MEDIUM.
 
 It may also read any source file in the repo (for example, the whole file around a hunk), since several
-checks need surrounding code. What it must not get is the implementer's account of the change: this
+checks need surrounding code, except the working-tree copies of `.claude/context/rejections.md` and
+`.claude/context/incidents.md`, which hold this PR's own entries: tell it not to open them or diff them. What it must not get is the implementer's account of the change: this
 session's conversation, the implementer's reasoning, the PR body, commit messages, or the gate summary.
 Tell it not to run any command that shows PR metadata or commit history: `gh pr view`, `gh pr checks`,
 `gh api` for the PR, `git log`, `git show` or `git blame`. Tell the subagent it is read-only (no edits,
@@ -179,7 +183,7 @@ reported, with its severity, marked accepted or dismissed, with the quoted code 
 the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
 Final verdict:
-- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script or an unconfigured `gates` CI job is reported as a visible note, never as a pass, and does not block on its own; if the `gates` job is pending, wait for it to finish before posting either verdict) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script or an unconfigured `gates` CI job is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
