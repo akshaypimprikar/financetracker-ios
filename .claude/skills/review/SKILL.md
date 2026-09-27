@@ -101,7 +101,8 @@ implementer's account of the change (listed below):
   when the diff touches `Views/` or adds a UI component
 - the two checklists below, verbatim
 - this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR, or
-  reintroduces a symptom in `incidents.md`, is **HIGH** severity — name the entry it repeats. Entries
+  reintroduces a symptom in `incidents.md`, is **HIGH** severity — name the entry it repeats. A repeat of
+  a `rejections.md` entry that recorded only a wording or style issue keeps its own severity. Entries
   that belong to this PR are not repeats: in `rejections.md`, those with this PR's number; in
   `incidents.md`, those this PR's diff adds. Do not rate against them
 - the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an

@@ -217,3 +217,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:115-119, :176
 **Caught by:** this review (isolated subagent, round 26)
+
+## 2026-09-27 — PR#130 — Older style-only entries still made repeats blocking HIGHs
+**What was wrong:** This PR stops logging LOW items, but rejections.md already holds style-only entries from earlier PRs (for example "run-on sentence"). The repeat rule rated any match HIGH with no way to lower it, so a later style slip would still block and be logged again. A repeat of a wording- or style-only entry now keeps its own severity.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:103
+**Caught by:** code-review pass (code-review:code-review on PR#130)
