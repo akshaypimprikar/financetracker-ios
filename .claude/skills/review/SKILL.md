@@ -102,7 +102,8 @@ implementer's account of the change (listed below):
 - the two checklists below, verbatim
 - this rule, verbatim: a finding that repeats a violation logged in `rejections.md` for an earlier PR, or
   reintroduces a symptom in `incidents.md`, is **HIGH** severity — name the entry it repeats. Entries
-  for this PR are not repeats; do not rate against them
+  that belong to this PR are not repeats: in `rejections.md`, those with this PR's number; in
+  `incidents.md`, those this PR's diff adds. Do not rate against them
 - the severity scale, one of these for every finding: **HIGH** is a repeat (the rule above) or a break of an
   AGENTS.md or `invariants.md` rule; **MEDIUM** is a FAIL on a checklist item that is not marked *(advisory)*,
   or a defect that changes behavior or would mislead a reader; **LOW** is a wording or style issue that

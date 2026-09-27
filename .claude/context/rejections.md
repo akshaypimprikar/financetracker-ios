@@ -205,3 +205,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md (subagent inputs; case 1)
 **Caught by:** this review (isolated subagent, round 16)
+
+## 2026-09-27 — PR#130 — Round 17: the same-PR exemption missed incidents.md
+**What was wrong:** "Entries for this PR are not repeats" could only be applied to rejections.md, which carries PR numbers. incidents.md entries carry none, and /feature writes them during the PR, so an unfixed doubt-driven finding would be rated a blocking HIGH repeat.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:103-105
+**Caught by:** this review (isolated subagent, round 17)
