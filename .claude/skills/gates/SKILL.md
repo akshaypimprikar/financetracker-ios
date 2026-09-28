@@ -235,6 +235,7 @@ Report every gate before opening the PR. The first line is mandatory: the full S
 pre-step. `/review` compares it to the PR HEAD and rejects a summary that is missing or stale.
 ```
 Gates run at <full 40-char SHA from `git rev-parse HEAD`>
+Lane: <output of `python3 scripts/check_pr_lane.py --git origin/develop --head-branch <branch> --base-branch develop`>
 Gates:
 [✓] Build
 [✓] Tests — <N> tests executed
@@ -254,6 +255,7 @@ Gates:
 When Gates 1 and 2 are skipped:
 ```
 Gates run at <full 40-char SHA>
+Lane: <lane>
 Gates:
 [–] Build — skipped (no build-relevant changes)
 [–] Tests — skipped (no build-relevant changes)
@@ -439,7 +441,7 @@ What is not covered:
 All 13 gates report (11 blocking gates pass; Gates 10 and 12 are advisory, see their own
 sections above), the summary opens with `Gates run at <sha>`, PR is open, and the PR URL is returned to the user.
 
-## Tip — chain into review + test + code-review
-Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review`, `/test`,
-and `code-review:code-review` — see that command for the exact fallback
-behavior on a `disable-model-invocation` project.
+## Tip — chain into code-review + review
+Once the PR is open, run `/pr-followup <PR>` to run `code-review:code-review`
+and then `/review`, and record both in the PR body for the `review-evidence`
+check. `/test` runs before `/gates`, not after the PR opens.

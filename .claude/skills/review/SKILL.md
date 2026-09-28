@@ -23,6 +23,27 @@ Also read the following files if they exist — skip silently if absent:
 How to rate a repeat of an entry in either file is stated under "Judgment checks" below, and the
 subagent gets that wording verbatim.
 
+### Lane, rounds and design mode (docs/superpowers/specs/2026-09-28-pipeline-lanes.md)
+
+**Lane first.** Run `python3 scripts/check_pr_lane.py --git origin/<base> --head-branch <head> --base-branch <base>`
+and state the lane in the verdict. The `docs`, `release` and `sync` lanes need no `/review`: say so and stop.
+`app` and `pipeline` continue. `scripts/pipeline_lanes.json` lists what each lane needs to merge; the
+`review-evidence` CI check enforces it.
+
+**At most two full rounds per PR.** Round 1 reviews the whole PR. Round 2 gives the subagent only the diff
+since the round-1 `Reviewed at` SHA plus the round-1 findings, and asks whether each was fixed and whether the
+delta introduced anything new. There is no round 3: after round 2, open a GitHub issue for each remaining
+non-HIGH finding and post APPROVED with the issue links; a remaining HIGH goes to the user for a decision.
+
+**`/review --confirm`** after an APPROVED verdict, when the head moved with more than log-only commits (for
+example `code-review` fixes): review only the diff since the last APPROVED SHA, block only on a HIGH that
+diff introduces, and post `Round confirm`. It is not a round.
+
+**Design mode** for a PR whose changes are specs or plans under `docs/superpowers/`: the subagent reports only
+contradictions, false claims (it opens every cited `path:line` and every claimed fact about another file) and
+flaws that make the design fail or unbuildable. Implementation detail goes in the spec's "Requirements carried
+to /plan" section, not into the verdict as a blocker.
+
 ### Architecture, type-safety, build/test/coverage compliance — verified against `/gates`, not trusted
 
 `/gates` runs before every PR is opened and is the single authoritative check for
@@ -86,8 +107,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    Require a check named `gates` with bucket `pass`. `fail` → **CHANGES REQUESTED**. `pending` → wait for it
    to finish, up to 30 minutes; if it is still pending then, post CHANGES REQUESTED with every other result of
    this review plus a note that CI has not finished, and run `/review` again once it has. Unfinished CI is not a violation: do not log it to
-   `rejections.md`. No check named `gates` at all → write `gates CI job: not yet configured` in
-   the verdict as a visible note — never let its absence read as a pass.
+   `rejections.md`. No check named `gates` at all → **CHANGES REQUESTED**: `gates.yml` runs on every PR, so a
+   missing check means CI did not run.
 
 ### Judgment checks — run by a fresh-context subagent, not this session
 
@@ -221,13 +242,16 @@ Merge its output into the verdict:
 For each check: ✅ PASS or ❌ FAIL (with file path + line number), or N/A with the reason it does not apply.
 
 Lead the verdict with a **Gate verification** block: the PR HEAD SHA, whether it matched the summary's
-SHA, each re-run script/grep and its result, the log prefix check result, the `gates` CI job state (or
-"not yet configured"), and which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
+SHA, each re-run script/grep and its result, the log prefix check result, the `gates` CI job state,
+and which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
 reported, with its severity, marked accepted or dismissed, with the quoted code for each dismissal (or
 the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
+Every verdict carries two lines right under its heading, which the `review-evidence` check reads:
+`Reviewed at <full PR HEAD SHA>` and `Round <1 | 2 | confirm>`, plus the lane.
+
 Final verdict:
-- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script or an unconfigured `gates` CI job is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once `/test` and `code-review:code-review` also pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once the required checks pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
@@ -280,12 +304,19 @@ Reporting the verdict back in this session is not enough — nothing distinguish
 gh pr review <PR> --comment --body "$(cat <<'EOF'
 ## Review Agent verdict: <APPROVED | CHANGES REQUESTED>
 
+Reviewed at <full PR HEAD SHA>
+Round <1 | 2 | confirm> · Lane <app | pipeline>
+
 <the check-by-check output from Output format above>
 EOF
 )"
 ```
 
 Use `--comment`, not `--approve` — GitHub blocks self-approval on PRs authored under your own account, so `--approve` fails here. `--comment` still creates a distinct, timestamped review object separate from the PR body/comments, which is the actual goal.
+
+Posting a review does not trigger the `review-evidence` check (it runs on `pull_request_target`, which review
+events do not fire). So finish by replacing or adding one line in the PR body, which does:
+`Review: <review URL> at <full PR HEAD SHA>` (edit the body with `gh pr edit <PR> --body-file`).
 
 ## Tip — automate the review-fix loop
 While a PR sits in CHANGES REQUESTED (or waiting on CI), the user can avoid manually re-checking by running, as a separate top-level command:
@@ -295,4 +326,4 @@ While a PR sits in CHANGES REQUESTED (or waiting on CI), the user can avoid manu
 This is the generic `/loop` skill with a literal prompt — there is no dedicated `/babysit` command. `/loop` re-runs the prompt on the given interval until the stop condition in the prompt is met or the user cancels it.
 
 ## Done when
-Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md's "Merge rule," merging only happens once `/test` and `code-review:code-review` also pass, and the user merges it themselves.
+Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, the PR body's `Review:` line is updated, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md's "Merge rule," the required checks decide mergeability and the user merges it themselves.
