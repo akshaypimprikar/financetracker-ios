@@ -92,6 +92,24 @@
 **File:** .claude/skills/review/SKILL.md:90-99
 **Caught by:** this review (isolated subagent)
 
+## 2026-09-26 — PR#127 — Repeat: ambiguous subagent input scope (HIGH)
+**What was wrong:** Allowed the isolated reviewer to read any repo source file but left "give it **only**" (review/SKILL.md:90) and the Context isolation section's "sees only the diff…" (:170) unchanged, so the file contradicts itself on the reviewer's inputs.
+**Rule violated:** repeats 2026-09-25 — PR#126 — Ambiguous subagent input scope
+**File:** .claude/skills/review/SKILL.md:90, :170
+**Caught by:** this review (isolated subagent) and code-review:code-review, independently
+
+## 2026-09-26 — PR#127 — Incomplete blocking and visibility rules
+**What was wrong:** APPROVED still required "all checks pass" despite the new advisory exemption (and the NOT-isolated fallback had none); no severity floor, so accepted LOW nits block; the subagent's raw report is never posted, so a finding omitted outright is invisible; "PASS or FAIL" has no N/A; the PR body is withheld but only git log/show are forbidden (gh pr view, git blame still expose narrative); the HIGH repeat rule exists in two differently worded copies.
+**Rule violated:** no formal rule, caught pre-review
+**File:** .claude/skills/review/SKILL.md:20-21, :98-113, :145, :172
+**Caught by:** this review (isolated subagent) and code-review:code-review
+
+## 2026-09-26 — PR#127 — Inaccurate cross-skill claims
+**What was wrong:** feature/SKILL.md:27 called /parallel-review "the one pre-PR review" (the doubt-driven review is also pre-PR) and said it runs "in the implementer's own session" (not stated in parallel-review/SKILL.md); the PR#126 rejections entries used "caught pre-merge" instead of the template's "caught pre-review".
+**Rule violated:** no formal rule, caught pre-review
+**File:** .claude/skills/feature/SKILL.md:27; .claude/context/rejections.md:85,91
+**Caught by:** this review (isolated subagent) and code-review:code-review
+
 ## 2026-09-27 — PR#130 — Edited past log entries against the file's own rule
 **What was wrong:** Changed "caught pre-merge" to "caught pre-review" in two PR#126 entries, although this file's header says "Never edit past entries", and "pre-merge" was accurate for issues a review found. The real gap was the template, which only worded case 2.
 **Rule violated:** no formal rule, caught in review
