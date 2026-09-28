@@ -206,8 +206,8 @@ Merge its output into the verdict:
 For each check: ✅ PASS or ❌ FAIL (with file path + line number), or N/A with the reason it does not apply.
 
 Lead the verdict with a **Gate verification** block: the PR HEAD SHA, whether it matched the summary's
-SHA, each re-run script/grep and its result, the `gates` CI job state (or "not yet configured"), and
-which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
+SHA, each re-run script/grep and its result, the log prefix check result, the `gates` CI job state (or
+"not yet configured"), and which gates were not re-run. Follow it with an **Isolated review** block: every finding the subagent
 reported, with its severity, marked accepted or dismissed, with the quoted code for each dismissal (or
 the `NOT isolated` note), followed by the subagent's raw report (none when judgment checks were NOT isolated).
 
