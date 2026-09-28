@@ -355,3 +355,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:78, :84, :89-90
 **Caught by:** this review (isolated subagent, round 51)
+
+## 2026-09-27 — PR#130 — Round 52: the regression check could not tell whether a log entry was blocking
+**What was wrong:** The session's regression check raises only a returning blocking fix to HIGH and reads this PR's own rejections.md entries, but the entry template carries no severity, so nothing said whether an entry was blocking. Only blocking items are ever logged, so every entry in either log now counts as a blocking fix.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:184-186
+**Caught by:** this review (isolated subagent, round 52)

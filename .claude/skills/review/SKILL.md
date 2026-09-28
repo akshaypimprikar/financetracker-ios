@@ -184,7 +184,8 @@ Merge its output into the verdict:
 - Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
   not rate them. Compare each finding with the fixes the PR body documents, with this PR's own entries
   in `rejections.md`, and with the `incidents.md` entries this PR's diff adds (an `incidents.md` entry
-  records a real bug, so treat it as a blocking fix). A fix listed in the PR body has no severity of its
+  records a real bug, and only blocking items are ever logged to `rejections.md`, so treat an entry in either
+  log as a blocking fix). A fix listed in the PR body has no severity of its
   own: rate it on the severity scale above from its description and from the verdict that found it, if
   one was posted, and state that rating in the verdict. If a finding matches a blocking fix made earlier in this PR (HIGH, or a blocking
   MEDIUM) that came back, it is a regression: raise it to HIGH and name that fix (and its entry, if one

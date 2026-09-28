@@ -22,7 +22,7 @@ Also read the following files if they exist — skip silently if absent:
 - `.claude/context/rejections.md` — past violations on this project; flag any repeats as HIGH severity,
   except a repeat of an entry that recorded only a wording or style issue, which keeps its own severity.
   Rate only against entries from earlier PRs: if this branch already has an open PR, skip that PR's own
-  entries, as `/review` does
+  entries, as `/review`'s isolated reviewer does
 
 ### Check 1 — Architecture compliance (`/gates`' Gate 9, pre-gates mode)
 `/review`'s own Architecture section defers to `/gates` having already run and expects a PR gate summary to check against — neither exists yet at this pre-PR, pre-`/gates` point, so run the actual checks instead of that deferral:
