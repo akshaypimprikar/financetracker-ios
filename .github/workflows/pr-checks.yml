@@ -8,8 +8,9 @@ on:
       - 'FinanceTracker/**'
       - 'FinanceTrackerTests/**'
       - 'FinanceTrackerUITests/**'
-      # The unit-test job runs this script, so a change to it must run the job.
-      - 'scripts/check_coverage.py'
+      # The unit-test job runs select_simulator.py, slim_simulator.sh and check_coverage.py,
+      # so a change to any script must run it (added deliberately in dee1901).
+      - 'scripts/**'
       # The deterministic gates moved to gates.yml, which runs on every PR.
 
 concurrency:

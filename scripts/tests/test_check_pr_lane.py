@@ -87,6 +87,20 @@ class LaneForTests(unittest.TestCase):
         del cfg["sync"]
         self.assertEqual(lane.lane_for(cfg, "develop", "sync/x", [".claude/skills/a/SKILL.md"], []), "pipeline")
 
+    def test_mixed_pr_needs_evidence_of_every_touched_lane(self):
+        # An app + pipeline PR is laned app but must still carry pipeline evidence.
+        self.assertEqual(
+            lane.evidence_for_change(CONFIG, "app", ["App/Model.swift", "scripts/a.py"]),
+            ["gate_summary", "review_verdict"],
+        )
+
+    def test_single_lane_evidence_unchanged(self):
+        self.assertEqual(lane.evidence_for_change(CONFIG, "app", ["App/Model.swift"]), ["gate_summary"])
+
+    def test_release_and_sync_evidence_not_unioned(self):
+        self.assertEqual(lane.evidence_for_change(CONFIG, "release", ["CHANGELOG.md", "scripts/a.py"]), [])
+        self.assertEqual(lane.evidence_for_change(CONFIG, "sync", [".claude/skills/a/SKILL.md"]), ["synced_from"])
+
     def test_evidence_for_lane(self):
         self.assertEqual(lane.evidence_for(CONFIG, "app"), ["gate_summary"])
         self.assertEqual(lane.evidence_for(CONFIG, "release"), [])
