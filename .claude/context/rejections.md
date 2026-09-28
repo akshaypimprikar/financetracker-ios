@@ -343,3 +343,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:105, :114
 **Caught by:** this review (isolated subagent, round 49)
+
+## 2026-09-27 — PR#130 — Round 50: a failing git diff was read as a log-only PR
+**What was wrong:** If `git diff "${BASE}...HEAD"` itself errored (for example with no merge-base on a shallow fetch), it left pr.diff empty, and `git diff --quiet` exited 128, which the block read as "has changes". It printed LOG-ONLY and skipped the subagent silently. The block now checks the diff's exit status and treats anything but 0 or 1 as STOP (tested: a bad range stops, #130 is normal, #129 is log-only).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:105-107
+**Caught by:** this review (isolated subagent, round 50)

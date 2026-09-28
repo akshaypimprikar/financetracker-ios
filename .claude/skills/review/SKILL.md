@@ -101,9 +101,12 @@ outside the repo so the working tree stays clean:
 BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
 git rev-parse -q --verify "$BASE" >/dev/null || { echo "STOP: base branch not found ($BASE)"; exit 1; }
 T=$(mktemp -d)
-git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md' ':!.claude/context/incidents.md' > "$T/pr.diff"
+git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md' ':!.claude/context/incidents.md' \
+  > "$T/pr.diff" || { echo "STOP: git diff failed"; exit 1; }
 if [ ! -s "$T/pr.diff" ]; then
-  if git diff --quiet "${BASE}...HEAD"; then echo "STOP: the PR has no changes"; exit 1; fi
+  git diff --quiet "${BASE}...HEAD"; rc=$?
+  [ "$rc" -eq 0 ] && { echo "STOP: the PR has no changes"; exit 1; }
+  [ "$rc" -eq 1 ] || { echo "STOP: git diff failed"; exit 1; }
   echo "LOG-ONLY: this PR changes only the logs"; exit 0
 fi
 for f in rejections incidents; do
