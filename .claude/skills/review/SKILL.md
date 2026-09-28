@@ -232,7 +232,9 @@ Final verdict:
 
 ## Logging violations to rejections.md
 
-Append one entry per violation to `.claude/context/rejections.md` in **two** cases, not just one:
+Only blocking items (HIGH, or a blocking MEDIUM) go in `.claude/context/rejections.md`, whoever logs them:
+this review, a code-review round, or a person by hand. Append one entry per violation in **two** cases, not
+just one:
 
 1. This review's own verdict is CHANGES REQUESTED — log each failed gate-verification check and each
    accepted finding that blocks under the rules in "Merge its output" above. Non-blocking and

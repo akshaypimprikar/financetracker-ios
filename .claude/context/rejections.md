@@ -361,3 +361,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:184-186
 **Caught by:** this review (isolated subagent, round 52)
+
+## 2026-09-27 — PR#130 — Round 53: "only blocking items are logged" was not a rule for every writer
+**What was wrong:** The regression check treats any log entry as a blocking fix because "only blocking items are ever logged", but the logging section still allowed code-review rounds and people to log entries of any severity. A returning LOW could then become a HIGH regression. The rule now covers everyone who writes to rejections.md.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:186-188, :242-244
+**Caught by:** this review (isolated subagent, round 53)
