@@ -52,3 +52,8 @@ Follow-on to the separately-specced `Theme.Glass` token addition (PR #95, no spe
 **Approaches considered:** (1) keep `/review` and cut what it repeats (the gate-script re-runs), moving the grep gates to CI and input prep to a tested script; (2) retire `/review` and fold its checklists into `AGENTS.md` for `code-review:code-review`, the grep gates into CI, and logging into `/pr-followup`; (3) keep both unchanged. For accepted grep-gate exceptions: (a) a guarded `scripts/gate_exceptions.txt` read from the base branch; (b) inline `// gate-allow:` comments.
 **Chosen:** (1) with (a). Pipeline-text violations split into `.claude/context/pipeline-rejections.md`.
 **Reason:** `/review` alone pins the gate summary's SHA, runs an isolated reviewer, checks the design and domain rules `code-review` filters out, writes the violation log and gives a verdict; the rest duplicates CI or Gate 3, and a base-branch exceptions file means no PR can waive its own gate hit.
+
+## 2026-09-28 — Pipeline Lanes and Enforced Merges
+**Approaches considered:** (1) implement the #131 `/review` simplification as specced; (2) targeted skill edits (round cap in `/review`, citation step in `/spec`); (3) path-based PR lanes with per-lane required evidence, a `review-evidence` CI job and branch protection requiring it and `gates`, plus a two-round `/review` cap with a design mode for specs.
+**Chosen:** (3), superseding #131; branch protection on `develop` and `main` in both FinanceTracker and pragma.
+**Reason:** The 2026-09-28 pipeline review found the merge rule skipped on 20 of 37 non-release PRs and review loops that did not converge; only a required CI check makes the rule binding, and lanes keep it proportionate so it is followed rather than routed around.

@@ -499,3 +499,81 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
 **Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#132 — Round 1: head-SHA evidence plus round cap could block a PR forever
+**What was wrong:** Any head move after the last allowed round (code-review fixes, log commits, rebases) left no way to get evidence at the new head.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: pragma lanes required evidence pragma cannot produce
+**What was wrong:** Pragma has no Xcode project for /gates and sync PRs carry no verdict, so required checks would block every pragma PR.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: pr_lane.py missed the hook prefilter
+**What was wrong:** The new script's name matched none of _PROTECTED_FRAGMENTS, so the live guard would skip it. Repeats PR#131 round 2.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: false claim that setup.sh copies scripts/ wholesale
+**What was wrong:** setup.sh copies six named scripts (pragma/scripts/setup.sh:117-124); new scripts would not reach adopters.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: /sync-workflow cannot carry the pragma port
+**What was wrong:** It stages only .claude/skills/ and scaffold/, leaving root scripts, workflows and setup.sh changes behind.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: base_ref and head_ref empty on review events
+**What was wrong:** The moved gates job would check out the default branch when triggered by pull_request_review.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: bootstrap rule did not cover the missing lane config
+**What was wrong:** The first PRs could not be laned because the base branch has no config.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: a PR could edit its own workflow to pass review-evidence
+**What was wrong:** The check ran from the PR's own pull_request workflow, which .github/** was not guarded against.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: release lane decided by branch name alone
+**What was wrong:** Any release/* head skipped all review evidence; the path limit existed only in /release prose.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 1: release back-merge not handled
+**What was wrong:** /release pushes develop directly, which the existing develop protection already forbids, and the spec did not lane the back-merge.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 2: release lane checked paths against the whole release delta
+**What was wrong:** The round-1 fix checked release_paths against the PR's diff to main, which holds every change since the last release, so no release PR would get the release lane; /release checks develop...HEAD instead.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)
+
+## 2026-09-28 — PR#132 — Round 2: gates would run TDD and integrity scripts over the release delta
+**What was wrong:** Round 1's release-lane exit was dropped, so a required check could fail on a release PR with no waiver path.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)
+
+## 2026-09-28 — PR#132 — Round 2: sync lane decided by branch name alone
+**What was wrong:** Any sync/* head skipped review whatever it changed; the same flaw round 1 fixed for the release lane.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)

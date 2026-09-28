@@ -1,7 +1,7 @@
 # /review Simplification — Design Spec
 
 **Date:** 2026-09-28
-**Status:** Approved
+**Status:** Superseded by `2026-09-28-pipeline-lanes.md`
 
 ## Overview
 `/review` grew from about 160 lines to 298 lines across PRs #126, #127 and #130: 57 commits, and PR #130's
