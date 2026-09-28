@@ -445,3 +445,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Decisions: Regressions, Logging rows)
 **Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 3: overclaim that all Gate 9 greps are diff-scoped
+**What was wrong:** The spec moved the Gate 9 greps into a BASE...HEAD script, but the UI-selector grep scans all of FinanceTrackerUITests/; 9 of 25 selectors match by label, not accessibilityIdentifier, so a mechanical check would fail every run. Repeats PR#105's Gate 9 scope overclaim.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:32, :45-47
+**Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-28 — PR#131 — Round 3: log-move PR ordered before the tooling it depends on
+**What was wrong:** The move PR was to land first, but its EDITED exception needs prep_review.py --verify-move and a new /review rule that would not yet be on base; no bootstrap rule for prep_review.py was stated.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (rejections.md migration bullet)
+**Caught by:** this review (isolated subagent, round 3)
