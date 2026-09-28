@@ -128,6 +128,23 @@ def evidence_for(config, lane_name):
     raise ConfigError(f"unknown lane '{lane_name}'")
 
 
+def evidence_for_change(config, lane_name, changed):
+    """Evidence a PR needs: its lane's, plus that of every other configured lane it touches.
+
+    The lane rank decides the lane name only. A PR touching app and pipeline
+    paths is laned `app` but still owes the pipeline lane's evidence (such as a
+    motivating incident). `release` and `sync` are decided by their own path
+    rules, so their evidence is not combined.
+    """
+    items = evidence_for(config, lane_name)
+    if lane_name in ("release", "sync"):
+        return items
+    for entry in config["lanes"]:
+        if any(_matches_any(entry["paths"], p) for p in changed):
+            items += [i for i in entry.get("evidence", []) if i not in items]
+    return items
+
+
 def _git_names(spec):
     out = subprocess.run(["git", "diff", "--name-only", spec], capture_output=True, text=True)
     if out.returncode != 0:

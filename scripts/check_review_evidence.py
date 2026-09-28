@@ -158,7 +158,7 @@ def main(argv=None):
         if head.startswith("release/") and base == "main":
             release_changed = api.compare_files("develop", head_sha) or []
         lane = check_pr_lane.lane_for(config, base, head, files, release_changed)
-        items = check_pr_lane.evidence_for(config, lane)
+        items = check_pr_lane.evidence_for_change(config, lane, files)
         reviews = api.paged(f"/pulls/{args.pr}/reviews")
         results = evaluate(items, head_sha, pr.get("body"), reviews, config.get("carryover_paths", []),
                            lambda sha: api.compare_files(sha, head_sha))
