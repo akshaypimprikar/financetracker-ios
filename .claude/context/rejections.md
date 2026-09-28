@@ -109,3 +109,285 @@
 **Rule violated:** no formal rule, caught pre-review
 **File:** .claude/skills/feature/SKILL.md:27; .claude/context/rejections.md:85,91
 **Caught by:** this review (isolated subagent) and code-review:code-review
+
+## 2026-09-27 — PR#130 — Edited past log entries against the file's own rule
+**What was wrong:** Changed "caught pre-merge" to "caught pre-review" in two PR#126 entries, although this file's header says "Never edit past entries", and "pre-merge" was accurate for issues a review found. The real gap was the template, which only worded case 2.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/context/rejections.md:85,91
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — False claim about another skill
+**What was wrong:** feature/SKILL.md:27 said /parallel-review "gives its checks to no fresh-context subagent", but its Check 2 runs code-review:code-review, which uses separate review agents.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/feature/SKILL.md:27
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-27 — PR#130 — Round 2: blocking rule still ambiguous for advisory items
+**What was wrong:** The round 1 fix ("a HIGH finding blocks even on an advisory item") left a MEDIUM finding on an advisory item with opposite answers, and the APPROVED line still said "advisory FAILs do not" block with no exception.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:118-119, :155
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-27 — PR#130 — Round 3: severity tiers undefined, so a required FAIL could stop blocking
+**What was wrong:** Blocking depended only on HIGH/MEDIUM/LOW, but the tiers were never defined and a required checklist FAIL had no minimum severity. A FAIL rated LOW would not block, a regression from the old rule, where any non-advisory FAIL blocked.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:104, :119-122, :157
+**Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-27 — PR#130 — Round 4: the HIGH floor was implied, not stated
+**What was wrong:** "Never below the floors in the severity scale" stated only the MEDIUM floor for required FAILs, so a HIGH repeat could be lowered to MEDIUM with a reason and stop blocking on an advisory item. That undid "HIGH always blocks".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:125-126
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-27 — PR#130 — Case 2 logging would duplicate earlier review rounds
+**What was wrong:** Once a PR's body listed fixes under "Found in review and fixed", a final APPROVED /review would log them again under case 2, labeled "caught pre-review". But earlier /review rounds had already logged them under case 1 ("caught in review"). The duplicates would inflate the history that repeat detection reads.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:163-165
+**Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 6: the case-2 skip rule was too narrow, and its label was timing-dependent
+**What was wrong:** The skip rule only covered items logged by earlier /review rounds, so a fix logged by a code-review round would still be logged twice (a follow-up to this PR's "Case 2 logging would duplicate" entry). The case-2 label "caught pre-review" was wrong for code-review rounds that run after /review.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:170, :175
+**Caught by:** this review (isolated subagent, round 6)
+
+## 2026-09-27 — PR#130 — Round 8: the skip rule covered only case 2
+**What was wrong:** The "already has an entry" skip applied only to case 2, so a later CHANGES REQUESTED round that found a still-unfixed issue would log it again under case 1.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:168-169, :179
+**Caught by:** this review (isolated subagent, round 8)
+
+## 2026-09-27 — PR#130 — Round 9: skip condition out of step, and regressions could be skipped
+**What was wrong:** After round 8 extended the skip to case 1, the "skip this step only if" line still required logging any CHANGES REQUESTED issue, which contradicted the skip. "Already has an entry" also didn't separate an unfixed issue (skip it) from a regression of a fixed one (log it).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:171-173, :183
+**Caught by:** this review (isolated subagent, round 9)
+
+## 2026-09-27 — PR#130 — Round 10: the skip condition's wording inverted its intent
+**What was wrong:** "Skip an item that already has an entry and has not been fixed since" can never skip a case-2 item, because those are fixes by definition. A final APPROVED review would log every earlier-round finding again.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:171-172
+**Caught by:** this review (isolated subagent, round 10)
+
+## 2026-09-27 — PR#130 — Round 11: the skip line required logging that no case asks for
+**What was wrong:** "Skip this step only if every issue this review found … already has an entry" ignored that case 1 logs only on CHANGES REQUESTED. An APPROVED review with only non-blocking findings could never skip, which invited logging no case requires.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:184-185
+**Caught by:** this review (isolated subagent, round 11)
+
+## 2026-09-27 — PR#130 — Repeat rule and case-1 logging turned non-blocking findings into blocking HIGHs
+**What was wrong:** The repeat rule counted this PR's own earlier-round entries, so an unfixed LOW logged in one round became a HIGH repeat the next round and blocked. Case 1 logged every finding, including non-blocking and dismissed ones, which filled repeat history with non-violations.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:102-104, :168
+**Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 13: case 1 stopped logging gate-verification failures
+**What was wrong:** Narrowing case 1 to "accepted findings that block" (a code-review fix) dropped CHANGES REQUESTED verdicts caused only by gate-verification failures (a stale SHA, a TODO hit, a missing CHANGELOG entry, TDD order), which the old "log each issue found here" covered.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:170-172
+**Caught by:** this review (isolated subagent, round 13)
+
+## 2026-09-27 — PR#130 — Round 14: the regression half of the repeat rule had no enforcer
+**What was wrong:** The subagent can't see the PR body, and code-review or non-blocking fixes aren't in rejections.md until case 2 runs. So a mid-PR regression of such a fix looked new, and nothing told the session (the only party that sees the body) to check. The regression exception also pointed at an entry that might not exist yet.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102-104, :175-178
+**Caught by:** this review (isolated subagent, round 14)
+
+## 2026-09-27 — PR#130 — Round 15: the subagent was asked to rate regressions it couldn't see
+**What was wrong:** The subagent's repeat rule included "comes back after being fixed earlier in this PR", but without the PR body or history it couldn't tell a regression from a still-unfixed item. The session's backstop checked only the PR body, not this PR's own rejections.md entries.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102-105, :129-131
+**Caught by:** this review (isolated subagent, round 15)
+
+## 2026-09-27 — PR#130 — Round 16: the subagent couldn't tell which entries were this PR's
+**What was wrong:** The subagent was told "Entries for this PR are not repeats" but was never given the PR number, and it is barred from gh pr view and gh api.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md (subagent inputs)
+**Caught by:** this review (isolated subagent, round 16)
+
+## 2026-09-27 — PR#130 — Round 17: the same-PR exemption missed incidents.md
+**What was wrong:** "Entries for this PR are not repeats" could only be applied to rejections.md, which carries PR numbers. incidents.md entries carry none, and /feature writes them during the PR, so an unfixed doubt-driven finding would be rated a blocking HIGH repeat.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:103-105
+**Caught by:** this review (isolated subagent, round 17)
+
+## 2026-09-27 — PR#130 — Case 2 logged non-blocking fixes into repeat history
+**What was wrong:** Case 2 logged every fix the PR body listed, whatever its severity, so a fixed LOW (for example a wrap-width nit) would enter rejections.md and make the same slip in a later PR a blocking HIGH repeat.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:180; .claude/context/rejections.md (this PR's entries)
+**Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 19: regressions of LOW fixes were still raised to a blocking HIGH
+**What was wrong:** The session's regression check and the HIGH floor covered any fix that came back, including a fixed LOW, so a returning style nit would block APPROVED and enter repeat history. That contradicted case 2 and the CHANGELOG. Now only a regression of a blocking fix is raised.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:128, :131-135
+**Caught by:** this review (isolated subagent, round 19)
+
+## 2026-09-27 — PR#130 — Round 25: incidents.md entries had no severity for the regression check
+**What was wrong:** The session's regression check compared findings with this PR's incidents.md entries but raised only returning "blocking" fixes, and incidents.md entries carry no severity, so the check could never fire or had to guess. incidents.md records real bugs, so its entries now count as blocking fixes.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:132-135
+**Caught by:** this review (isolated subagent, round 25)
+
+## 2026-09-27 — PR#130 — Round 26: PR-body fixes had no severity for the regression check or case 2
+**What was wrong:** The regression check and case 2 act only on blocking fixes, but a fix listed in the PR body carries no severity, and nothing told the session how to rate one. Whether a returning fix was raised, or a fix was logged, depended on a guess.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:115-119, :176
+**Caught by:** this review (isolated subagent, round 26)
+
+## 2026-09-27 — PR#130 — Older style-only entries still made repeats blocking HIGHs
+**What was wrong:** This PR stops logging LOW items, but rejections.md already holds style-only entries from earlier PRs (for example "run-on sentence"). The repeat rule rated any match HIGH with no way to lower it, so a later style slip would still block and be logged again. A repeat of a wording- or style-only entry now keeps its own severity.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:103
+**Caught by:** code-review pass (code-review:code-review on PR#130)
+
+## 2026-09-27 — PR#130 — Round 28: the HIGH floor overrode the style-only repeat exception
+**What was wrong:** The floors sentence said "a repeat … stays HIGH" with no exception, which contradicted the new rule that a repeat of a wording- or style-only entry keeps its own severity. A session applying the floor could raise a style repeat to a blocking HIGH.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md (severity floors)
+**Caught by:** this review (isolated subagent, round 28)
+
+## 2026-09-27 — PR#130 — Regression check ignored this PR's incidents.md entries
+**What was wrong:** The session's regression check compared findings only with the PR body and this PR's rejections.md entries. A regression of a fix recorded in an incidents.md entry that this PR added (for example by /feature's doubt-driven review) was never raised to HIGH.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:131
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 24)
+
+## 2026-09-27 — PR#130 — APPROVED unreachable when a gate is NOT VERIFIED
+**What was wrong:** APPROVED required "every gate-verification check passes", but a NOT VERIFIED script or an unconfigured gates CI job is never a pass and was not listed as CHANGES REQUESTED either, so the reviewer had to guess. They are now visible notes that do not block on their own.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:178
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 29)
+
+## 2026-09-27 — PR#130 — The isolated reviewer could read this PR's own log entries
+**What was wrong:** The subagent read the PR branch's rejections.md and got the PR number, so it could find this PR's round-by-round entries, which retell the implementer's account of the change. The PR's diff carried the same entries. It now gets the base branch's rejections.md and a diff without it, and the session checks that the log only appends.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:95-100
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 31)
+
+## 2026-09-27 — PR#130 — Round 32: the new append-only check had no failure outcome
+**What was wrong:** The session's check that rejections.md only appends did not say what a failure meant: it was not a gate-verification check, a subagent finding or a case-1 item, so a PR that edits past log entries could still be APPROVED. A failure is now a failed gate-verification check (CHANGES REQUESTED).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:125-126
+**Caught by:** this review (isolated subagent, round 32)
+
+## 2026-09-27 — PR#130 — Round 33: this PR's incidents.md entries still reached the isolated reviewer
+**What was wrong:** Only this PR's rejections.md entries were withheld. Its incidents.md entries, which /feature writes during the PR, still reached the subagent through the diff and the branch copy, which leaked the implementer's account. Both logs are now given as base-branch copies, with a diff that leaves both out.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:93-106
+**Caught by:** this review (isolated subagent, round 33)
+
+## 2026-09-27 — PR#130 — Log withholding could be bypassed or silently emptied
+**What was wrong:** The subagent could still open the working-tree copies of both logs under "read any source file". Its diff and base-log commands used `${BASE}`, which is set only inside step 2's shell block, so an empty BASE gave an empty diff (nothing reviewed) and made `git show` read the PR's own log. The commands now set BASE themselves, and the working-tree logs are off-limits.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:96-101, :114
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 34)
+
+## 2026-09-27 — PR#130 — Round 35: append check could run with an empty BASE; unfinished CI could be logged
+**What was wrong:** The session's append-only log check used `${BASE}` without setting it, so in a fresh shell it diffed HEAD against itself and always passed. And a CHANGES REQUESTED for CI still pending after 30 minutes could be logged under case 1 as a failed check, although it is not a violation.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:86-88, :128
+**Caught by:** this review (isolated subagent, round 35)
+
+## 2026-09-27 — PR#130 — Round 36: CI-pending verdict could drop results; base-log copies had no location
+**What was wrong:** "Post CHANGES REQUESTED noting only that CI has not finished" could be read as dropping failures already found, and skipping the judgment checks. "Save … to a file" named no location, so a copy inside the repo would fail the next run's clean-tree check.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:86-88, :104
+**Caught by:** this review (isolated subagent, round 36)
+
+## 2026-09-27 — PR#130 — Round 37: CHANGELOG described the CI-pending verdict wrongly
+**What was wrong:** The CHANGELOG still said a CI-pending CHANGES REQUESTED "notes only the unfinished CI", after round 36 changed the skill to keep every other result.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:15
+**Caught by:** this review (isolated subagent, round 37)
+
+## 2026-09-27 — PR#130 — Round 38: inline commands broke across lines; the copy loop used an unguarded rm
+**What was wrong:** The subagent-input and append-check commands were inline code wrapped at unsafe points, so copied into a shell they ran the wrong diff and set BASE wrong. Moving them into fenced blocks also showed that the base-log copy loop's `rm -f "$T/$f.md"` is blocked by Claude Code's safety check, so /review would have failed there. The loop now writes a copy only when the file exists on the base branch.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:99-100, :157-159
+**Caught by:** this review (isolated subagent, round 38) and the session's dry run
+
+## 2026-09-27 — PR#130 — Round 39: the append-only check missed insertions into earlier entries
+**What was wrong:** The check grepped the diff for removed lines, so a line inserted into an earlier log entry (shown only as "+") or a removed blank separator got through, and "must only append" was not enforced. It now checks that the base file is an exact prefix of the PR's copy (dry-run: a real append passes and an insertion is caught). `gh pr diff` was also missing from the subagent's barred list, although it shows the withheld log entries.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:110, :141-142
+**Caught by:** this review (isolated subagent, round 39)
+
+## 2026-09-27 — PR#130 — Round 40: the prep block never printed its temp directory
+**What was wrong:** The prep block set `T=$(mktemp -d)` but never printed it, and shell variables do not carry over between calls, so the session could not tell the subagent where its diff and log copies were.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:102, :112
+**Caught by:** this review (isolated subagent, round 40)
+
+## 2026-09-27 — PR#130 — Append-only check compared against the base tip instead of the merge-base
+**What was wrong:** The prefix check compared the PR's log with the base branch's current tip. Once another PR merged its own log entries, which case-2 logging makes common, the tip was no longer a prefix of an open PR's copy, and a PR that only appended got a false EDITED, a CHANGES REQUESTED and a logged violation. It now compares against the merge-base (a simulated merged entry reproduced the false flag under the old check).
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md (append-only check)
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 41)
+
+## 2026-09-27 — PR#130 — CHANGELOG entry carried review history into the isolated reviewer's diff
+**What was wrong:** CHANGELOG.md stays in the subagent's diff as part of the change, but this PR's entry included review history ("which merged with them open", a finding's HIGH-repeat rating), which is part of the implementer's account. The entry now describes only what changed, and the skill says CHANGELOG entries must do so.
+**Rule violated:** no formal rule, caught before this review
+**File:** CHANGELOG.md:15; .claude/skills/review/SKILL.md (subagent inputs)
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 42)
+
+## 2026-09-27 — PR#130 — Round 44: Context isolation restated the subagent's inputs and dropped a limit
+**What was wrong:** The Context isolation bullet restated the subagent's inputs as "any repo source file it needs", without the rule that the working-tree logs are off-limits, so the inputs were stated twice and the two lists differed. It now points to the single list under "Judgment checks".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:247
+**Caught by:** this review (isolated subagent, round 44)
+
+## 2026-09-27 — PR#130 — Round 45: quoting edited log lines needed BASE; the fallback read this PR's own entries
+**What was wrong:** The command for quoting edited log lines used BASE from a separate shell call, so it printed nothing. The NOT-isolated fallback applied the repeat rule to the working-tree logs, which hold this PR's own entries, so a match to one of them could become a false HIGH repeat. The check block now prints the edited diff itself, and the fallback rates repeats only against the base-branch copies.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:157, :181-183
+**Caught by:** this review (isolated subagent, round 45)
+
+## 2026-09-27 — PR#130 — Command blocks passed silently when BASE came back empty
+**What was wrong:** If `gh pr view` or `git merge-base` failed, BASE was empty or just `origin/`. The log check then compared the log with itself and passed, so edited entries would get through (reproduced on the branch). The prep block produced an empty diff but still reported its directory, so the subagent reviewed nothing. Both blocks now print STOP and exit, and a STOP means re-run before any verdict (each failure mode tested).
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:101, :147
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 47)
+
+## 2026-09-27 — PR#130 — /parallel-review claimed /review's repeat rule without its earlier-PRs-only scope
+**What was wrong:** parallel-review/SKILL.md said it used "the same rule as /review" for repeats, but it still read the working-tree rejections.md with nothing excluding the current PR's own entries. Re-run during rework, a match to one of those entries would become a blocking HIGH repeat, the behavior this PR removed from /review.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/parallel-review/SKILL.md:22
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 48)
+
+## 2026-09-27 — PR#130 — Round 49: a log-only PR could never get a verdict
+**What was wrong:** For a PR that changes only rejections.md and/or incidents.md, the log-free diff is empty, so the prep block always printed STOP and the skill forbids a verdict on a stopped block. Such a PR (for example PR#129) could never be reviewed. A log-only PR now prints LOG-ONLY, skips the subagent, and still gets the log check (PR#129 verified as detected).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:105, :114
+**Caught by:** this review (isolated subagent, round 49)
+
+## 2026-09-27 — PR#130 — Round 50: a failing git diff was read as a log-only PR
+**What was wrong:** If `git diff "${BASE}...HEAD"` itself errored (for example with no merge-base on a shallow fetch), it left pr.diff empty, and `git diff --quiet` exited 128, which the block read as "has changes". It printed LOG-ONLY and skipped the subagent silently. The block now checks the diff's exit status and treats anything but 0 or 1 as STOP (tested: a bad range stops, #130 is normal, #129 is log-only).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:105-107
+**Caught by:** this review (isolated subagent, round 50)
+
+## 2026-09-27 — PR#130 — Round 51: an empty PR could never get a verdict; a failed log copy was silent
+**What was wrong:** An empty PR made the prep block print STOP, and the skill forbids a verdict on a stopped block while no fix exists for an empty PR. The base-log copy (`git show … > file`) also had no failure check, so a failed copy left the subagent with no log and no error. An empty PR now prints EMPTY (post CHANGES REQUESTED saying so), and a failed copy prints STOP.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:78, :84, :89-90
+**Caught by:** this review (isolated subagent, round 51)
+
+## 2026-09-27 — PR#130 — Round 52: the regression check could not tell whether a log entry was blocking
+**What was wrong:** The session's regression check raises only a returning blocking fix to HIGH and reads this PR's own rejections.md entries, but the entry template carries no severity, so nothing said whether an entry was blocking. Only blocking items are ever logged, so every entry in either log now counts as a blocking fix.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:184-186
+**Caught by:** this review (isolated subagent, round 52)
+
+## 2026-09-27 — PR#130 — Round 53: "only blocking items are logged" was not a rule for every writer
+**What was wrong:** The regression check treats any log entry as a blocking fix because "only blocking items are ever logged", but the logging section still allowed code-review rounds and people to log entries of any severity. A returning LOW could then become a HIGH regression. The rule now covers everyone who writes to rejections.md.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:186-188, :242-244
+**Caught by:** this review (isolated subagent, round 53)
+
+## 2026-09-27 — PR#130 — Round 55: every incidents.md entry was treated as a blocking fix
+**What was wrong:** The regression check treated any entry in either log as a blocking fix, but /feature's doubt-driven review can log non-blocking findings to incidents.md, so a returning LOW would be raised to HIGH. Only this PR's own rejections.md entries are now treated as blocking, and an incidents.md entry is rated from what it describes.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:186-192
+**Caught by:** this review (isolated subagent, round 55)
