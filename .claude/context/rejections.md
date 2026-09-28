@@ -391,3 +391,27 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:186-192
 **Caught by:** this review (isolated subagent, round 55)
+
+## 2026-09-28 — PR#131 — Round 1: overclaim that Gate 3 covers the TODO/FIXME checklist item
+**What was wrong:** The spec removed /review's TODO/FIXME checklist item because "Gate 3's grep covers it", but Gate 3 greps only `*.swift` files and has no "unless tracked in an issue" allowance, so non-Swift code (including the spec's own new Python scripts) would lose the check. Repeats PR#105's overclaim about a gate's scope.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:34
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: false claim that nothing else writes the violation logs
+**What was wrong:** The spec said nothing but /review writes the logs, but /bugfix appends to incidents.md and code-review rounds or a person may append to rejections.md. Repeats PR#130's false claim about another skill.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:22
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: log migration could never pass the append-only check
+**What was wrong:** The spec moves entries out of rejections.md, a non-append edit that the append-only check reports as EDITED (CHANGES REQUESTED), and gave no rule for that PR to reach APPROVED.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:70-72
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: pipeline-path rule left multi-path entries unclassified
+**What was wrong:** The split rule classified entries by their **File:** path but did not say how an entry naming several paths is classified; the PR#130 Round 44 entry names both CHANGELOG.md and a skill file, contradicting the stated 59/4/2 split.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38
+**Caught by:** this review (isolated subagent, round 1)
