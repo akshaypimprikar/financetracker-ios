@@ -337,3 +337,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/parallel-review/SKILL.md:22
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 48)
+
+## 2026-09-27 — PR#130 — Round 49: a log-only PR could never get a verdict
+**What was wrong:** For a PR that changes only rejections.md and/or incidents.md, the log-free diff is empty, so the prep block always printed STOP and the skill forbids a verdict on a stopped block. Such a PR (for example PR#129) could never be reviewed. A log-only PR now prints LOG-ONLY, skips the subagent, and still gets the log check (PR#129 verified as detected).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:105, :114
+**Caught by:** this review (isolated subagent, round 49)
