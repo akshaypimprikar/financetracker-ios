@@ -313,3 +313,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** CHANGELOG.md:15; .claude/skills/review/SKILL.md (subagent inputs)
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 42)
+
+## 2026-09-27 — PR#130 — Round 44: Context isolation restated the subagent's inputs and dropped a limit
+**What was wrong:** The Context isolation bullet restated the subagent's inputs as "any repo source file it needs", without the rule that the working-tree logs are off-limits, so the inputs were stated twice and the two lists differed. It now points to the single list under "Judgment checks".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:247
+**Caught by:** this review (isolated subagent, round 44)
