@@ -19,7 +19,7 @@ The simplified skill is also the version that gets ported to pragma afterwards (
 | SHA pin: the PR head equals the `Gates run at <sha>` line | CI cannot read the gate summary's claim |
 | Isolated judgment subagent | `code-review:code-review` sees the PR summary, commits and blame, so it is not isolated |
 | Design-system and domain checklists | `code-review` drops general quality issues that `CLAUDE.md` does not name, and `AGENTS.md` has no Theme or magic-number rules |
-| Writing the violation logs | `/feature`, `/bugfix` and `/parallel-review` read them. Nothing else writes them. |
+| Logging review findings to `rejections.md` | `/feature`, `/bugfix` and `/parallel-review` read it. /review is the only stage that logs its own findings and the fixes a PR body documents; otherwise entries are added only when a code-review round or a person appends one by hand. (`incidents.md` is written by `/bugfix` and is unchanged here.) |
 | APPROVED / CHANGES REQUESTED verdict | `code-review` gives no verdict, only issues scored 80 or higher |
 
 ## Decisions & Constraints
@@ -30,12 +30,12 @@ The simplified skill is also the version that gets ported to pragma afterwards (
 | Grep-only gates (3, 4, 5, 8, 9-grep) | Move to a new base-branch script that the CI `gates` job runs | Deterministic checks belong in CI, where the other two scripts already run. /review then checks only the SHA and that CI passed. |
 | Accepted grep-gate exceptions (for example `percentUsed`) | A guarded `scripts/gate_exceptions.txt`, one `path:pattern  # reason` line per exception | CI cannot read the gate summary. A guarded file keeps every exception visible in the diff and out of reach of the PR it would waive. Rejected: inline `// gate-allow: <rule>` comments, which let a PR waive a check in its own diff. |
 | UI-selector check (Gate 9) | The script cross-checks each `app.<element>["id"]` literal against `accessibilityIdentifier` strings in `FinanceTracker/Views/` | Today this is checked by hand. A script makes it pass or fail. |
-| Subagent input prep (STOP / EMPTY / LOG-ONLY block) and the append-only log check | Move to `scripts/prep_review.py`, run from the base branch | About 50 lines of shell in the skill become a tested script. Running it from base means a PR cannot edit its own reviewer's inputs. |
-| TODO/FIXME checklist item | Remove | Gate 3's grep covers it |
+| Subagent input prep (STOP / EMPTY / LOG-ONLY block) and the append-only log check | Move to `scripts/prep_review.py`, run from the base branch | About 31 lines of shell in the skill (`review/SKILL.md:100-118` and `159-170`) become a tested script. Running it from base means a PR cannot edit its own reviewer's inputs. |
+| TODO/FIXME checklist item | Keep | Gate 3 greps only `*.swift` and has no "unless tracked in an issue" allowance, so it does not cover non-Swift code such as this spec's own scripts |
 | Severity and blocking rules | State them once in a "Severity and blocking" section, and point to it | They are currently stated in four places (lines 139-142, 178-183, 230, 235) |
 | Regressions within a PR (current lines 184-194) | One rule: a finding that matches a fix described in the PR body or an entry this PR added to a log is a regression and is rated HIGH, unless it is a wording or style issue | Drops the step where the session rates PR-body fixes on the severity scale, which was the densest paragraph in the skill |
 | Logging (current lines 233-260) | Log each blocking item in this verdict, and each fix the PR body credits to a `code-review` round or an earlier `/review` round. Skip anything already logged for this PR. A regression gets a new entry that names what it repeats. | `code-review` only reports issues scored 80 or higher, so its fixes count as blocking without re-rating them. This removes case 1 vs case 2. |
-| Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. An entry goes there when its **File:** is under `.claude/`, `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`. | 59 of the 65 current entries are about pipeline text (4 are app code, 2 are `CHANGELOG.md`, and those 6 stay). App reviews should repeat-check against app violations only. |
+| Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. An entry goes there when the first path in its **File:** is under `.claude/`, `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`; later paths in the same field do not count. | 59 of the 65 current entries are about pipeline text (4 are app code, 2 are `CHANGELOG.md`, and those 6 stay). App reviews should repeat-check against app violations only. |
 | Who reads pipeline-rejections.md | The /review subagent only when the diff touches a pipeline path; `/pipeline-review` always | Keeps repeat detection for skill PRs without feeding pipeline history to app reviews |
 | Size target | `review/SKILL.md` at or under 180 lines | A measurable exit criterion for this spec |
 
@@ -52,7 +52,9 @@ Pipeline only. No app layers are touched.
   `INPUTS <dir>`, `EMPTY`, `LOG-ONLY` or `STOP <reason>`. It also runs the append-only check on all three
   logs against the merge-base and prints `EDITED <path>` along with the diff.
 - `.github/workflows/pr-checks.yml`: the `gates` job adds `check_grep_gates.py` to its trusted-script loop,
-  and adds a step that runs `python3 -m unittest discover scripts/tests`.
+  and adds a step that runs `python3 -m unittest discover scripts/tests`. The job's comment (lines 80-82)
+  that says the UI-selector cross-check "stays local to /gates" is updated, and the two new guarded files
+  are added to the `paths:` filter in both its root and `**/` forms, per that list's convention.
 - `.claude/skills/gates/SKILL.md`: Gates 3, 4, 5, 8 and 9 each call the script instead of inline greps, so
   the local and CI checks cannot drift apart. The gate summary stops listing accepted exceptions, because
   the exceptions file now holds them.
@@ -60,12 +62,19 @@ Pipeline only. No app layers are touched.
 - `.claude/skills/pipeline-review/SKILL.md`: reads `pipeline-rejections.md`.
 - `.claude/skills/parallel-review/SKILL.md`: gets the same regression and severity wording by pointing to
   /review's section, and reads `pipeline-rejections.md` under the same path condition.
-- `.claude/hooks/guard_protected_paths.py` and `check_gate_integrity.py`: add
+- `.claude/hooks/guard_protected_paths.py` and `scripts/check_gate_integrity.py`: add
   `scripts/gate_exceptions.txt` and `scripts/prep_review.py` to both glob lists. They must stay in step,
   which CI's self-test already checks.
-- `.claude/context/rejections.md`: entries whose **File:** is a pipeline path move to
-  `pipeline-rejections.md`, verbatim and in their original order. This one-time migration is the only
-  non-append edit to either log. The PR body must name it, because the append-only check will flag it.
+- `.claude/context/rejections.md`: entries whose first **File:** path is a pipeline path move to
+  `pipeline-rejections.md`, verbatim and in their original order. This one-time move is the only
+  non-append edit to either log, so it lands first, on its own `chore/*` PR that changes nothing else.
+  The append-only check prints `EDITED` on that PR. For that PR only, /review accepts the `EDITED`
+  result when both of these print nothing, and states the exception and the output in its verdict:
+  ```bash
+  git diff "$BASE" HEAD -- .claude/context/rejections.md | grep '^+[^+]'          # nothing added
+  git diff "$BASE" HEAD -- .claude/context/rejections.md | grep '^-[^-]' | sed 's/^-//' |
+    grep -vxFf .claude/context/pipeline-rejections.md                             # every removed line moved
+  ```
 
 ## Data Models / Domain Services / Navigation / Design
 None. This spec touches no Swift code, views or tokens.
