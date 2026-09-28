@@ -391,3 +391,111 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:186-192
 **Caught by:** this review (isolated subagent, round 55)
+
+## 2026-09-28 — PR#131 — Round 1: overclaim that Gate 3 covers the TODO/FIXME checklist item
+**What was wrong:** The spec removed /review's TODO/FIXME checklist item because "Gate 3's grep covers it", but Gate 3 greps only `*.swift` files and has no "unless tracked in an issue" allowance, so non-Swift code (including the spec's own new Python scripts) would lose the check. Repeats PR#105's overclaim about a gate's scope.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:34
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: false claim that nothing else writes the violation logs
+**What was wrong:** The spec said nothing but /review writes the logs, but /bugfix appends to incidents.md and code-review rounds or a person may append to rejections.md. Repeats PR#130's false claim about another skill.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:22
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: log migration could never pass the append-only check
+**What was wrong:** The spec moves entries out of rejections.md, a non-append edit that the append-only check reports as EDITED (CHANGES REQUESTED), and gave no rule for that PR to reach APPROVED.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:70-72
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 1: pipeline-path rule left multi-path entries unclassified
+**What was wrong:** The split rule classified entries by their **File:** path but did not say how an entry naming several paths is classified; the PR#130 Round 44 entry names both CHANGELOG.md and a skill file, contradicting the stated 59/4/2 split.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38
+**Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 2: move-check commands used an unset BASE (regression of this PR's round 1 fix)
+**What was wrong:** The round-1 move-check block used $BASE, which nothing sets; git diff "" fails with no stdout, so the "prints nothing" test passes on a failed command, and base tip vs merge-base was unstated. Repeats PR#130 Round 35 and the merge-base entry.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (rejections.md migration bullet)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: new guarded paths miss the hook prefilter
+**What was wrong:** The spec adds scripts/gate_exceptions.txt and scripts/prep_review.py to both glob lists, but guard_protected_paths.py's _PROTECTED_FRAGMENTS prefilter matches neither, so the live guard would skip them.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (guard_protected_paths.py bullet)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: acceptance criterion could not fail
+**What was wrong:** "check_grep_gates.py against origin/develop reports no hits" is vacuous: every rule is scoped to BASE...HEAD, which is empty on develop.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Testing Strategy)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: pragma port described as a config edit
+**What was wrong:** Pragma's Gate 8 is abstraction bloat, it has no CSV-concurrency gate, and architecture is Gate 10, so a script hardcoding FinanceTracker's gate set needs more than renumbering.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Future Extension Points)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: regression and logging rules changed behavior silently
+**What was wrong:** The one-line regression rule raises returning advisory MEDIUMs and non-blocking incidents.md items to HIGH without saying so, and the logging row drops manual-verification fixes, contradicting the spec's own kept-jobs table.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Decisions: Regressions, Logging rows)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 3: overclaim that all Gate 9 greps are diff-scoped
+**What was wrong:** The spec moved the Gate 9 greps into a BASE...HEAD script, but the UI-selector grep scans all of FinanceTrackerUITests/; 9 of 25 selectors match by label, not accessibilityIdentifier, so a mechanical check would fail every run. Repeats PR#105's Gate 9 scope overclaim.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:32, :45-47
+**Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-28 — PR#131 — Round 3: log-move PR ordered before the tooling it depends on
+**What was wrong:** The move PR was to land first, but its EDITED exception needs prep_review.py --verify-move and a new /review rule that would not yet be on base; no bootstrap rule for prep_review.py was stated.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (rejections.md migration bullet)
+**Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-28 — PR#131 — Round 4: false claim that /review already requires the gates CI job
+**What was wrong:** The spec justified removing /review's gate re-runs with "/review already requires gates to pass", but a missing gates check is a non-blocking note (review/SKILL.md:88-90, :230) and the job skips PRs outside pr-checks.yml's paths filter, so those PRs would get no gate checks at all. Repeats PR#130 and PR#127 false cross-skill claims.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:29-30
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 4: .claude/context/ classified two ways
+**What was wrong:** The move rule sends entries whose first path is under .claude/ (including .claude/context/) to pipeline-rejections.md, while the read trigger says .claude/context/ does not count, so those entries would never be loaded for the files they are about.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38-39
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 4: log split dropped pipeline history from /feature and /bugfix
+**What was wrong:** /feature and /bugfix read only rejections.md; the spec moves 59 pipeline entries out of it without updating either skill, so pipeline work would start without its history.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 5: decisions.md contradicted the spec on the TODO item
+**What was wrong:** The decisions.md entry said option (1) cuts the TODO checklist item; the spec (after round 1) keeps it.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/context/decisions.md:52
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: pipeline specs logged to pipeline-rejections.md but never read it
+**What was wrong:** New findings on pipeline specs under docs/superpowers/ go to pipeline-rejections.md, but that path does not trigger reading the file, so repeat detection is lost for them.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38-39
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: reviewer's copy of pipeline-rejections.md unscoped
+**What was wrong:** The spec did not require the isolated reviewer and /parallel-review to get only the base-branch copy of pipeline-rejections.md, as they do for rejections.md; built as written it would reintroduce the PR#130 own-log-entries leak.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (prep_review.py and parallel-review bullets)
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: clean-tree check not updated for the new log
+**What was wrong:** review/SKILL.md:44 exempts only rejections.md from git status; /review writing pipeline-rejections.md would fail the SHA-pin clean-tree check on the next round.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
+**Caught by:** this review (isolated subagent, round 5)
