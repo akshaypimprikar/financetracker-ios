@@ -457,3 +457,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-review-simplification.md (rejections.md migration bullet)
 **Caught by:** this review (isolated subagent, round 3)
+
+## 2026-09-28 — PR#131 — Round 4: false claim that /review already requires the gates CI job
+**What was wrong:** The spec justified removing /review's gate re-runs with "/review already requires gates to pass", but a missing gates check is a non-blocking note (review/SKILL.md:88-90, :230) and the job skips PRs outside pr-checks.yml's paths filter, so those PRs would get no gate checks at all. Repeats PR#130 and PR#127 false cross-skill claims.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:29-30
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 4: .claude/context/ classified two ways
+**What was wrong:** The move rule sends entries whose first path is under .claude/ (including .claude/context/) to pipeline-rejections.md, while the read trigger says .claude/context/ does not count, so those entries would never be loaded for the files they are about.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38-39
+**Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 4: log split dropped pipeline history from /feature and /bugfix
+**What was wrong:** /feature and /bugfix read only rejections.md; the spec moves 59 pipeline entries out of it without updating either skill, so pipeline work would start without its history.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
+**Caught by:** this review (isolated subagent, round 4)
