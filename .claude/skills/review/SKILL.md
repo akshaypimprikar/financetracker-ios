@@ -108,7 +108,9 @@ for f in rejections incidents; do
 done
 echo "subagent inputs in: $T"
 ```
-Then give it these, using the directory the block printed as `$T`:
+`CHANGELOG.md` stays in the diff: it is part of the change under review. Its entries describe what changed,
+not how the review went, so they carry no implementer's account. Then give it these, using the directory the
+block printed as `$T`:
 - the PR number, to name in its findings (not to fetch anything with)
 - the diff: `$T/pr.diff`
 - the acceptance criteria from the plan or spec this PR implements (`docs/superpowers/plans/` or
@@ -146,8 +148,8 @@ BASE=$(git merge-base "origin/$(gh pr view <PR> --json baseRefName -q .baseRefNa
 for f in rejections incidents; do
   p=".claude/context/$f.md"
   if git cat-file -e "${BASE}:$p" 2>/dev/null; then
-    n=$(git show "${BASE}:$p" | wc -l)
-    cmp -s <(git show "${BASE}:$p") <(git show "HEAD:$p" | head -n "$n") || echo "EDITED: $p"
+    n=$(git show "${BASE}:$p" | wc -c)
+    cmp -s <(git show "${BASE}:$p") <(git show "HEAD:$p" | head -c "$n") || echo "EDITED: $p"
   fi
 done
 ```

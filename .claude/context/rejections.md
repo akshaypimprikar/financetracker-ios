@@ -307,3 +307,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md (append-only check)
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 41)
+
+## 2026-09-27 — PR#130 — CHANGELOG entry carried review history into the isolated reviewer's diff
+**What was wrong:** CHANGELOG.md stays in the subagent's diff as part of the change, but this PR's entry included review history ("which merged with them open", a finding's HIGH-repeat rating), which is part of the implementer's account. The entry now describes only what changed, and the skill says CHANGELOG entries must do so.
+**Rule violated:** no formal rule, caught before this review
+**File:** CHANGELOG.md:15; .claude/skills/review/SKILL.md (subagent inputs)
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 42)
