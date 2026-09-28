@@ -319,3 +319,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:247
 **Caught by:** this review (isolated subagent, round 44)
+
+## 2026-09-27 — PR#130 — Round 45: quoting edited log lines needed BASE; the fallback read this PR's own entries
+**What was wrong:** The command for quoting edited log lines used BASE from a separate shell call, so it printed nothing. The NOT-isolated fallback applied the repeat rule to the working-tree logs, which hold this PR's own entries, so a match to one of them could become a false HIGH repeat. The check block now prints the edited diff itself, and the fallback rates repeats only against the base-branch copies.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:157, :181-183
+**Caught by:** this review (isolated subagent, round 45)

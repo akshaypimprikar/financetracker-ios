@@ -149,12 +149,13 @@ for f in rejections incidents; do
   p=".claude/context/$f.md"
   if git cat-file -e "${BASE}:$p" 2>/dev/null; then
     n=$(git show "${BASE}:$p" | wc -c)
-    cmp -s <(git show "${BASE}:$p") <(git show "HEAD:$p" | head -c "$n") || echo "EDITED: $p"
+    cmp -s <(git show "${BASE}:$p") <(git show "HEAD:$p" | head -c "$n") ||
+      { echo "EDITED: $p"; git diff "${BASE}" HEAD -- "$p"; }
   fi
 done
 ```
-An `EDITED:` line is a failed gate-verification check: CHANGES REQUESTED. Quote the edited lines, which
-`git diff "${BASE}...HEAD" -- <path>` shows for the path it names.
+An `EDITED:` line is a failed gate-verification check: CHANGES REQUESTED. Quote the edited lines from the
+diff the block prints under it.
 
 Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
@@ -179,7 +180,8 @@ Merge its output into the verdict:
 - Post the subagent's raw report, unedited, in the verdict (inside a `<details>` block). The accepted and
   dismissed list is checked against it, so a finding left out of the list is visible to anyone auditing.
 - If a subagent cannot be spawned in this runtime, run the checklists here instead, apply the same
-  severity, blocking and advisory rules, and write `Judgment checks: NOT isolated (subagent
+  severity, blocking and advisory rules (rating repeats only against the base-branch log copies prepared
+  above, not the working-tree logs, which hold this PR's own entries), and write `Judgment checks: NOT isolated (subagent
   unavailable)` in the verdict.
 
 ### Design compliance checks
