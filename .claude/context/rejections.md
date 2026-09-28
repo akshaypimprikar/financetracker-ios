@@ -367,3 +367,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:186-188, :242-244
 **Caught by:** this review (isolated subagent, round 53)
+
+## 2026-09-27 — PR#130 — Round 55: every incidents.md entry was treated as a blocking fix
+**What was wrong:** The regression check treated any entry in either log as a blocking fix, but /feature's doubt-driven review can log non-blocking findings to incidents.md, so a returning LOW would be raised to HIGH. Only this PR's own rejections.md entries are now treated as blocking, and an incidents.md entry is rated from what it describes.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:186-192
+**Caught by:** this review (isolated subagent, round 55)
