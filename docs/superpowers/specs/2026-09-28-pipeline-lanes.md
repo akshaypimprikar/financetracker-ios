@@ -18,130 +18,150 @@ The 2026-09-28 pipeline review of the last 40 merged PRs (#92-#131) found three 
 This spec fixes the causes: a script sorts each PR into a **lane** by its changed paths, each lane has its
 own required evidence, a CI job checks that evidence, and branch protection makes the check binding.
 `/review` gets a hard two-round cap and a design mode for specs. Claims that cite `file:line` are checked
-mechanically. Everything is driven by a per-project config file, so it ships to pragma unchanged apart from
-that file.
+mechanically. The scripts and workflows are the same in every project; a per-project config file holds the lane
+globs and each lane's evidence, so pragma ships them with its own config.
 
 ## Decisions & Constraints
 | Decision | Choice | Rationale |
 |---|---|---|
 | Relationship to #131 | Supersedes it | Keeps its two load-bearing ideas (the `gates` job runs on every PR; a missing check blocks). Drops the log split, the grep-gate script and the rule restatements, which lanes and the round cap make unnecessary. |
-| How a PR's lane is decided | `scripts/pr_lane.py` reads the changed paths and a config file; the highest-ranked matching lane wins | Deterministic, testable, and the same code in every project |
-| Lanes | `release`, `app`, `pipeline`, `docs` (rank: app > pipeline > docs; `release` by branch) | See "Lanes" below |
-| Where enforcement lives | A `review-evidence` CI job plus branch protection requiring it and `gates` | Prose rules were skipped on most PRs; a required check cannot be |
-| Branch protection | Required checks `gates` and `review-evidence` on `develop` and `main`, in FinanceTracker and pragma. Turned on only after `pipeline.yml` is on each repo's `develop` and `main`. | Confirmed by the user 2026-09-28. `enforce_admins` is already on in both repos, so the rule binds the owner too. Enabling it before the checks exist would block every open PR. |
-| Review rounds | At most 2. Round 2 reviews only the changes since round 1 and whether round-1 findings were fixed. No round 3: remaining non-HIGH findings become GitHub issues and the verdict is APPROVED; a remaining HIGH goes to the user. | #130 and #131 show that unbounded rounds keep finding new detail |
-| Spec and plan PRs | `/review` runs in design mode: contradictions, false claims, feasibility. Implementation detail is written into the spec's "Requirements carried to /plan" section instead of blocking. | A spec reviewed like code never converges |
-| Cross-file claims in specs, plans and skills | Must cite `path:line` (or `path:start-end`); `scripts/check_citations.py` fails any citation whose file is missing or whose line is past the end of the file | Catches the cheap half of the false-claim problem mechanically. Whether the cited line *says* what the text claims stays a review question. |
+| How a PR's lane is decided | `scripts/check_pr_lane.py` reads the changed paths, the head and base branches, and a per-project config; see "Lanes" | Deterministic, testable, the same code in every project. The `check_` prefix puts it under the existing `scripts/check_*` guard glob and the hook's `scripts/check_` fragment. |
+| What each lane requires | Listed in the config per lane, as evidence items (`gate_summary`, `review_verdict`, `code_review`, `motivating_incident`, `synced_from`) | Projects differ: pragma has no Xcode project, so it cannot produce a `/gates` summary, and its lanes simply do not list one |
+| Where enforcement lives | A `review-evidence` check that runs the **base branch's** workflow and scripts (`pull_request_target`) and never checks out PR code, plus branch protection requiring it and `gates` | A PR can edit a `pull_request` workflow to pass itself; it cannot edit the base branch's. Reading PR data only through the API keeps `pull_request_target` safe. |
+| Branch protection | Required checks `gates` and `review-evidence` on `develop` and `main`, in FinanceTracker and pragma, turned on last (see "Rollout order") | Confirmed by the user 2026-09-28. `enforce_admins` is already on in both repos. |
+| Evidence at a moved head | Evidence recorded at SHA `X` counts for head `H` when `X` = `H`, or `X` is an ancestor of `H` and every file changed in `X..H` is on the config's `carryover_paths` list (FinanceTracker: `.claude/context/rejections.md`, `.claude/context/incidents.md`) | /review's own log commit, and the `code-review` line edit, must not invalidate the verdict they follow |
+| Review rounds | At most 2 full rounds. Round 2 reviews only `X..H` since round 1 plus whether round-1 findings were fixed. After that, remaining non-HIGH findings become GitHub issues and the verdict is APPROVED; a remaining HIGH goes to the user. | #130 and #131 show unbounded rounds keep finding new detail |
+| Code changes after APPROVED | A `/review --confirm` verdict covers only `X..H` since the last APPROVED SHA and blocks only on a HIGH introduced in that delta. It is not a round. | Without it, any fix after approval (for example a `code-review` finding) could never get evidence at the new head |
+| Order after a PR opens | `/pr-followup` runs `code-review:code-review` first and fixes its findings, then `/review` | Fixes land before the review rounds, so the head moves less after approval |
+| Spec and plan PRs | `/review` runs in design mode: contradictions, false claims, feasibility. Implementation detail goes to the spec's "Requirements carried to /plan" section instead of blocking. | A spec reviewed like code never converges |
+| Cross-file claims in specs, plans and skills | Must cite `path:line` (or `path:start-end`); `scripts/check_citations.py` fails a citation whose file is missing or whose line is past the end | Catches the cheap half of the false-claim problem mechanically. Whether the cited line *says* what the text claims stays a review question. |
 | `/test` | Becomes a coverage-gap audit that runs after `/feature` and before `/gates` | Today it writes tests after `/review` APPROVED, so they are never reviewed and skip RED-before-GREEN |
-| Pipeline-change brake | The `pipeline` lane requires a `Motivating incident:` line in the PR body naming a PR, issue or report that shows the problem | The review found 51 of the last 60 PRs were pipeline, docs or release work; the pipeline should change in response to observed failures, not by itself |
+| Pipeline-change brake | The `pipeline` lane requires a `Motivating incident:` line naming a PR, issue or report that shows the problem, or `none (<reason>)` | 51 of the last 60 PRs were pipeline, docs or release work; the pipeline should change in response to observed failures. `none (<reason>)` keeps genuine one-offs possible and visible. |
+| `code-review` on pipeline PRs | Required in the `pipeline` lane too | The user's standing rule: run `code-review:code-review` on pipeline and tooling PRs, not only app PRs |
 
 ## Lanes
-| Lane | Chosen when | Required evidence (checked by `review-evidence`) |
+Evaluated in this order; the first that applies wins.
+
+| Lane | Chosen when | Evidence (FinanceTracker config) |
 |---|---|---|
-| `release` | Head branch is `release/*` | None beyond `gates` (unchanged: `/release`'s pre-flight test run is the gate) |
-| `app` | Any changed path matches the config's `app` globs | Gate summary `Gates run at <head SHA>` in the PR body; a `Review Agent verdict: APPROVED` review containing `Reviewed at <head SHA>`; a `code-review:` line in the PR body giving the URL of the plugin's `### Code review` comment, or `code-review: no issues` |
-| `pipeline` | No `app` match, and any path matches the `pipeline` globs | Gate summary at head SHA; an APPROVED verdict at head SHA; a `Motivating incident:` line |
-| `docs` | Nothing above matches | Gate summary at head SHA |
+| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every changed path is on the config's `release_paths` (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
+| `sync` | head `sync/*` (only in configs that define it; pragma does) | `synced_from`: a line naming the source PR, whose content was already reviewed there |
+| `app` | any changed path matches `app` globs | `gate_summary`, `review_verdict`, `code_review` |
+| `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `code_review`, `motivating_incident` |
+| `docs` | otherwise | `gate_summary` |
 
-`hotfix/*` branches are laned by their paths like any other branch, so an app hotfix gets the full `app` lane.
+Evidence items, each tied to a SHA and subject to the carryover rule:
+- `gate_summary`: `Gates run at <sha>` in the PR body.
+- `review_verdict`: the latest `## Review Agent verdict:` review is APPROVED (a full round or `--confirm`) and contains `Reviewed at <sha>`.
+- `code_review`: a `code-review: <comment URL> at <sha>` or `code-review: no issues at <sha>` line in the PR body.
+- `motivating_incident`, `synced_from`: a non-empty line with that label in the PR body.
 
-FinanceTracker's config, `scripts/pipeline_lanes.json`:
-- `app`: `FinanceTracker/**`, `FinanceTrackerTests/**`, `FinanceTrackerUITests/**`, `*.xcodeproj/**`, `*.xctestplan`
+FinanceTracker's lane globs:
+- `app`: `FinanceTracker/**`, `FinanceTrackerTests/**`, `FinanceTrackerUITests/**`, `*.xcodeproj/**`, `**/*.xctestplan`
 - `pipeline`: `.claude/skills/**`, `.claude/hooks/**`, `.claude/commands/**`, `.claude/settings.json`,
-  `.claude/context/invariants.md`, `scripts/**`, `.github/**`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`,
-  `docs/superpowers/**` (specs and plans are laned `pipeline` so they get a design-mode review)
-- Everything else (`docs/**` outside `superpowers/`, `CHANGELOG.md`, `README.md`, `.claude/context/*.md` logs) is `docs`.
+  `.claude/context/invariants.md`, `scripts/**`, `.github/**`, `.githooks/**`, `AGENTS.md`, `CLAUDE.md`,
+  `CONSTRAINTS.md`, `docs/superpowers/**` (specs and plans get a design-mode review)
+- `docs`: everything else (`docs/**` outside `superpowers/`, `CHANGELOG.md`, `README.md`, the `.claude/context/` logs)
 
-A spec for an *app* feature also lands in `docs/superpowers/`, so it is laned `pipeline` and needs a
-`Motivating incident:` line. For an app spec that line names the feature request or issue. The line's rule
-is "name what this change responds to", which fits both.
+`hotfix/*` branches are laned by their paths, so an app hotfix gets the full `app` lane. A spec for an app
+feature is laned `pipeline`; its `Motivating incident:` line names the feature request or issue.
 
 ## Architecture
 Pipeline only. No app code changes.
 
-- **`scripts/pr_lane.py`** (new): `pr_lane.py <base-ref> <head-branch>` prints one lane name. Reads
-  `scripts/pipeline_lanes.json` from the base branch (a PR cannot relane itself), matches
-  `git diff --name-only <base-ref>...HEAD` against it, exits non-zero on a missing or invalid config.
-- **`scripts/check_review_evidence.py`** (new): given the lane, the head SHA, the PR body and the PR's
-  review bodies (as JSON on stdin, fetched by the workflow with the job's `GITHUB_TOKEN`), prints each
-  required item as found or missing and exits non-zero if any is missing. It never evaluates PR text as
-  shell.
+- **`scripts/check_pr_lane.py`** (new): prints the lane for a list of changed paths, a head branch, a base
+  branch and a config file. It exits non-zero on an invalid config.
+- **`scripts/check_review_evidence.py`** (new): given the lane, the head SHA, the PR body, the PR's reviews
+  and, for the carryover rule, the files changed between an evidence SHA and the head (all as JSON on stdin),
+  prints each required item as found or missing and exits non-zero if any is missing. It treats PR text as
+  data only.
 - **`scripts/check_citations.py`** (new): scans the changed `.md` files under `docs/superpowers/` and
   `.claude/skills/` for backticked `path:line` and `path:start-end` citations and fails on a missing file or
-  an out-of-range line. A citation into another repo (`pragma/...`, `../pragma/...`) is checked only when that
-  repo is present, and skipped with a note otherwise.
-- **`.github/workflows/pipeline.yml`** (new), on `pull_request` (`opened`, `synchronize`, `reopened`,
-  `edited`) and `pull_request_review` (`submitted`), with its own `concurrency` group, not
-  `pr-checks.yml`'s:
-  - `gates`: today's `gates` job moved from `pr-checks.yml` with no `paths:` filter, plus
-    `check_citations.py` and `python3 -m unittest discover scripts/tests`. For the `release` lane it exits
-    successfully after printing the lane, which replaces today's job-level `if:` so the required check always
-    reports.
-  - `review-evidence`: runs `pr_lane.py`, fetches the PR body and reviews, and runs
-    `check_review_evidence.py`. Re-runs whenever the body is edited or a review is posted, so adding the
-    evidence turns the check green without a new commit.
-  - Scripts run from the base-branch checkout, as the `gates` job already does, with the same bootstrap
-    rule: the PR that first adds a script runs its own copy and says so in the log.
+  out-of-range line. A citation into another repo is checked when that repo is present, skipped with a note
+  otherwise.
+- **`scripts/pipeline_lanes.json`** (new): the lane globs, `release_paths`, `carryover_paths` and each lane's
+  evidence items.
+- **`.github/workflows/gates.yml`** (new, `pull_request` only, its own `concurrency` group): today's
+  `gates` job moved from `pr-checks.yml` with no `paths:` filter, reading base and head from
+  `github.event.pull_request.base.ref` and `.head.ref`, plus `check_citations.py` and
+  `python3 -m unittest discover scripts/tests`. It runs on every PR, `release` lane included, so the required
+  check always reports.
+- **`.github/workflows/review-evidence.yml`** (new, `pull_request_target` on `opened`, `synchronize`,
+  `reopened`, `edited`): checks out the base branch only, gets changed files, the PR body, reviews and
+  `compare` results from the GitHub API with the job's read-only `GITHUB_TOKEN`, then runs
+  `check_pr_lane.py` and `check_review_evidence.py` from the base checkout. Posting a review does not
+  trigger `pull_request_target`, so `/review` and `/pr-followup` finish by editing the PR body (the verdict
+  link and the `code-review:` line), which does.
+- **Bootstrap:** while the base branch has no `pipeline_lanes.json` or no checker scripts (only before
+  rollout step 4), `review-evidence` prints a warning and passes. Branch protection is turned on only after
+  both are on `develop` and `main`, so the warning path is never binding.
 - **`.github/workflows/pr-checks.yml`**: loses the `gates` job and the comment tying its `paths:` filter to
-  the guarded globs. The build and test jobs keep their `paths:` filter.
-- **`.claude/skills/review/SKILL.md`**:
-  - Starts by running `pr_lane.py` and states the lane in the verdict. The `docs` and `release` lanes need
-    no `/review`; it says so and stops.
-  - The verdict gains two required lines, `Reviewed at <head SHA>` and `Round <1|2>`.
-  - The two-round rule and design mode are stated in one short section. Round 2 gives the subagent the diff
-    since the round-1 SHA plus the round-1 findings, not the whole PR again.
-  - The gate re-runs and the current severity, logging and isolation rules are otherwise unchanged. This
-    spec does not reopen them.
-- **`.claude/skills/spec/SKILL.md`** and **`.claude/skills/plan/SKILL.md`**: a step requiring `path:line`
-  citations for every claim about another skill or file, and a `## Requirements carried to /plan` section
-  in the spec template.
-- **`.claude/skills/test/SKILL.md`**: trigger and purpose change to a coverage-gap audit between `/feature`
-  and `/gates`. **`.claude/skills/pr-followup/SKILL.md`** chains `/review` then `code-review:code-review`
-  and writes the `code-review:` line into the PR body.
-- **`.claude/skills/gates/SKILL.md`**: the gate summary also prints the lane.
-- **`AGENTS.md`**: the "Standard pipeline" line and the Merge rule are rewritten to point to lanes. The Merge
-  rule becomes one sentence: the required checks decide mergeability, and the user merges.
-- **`scripts/check_gate_integrity.py`** and **`.claude/hooks/guard_protected_paths.py`**:
-  `scripts/pipeline_lanes.json` joins both guarded lists and the hook's `_PROTECTED_FRAGMENTS`
-  (`.claude/hooks/guard_protected_paths.py:154-160`); the three new scripts are already covered where they
-  match `scripts/check_*`, and `pr_lane.py` is added explicitly.
-- **Branch protection** (FinanceTracker and pragma, `develop` and `main`): add required status checks
-  `gates` and `review-evidence`, as the last step, after `pipeline.yml` is on both branches.
+  the guarded globs. Its build and test jobs keep their `paths:` filter.
+- **Guard lists** (`scripts/check_gate_integrity.py` `GUARDED_PATH_GLOBS`, the hook's `PROTECTED_GLOBS` and
+  `_PROTECTED_FRAGMENTS` at `.claude/hooks/guard_protected_paths.py:154-160`): add
+  `scripts/pipeline_lanes.json` and `.github/workflows/*`, with fragments `pipeline_lanes.json` and
+  `.github/workflows/`. The three scripts are already covered by `scripts/check_*` and its fragment.
+- **`.claude/skills/review/SKILL.md`**: runs `check_pr_lane.py` first and states the lane; `docs`,
+  `release` and `sync` lanes need no `/review`, and it says so and stops. The verdict gains `Reviewed at
+  <sha>` and `Round <1|2|confirm>`. One short section states the round cap, `--confirm` and design mode.
+  It ends by writing the verdict link into the PR body. The gate re-runs and the current severity, logging
+  and isolation rules are otherwise unchanged.
+- **`.claude/skills/pr-followup/SKILL.md`**: `code-review:code-review` first, fix its findings, then `/review`;
+  writes the `code-review:` line with the SHA it ran at.
+- **`.claude/skills/spec/SKILL.md`** and **`plan/SKILL.md`**: require `path:line` citations for claims about
+  another skill or file, and add a "Requirements carried to /plan" section to the spec template.
+- **`.claude/skills/test/SKILL.md`**: a coverage-gap audit between `/feature` and `/gates`.
+- **`.claude/skills/gates/SKILL.md`**: the gate summary prints the lane.
+- **`.claude/skills/release/SKILL.md`**: the back-merge from `main` to `develop`
+  (`.claude/skills/release/SKILL.md:105-107`) becomes a PR, which the `release` lane covers, instead of a
+  direct push that the existing `develop` protection already forbids.
+- **`AGENTS.md`**: the "Standard pipeline" line and the Merge rule point to lanes. The Merge rule becomes one
+  sentence: the required checks decide mergeability, and the user merges.
 
 ## Pragma port
-Pragma ships the same scripts (in its root `scripts/`, which `setup.sh` copies into a project wholesale,
-`pragma/scripts/setup.sh:11`) and the same `pipeline.yml` in `scaffold/.github/workflows/`. Placeholders
-follow the existing convention: `setup.sh` replaces `<AppName>` only in skill files
-(`pragma/scripts/setup.sh:16`) and `YOUR_PROJECT`/`YOUR_SCHEME` in workflows
-(`pragma/scripts/setup.sh:176-177`). So the adopter's lane config is a template at
-`scaffold/pipeline_lanes.json` using `YOUR_PROJECT`, and `setup.sh` gains one step that copies it to the
-project's `scripts/pipeline_lanes.json` with the same substitution. This step runs after `scripts/` is
-copied, so it overwrites the copy of pragma's own config that the wholesale copy brings along.
-
-Pragma's own repo has no CI today. It gets its own `.github/workflows/pipeline.yml` and a
-`scripts/pipeline_lanes.json` for itself (`pipeline`: `.claude/**`, `scripts/**`, `scaffold/**`,
-`.github/**`; `docs`: everything else; no `app` lane). Its `gates` job runs the script unit tests and
-`check_citations.py`.
+A hand-authored pragma PR, not `/sync-workflow`, which stages only `.claude/skills/` and `scaffold/`
+(`.claude/skills/sync-workflow/SKILL.md:65`). It carries:
+- The same three scripts and their tests in pragma's `scripts/`, plus explicit `cp` lines for them in
+  `setup.sh`'s script-copy step (`pragma/scripts/setup.sh:117-124`, which copies named files, not the
+  directory).
+- `scaffold/.github/workflows/gates.yml` and `review-evidence.yml`, and removal of the `gates` job from
+  `scaffold/.github/workflows/pr-checks.yml` (`pragma/scaffold/.github/workflows/pr-checks.yml:106`).
+  `setup.sh` skips workflow files that already exist, so the pragma CHANGELOG tells existing adopters to
+  delete that job by hand.
+- `scaffold/pipeline_lanes.json`, a template using `YOUR_PROJECT` like the scaffold workflows
+  (`pragma/scripts/setup.sh:176-177`), and a `setup.sh` step that copies it to the project's
+  `scripts/pipeline_lanes.json` with the same substitution, skipping it if the file already exists.
+- The same skill edits, with pragma's placeholders.
+- Pragma's own CI, for the first time: `.github/workflows/gates.yml` (script unit tests and
+  `check_citations.py`) and `review-evidence.yml`, with its own `scripts/pipeline_lanes.json`: no `app` lane;
+  `pipeline` = `.claude/**`, `scripts/**`, `scaffold/**`, `.github/**`, `.claude-plugin/**`, `evals/**`,
+  `CONSTRAINTS.md`, `AGENTS.md`, `CLAUDE.md`, requiring `review_verdict`, `code_review` and
+  `motivating_incident` but no `gate_summary`, since pragma has no Xcode project for `/gates`; `sync` for
+  `sync/*` heads; `docs` for the rest, requiring nothing.
 
 ## Rollout order (both repos)
-1. This spec merges (FinanceTracker, under today's rules).
-2. The implementation PR merges into FinanceTracker `develop`. It is the first PR laned by the new script,
-   and it runs its own new scripts under the bootstrap rule.
-3. `/sync-workflow` opens the pragma PR; it merges into pragma `develop`.
-4. Both releases (`release/*` to `main`) carry `pipeline.yml` to `main`.
-5. Branch protection is turned on for `develop` and `main` in both repos, and a docs-only test PR in each repo
-   shows both checks reporting.
+1. This spec merges.
+2. The FinanceTracker implementation PR merges into `develop`. `review-evidence` does not run on it yet,
+   because `pull_request_target` uses the base branch's workflow, which does not exist.
+3. The pragma PR merges into pragma `develop`.
+4. Each repo's `release/*` PR merges to `main`, then the back-merge PR from `main` to `develop`. Both are
+   `release` lane.
+5. Branch protection is turned on for `develop` and `main` in both repos. A docs-only test PR in each repo
+   shows both checks passing, and an app-lane test PR without a verdict shows `review-evidence` failing.
 
 ## Data Models / Domain Services / Navigation / Design
 None.
 
 ## Requirements carried to /plan
-- Several check runs named `review-evidence` can exist for one SHA (one per trigger). Confirm branch
-  protection uses the latest, and if not, give each trigger's run the same check name via one job.
-- `pull_request_review` runs use the PR head's workflow file; confirm the `GITHUB_TOKEN` there can read the PR
-  body and reviews (`pull-requests: read`).
-- The `Motivating incident:` requirement needs an escape for a genuine one-off (for example, a dependency
-  bump): decide whether `none (reason)` is accepted.
+- Several `review-evidence` runs can exist for one SHA. With `cancel-in-progress`, make sure a cancelled run
+  can't be the latest one branch protection sees (or don't cancel in progress for this workflow).
+- `check_review_evidence.py` uses the latest verdict review by submission time, not any review containing
+  the string.
+- Glob semantics: gitignore-style `**`, and whether a pattern without `/` matches at any depth.
+- The citation regex must not match `host:port`, `ref:path` or URLs.
+- `check_citations.py` checks every citation in a changed file, old ones included; decide whether that is
+  wanted or only added lines count.
+- The release back-merge PR needs the `develop` PR requirement's settings (reviews: 0) to allow it; confirm.
 
 ## Future Extension Points
 - Moving the grep gates into a script (from #131) stays possible later; it is not needed for enforcement.
@@ -149,13 +169,14 @@ None.
 
 ## Testing Strategy
 - Unit tests in `scripts/tests/` for each new script, using temporary git repos and JSON fixtures:
-  - `pr_lane.py`: every lane, rank order, the `release/*` branch rule, a missing or invalid config, and
-    that the base-branch config wins over the PR's.
-  - `check_review_evidence.py`: each required item present, missing, or present at a stale SHA, per lane.
+  - `check_pr_lane.py`: every lane, rank order, the `release` rule's branch and path conditions (a
+    `release/*` PR with other paths is laned by its paths), the back-merge, `sync`, and an invalid config.
+  - `check_review_evidence.py`: each item present, missing, at a stale SHA, and at an ancestor SHA with
+    only carryover paths changed (passes) or other paths changed (fails), per lane; `--confirm` verdicts.
   - `check_citations.py`: valid, missing-file, out-of-range, a range citation, and a skipped other-repo
     citation.
 - **Acceptance:**
-  - The implementation PR shows `gates` and `review-evidence` checks.
-  - After protection is on, a docs-only PR in each repo passes both checks with only a gate summary.
+  - The implementation PR shows the `gates` check (`review-evidence` cannot run on it; see Rollout step 2).
+  - After protection is on, a docs-only PR in each repo passes both checks with only its lane's evidence.
   - An app-lane test PR without a `/review` verdict shows `review-evidence` failing and cannot merge.
-  - `/review` on the implementation PR stops at round 2 at most.
+  - `/review` on the implementation PR stops at round 2 at most, plus `--confirm` verdicts if needed.
