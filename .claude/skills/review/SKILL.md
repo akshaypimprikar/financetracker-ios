@@ -105,19 +105,20 @@ git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md' ':!.claude/cont
   > "$T/pr.diff" || { echo "STOP: git diff failed"; exit 1; }
 if [ ! -s "$T/pr.diff" ]; then
   git diff --quiet "${BASE}...HEAD"; rc=$?
-  [ "$rc" -eq 0 ] && { echo "STOP: the PR has no changes"; exit 1; }
+  [ "$rc" -eq 0 ] && { echo "EMPTY: the PR has no changes"; exit 0; }
   [ "$rc" -eq 1 ] || { echo "STOP: git diff failed"; exit 1; }
   echo "LOG-ONLY: this PR changes only the logs"; exit 0
 fi
 for f in rejections incidents; do
   if git cat-file -e "${BASE}:.claude/context/$f.md" 2>/dev/null; then
-    git show "${BASE}:.claude/context/$f.md" > "$T/$f.md"
+    git show "${BASE}:.claude/context/$f.md" > "$T/$f.md" || { echo "STOP: could not copy $f.md"; exit 1; }
   fi
 done
 echo "subagent inputs in: $T"
 ```
 If this block or the log check below prints `STOP`, it did not run: fix the cause (for example
 `gh auth login` or `git fetch`) and run it again. Never post a verdict on a block that stopped.
+`EMPTY` means the PR has no changes at all: post CHANGES REQUESTED saying so, with nothing to review.
 `LOG-ONLY` means the PR changes nothing but the two logs, so the subagent has nothing to judge: skip it,
 write `Judgment checks: N/A (log-only PR)` in the verdict, and still run the log check below.
 `CHANGELOG.md` stays in the diff: it is part of the change under review. Its entries must describe what changed,

@@ -349,3 +349,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:105-107
 **Caught by:** this review (isolated subagent, round 50)
+
+## 2026-09-27 — PR#130 — Round 51: an empty PR could never get a verdict; a failed log copy was silent
+**What was wrong:** An empty PR made the prep block print STOP, and the skill forbids a verdict on a stopped block while no fix exists for an empty PR. The base-log copy (`git show … > file`) also had no failure check, so a failed copy left the subagent with no log and no error. An empty PR now prints EMPTY (post CHANGES REQUESTED saying so), and a failed copy prints STOP.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:78, :84, :89-90
+**Caught by:** this review (isolated subagent, round 51)
