@@ -84,7 +84,11 @@ Pipeline only. No app code changes.
 - **`.github/workflows/gates.yml`** (new, `pull_request` only, its own `concurrency` group): today's
   `gates` job moved from `pr-checks.yml` with no `paths:` filter, reading base and head from
   `github.event.pull_request.base.ref` and `.head.ref`, plus `check_citations.py` and
-  `python3 -m unittest discover scripts/tests`. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
+  `python3 -m unittest discover scripts/tests`. It keeps today's two checkouts (PR head, and the base branch
+  as the trusted copy) and runs every script, `check_citations.py` and the unit tests included, from the base
+  checkout, with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
+  (`.github/workflows/pr-checks.yml:112-141`). A PR therefore cannot edit a gate script and have its own
+  copy judge it. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
   exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
   delta (`.github/workflows/pr-checks.yml:94-99`).
 - **`.github/workflows/review-evidence.yml`** (new, `pull_request_target` on `opened`, `synchronize`,
