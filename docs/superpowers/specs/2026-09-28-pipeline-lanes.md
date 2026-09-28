@@ -1,7 +1,7 @@
 # Pipeline Lanes and Enforced Merges — Design Spec
 
 **Date:** 2026-09-28
-**Status:** Draft
+**Status:** Approved
 **Supersedes:** `2026-09-28-review-simplification.md` (PR #131)
 
 ## Overview
@@ -44,13 +44,13 @@ Evaluated in this order; the first that applies wins.
 
 | Lane | Chosen when | Evidence (FinanceTracker config) |
 |---|---|---|
-| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every changed path is on the config's `release_paths` (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
-| `sync` | head `sync/*` (only in configs that define it; pragma does) | `synced_from`: a line naming the source PR, whose content was already reviewed there |
+| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/pr-checks.yml:94-95`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
+| `sync` | head `sync/*` **and** every changed path is on the config's `sync_paths` (pragma: `.claude/skills/**`, `scaffold/**`, the only paths `/sync-workflow` stages). Otherwise laned by paths. Only in configs that define it. | `synced_from`: a line naming the source PR, whose content was already reviewed there |
 | `app` | any changed path matches `app` globs | `gate_summary`, `review_verdict`, `code_review` |
 | `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `code_review`, `motivating_incident` |
 | `docs` | otherwise | `gate_summary` |
 
-Evidence items, each tied to a SHA and subject to the carryover rule:
+Evidence items (the first three are tied to a SHA and subject to the carryover rule):
 - `gate_summary`: `Gates run at <sha>` in the PR body.
 - `review_verdict`: the latest `## Review Agent verdict:` review is APPROVED (a full round or `--confirm`) and contains `Reviewed at <sha>`.
 - `code_review`: a `code-review: <comment URL> at <sha>` or `code-review: no issues at <sha>` line in the PR body.
@@ -84,8 +84,9 @@ Pipeline only. No app code changes.
 - **`.github/workflows/gates.yml`** (new, `pull_request` only, its own `concurrency` group): today's
   `gates` job moved from `pr-checks.yml` with no `paths:` filter, reading base and head from
   `github.event.pull_request.base.ref` and `.head.ref`, plus `check_citations.py` and
-  `python3 -m unittest discover scripts/tests`. It runs on every PR, `release` lane included, so the required
-  check always reports.
+  `python3 -m unittest discover scripts/tests`. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
+  exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
+  delta (`.github/workflows/pr-checks.yml:94-99`).
 - **`.github/workflows/review-evidence.yml`** (new, `pull_request_target` on `opened`, `synchronize`,
   `reopened`, `edited`): checks out the base branch only, gets changed files, the PR body, reviews and
   `compare` results from the GitHub API with the job's read-only `GITHUB_TOKEN`, then runs
@@ -129,7 +130,7 @@ A hand-authored pragma PR, not `/sync-workflow`, which stages only `.claude/skil
   `setup.sh` skips workflow files that already exist, so the pragma CHANGELOG tells existing adopters to
   delete that job by hand.
 - `scaffold/pipeline_lanes.json`, a template using `YOUR_PROJECT` like the scaffold workflows
-  (`pragma/scripts/setup.sh:176-177`), and a `setup.sh` step that copies it to the project's
+  (`pragma/scripts/setup.sh:177-178`), and a `setup.sh` step that copies it to the project's
   `scripts/pipeline_lanes.json` with the same substitution, skipping it if the file already exists.
 - The same skill edits, with pragma's placeholders.
 - Pragma's own CI, for the first time: `.github/workflows/gates.yml` (script unit tests and
@@ -137,7 +138,7 @@ A hand-authored pragma PR, not `/sync-workflow`, which stages only `.claude/skil
   `pipeline` = `.claude/**`, `scripts/**`, `scaffold/**`, `.github/**`, `.claude-plugin/**`, `evals/**`,
   `CONSTRAINTS.md`, `AGENTS.md`, `CLAUDE.md`, requiring `review_verdict`, `code_review` and
   `motivating_incident` but no `gate_summary`, since pragma has no Xcode project for `/gates`; `sync` for
-  `sync/*` heads; `docs` for the rest, requiring nothing.
+  `sync/*` heads that change only `sync_paths`; `docs` for the rest, requiring nothing.
 
 ## Rollout order (both repos)
 1. This spec merges.
@@ -162,6 +163,11 @@ None.
 - `check_citations.py` checks every citation in a changed file, old ones included; decide whether that is
   wanted or only added lines count.
 - The release back-merge PR needs the `develop` PR requirement's settings (reviews: 0) to allow it; confirm.
+- Confirm on the rollout step-5 test PR that a `pull_request_target` check run attaches to the PR head SHA,
+  so branch protection counts it as `review-evidence`.
+- The bootstrap warning path may be unreachable (`pull_request_target` has no workflow until the base has
+  one); keep it minimal or drop it.
+- Release PRs must be merged with a merge commit, not squashed, or the back-merge re-diffs the whole release.
 
 ## Future Extension Points
 - Moving the grep gates into a script (from #131) stays possible later; it is not needed for enforcement.

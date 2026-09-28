@@ -559,3 +559,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
 **Caught by:** this review (isolated subagent, design mode, round 1)
+
+## 2026-09-28 — PR#132 — Round 2: release lane checked paths against the whole release delta
+**What was wrong:** The round-1 fix checked release_paths against the PR's diff to main, which holds every change since the last release, so no release PR would get the release lane; /release checks develop...HEAD instead.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)
+
+## 2026-09-28 — PR#132 — Round 2: gates would run TDD and integrity scripts over the release delta
+**What was wrong:** Round 1's release-lane exit was dropped, so a required check could fail on a release PR with no waiver path.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)
+
+## 2026-09-28 — PR#132 — Round 2: sync lane decided by branch name alone
+**What was wrong:** Any sync/* head skipped review whatever it changed; the same flaw round 1 fixed for the release lane.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
+**Caught by:** this review (isolated subagent, design mode, round 2)
