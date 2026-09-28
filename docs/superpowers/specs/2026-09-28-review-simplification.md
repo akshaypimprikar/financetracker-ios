@@ -1,7 +1,7 @@
 # /review Simplification — Design Spec
 
 **Date:** 2026-09-28
-**Status:** Draft
+**Status:** Approved
 
 ## Overview
 `/review` grew from about 160 lines to 298 lines across PRs #126, #127 and #130: 57 commits, and PR #130's
@@ -28,7 +28,7 @@ The simplified skill is also the version that gets ported to pragma afterwards (
 | Overall approach | Keep /review, cut what it repeats (option 1 of 3) | Retiring it loses isolation, repeat escalation and the verdict. Keeping it as is keeps 298 lines. |
 | Gate-script re-runs in /review | Remove | The CI `gates` job already runs both scripts from the base branch, and /review already requires `gates` to pass |
 | Grep-only gates (3, 4, 5, 8, 9-grep) | Move to a new base-branch script that the CI `gates` job runs | Deterministic checks belong in CI, where the other two scripts already run. /review then checks only the SHA and that CI passed. |
-| Accepted grep-gate exceptions (for example `percentUsed`) | **Needs your approval.** Recommended: a guarded `scripts/gate_exceptions.txt` with one `path:pattern  # reason` line per exception | CI cannot read the gate summary. A guarded file (Gate 13 already protects `scripts/check_*`, so this adds one glob) keeps exceptions reviewable in the diff. Alternative: an inline `// gate-allow: <rule>` comment on the line, which is simpler but lets the PR author waive a check in the same diff. |
+| Accepted grep-gate exceptions (for example `percentUsed`) | A guarded `scripts/gate_exceptions.txt`, one `path:pattern  # reason` line per exception | CI cannot read the gate summary. A guarded file keeps every exception visible in the diff and out of reach of the PR it would waive. Rejected: inline `// gate-allow: <rule>` comments, which let a PR waive a check in its own diff. |
 | UI-selector check (Gate 9) | The script cross-checks each `app.<element>["id"]` literal against `accessibilityIdentifier` strings in `FinanceTracker/Views/` | Today this is checked by hand. A script makes it pass or fail. |
 | Subagent input prep (STOP / EMPTY / LOG-ONLY block) and the append-only log check | Move to `scripts/prep_review.py`, run from the base branch | About 50 lines of shell in the skill become a tested script. Running it from base means a PR cannot edit its own reviewer's inputs. |
 | TODO/FIXME checklist item | Remove | Gate 3's grep covers it |
@@ -44,7 +44,8 @@ Pipeline only. No app layers are touched.
 
 - `scripts/check_grep_gates.py` (new, guarded by the `scripts/check_*` glob): takes `BASE` and the head
   branch name, runs Gates 3, 4, 5, 8 and the Gate 9 greps against `BASE...HEAD`, applies
-  `scripts/gate_exceptions.txt`, and exits non-zero on any unexcepted hit. It prints each hit as
+  `scripts/gate_exceptions.txt` as it is on `BASE` (so a PR cannot waive its own hit; a new exception
+  lands first on its own `chore/*` PR), and exits non-zero on any unexcepted hit. It prints each hit as
   `gate:rule:path:line`.
 - `scripts/prep_review.py` (new): takes the PR's base ref. It writes `pr.diff` (without the two logs, and
   without `pipeline-rejections.md`) and the base-branch log copies to a temp dir, and prints
