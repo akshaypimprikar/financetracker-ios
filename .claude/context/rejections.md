@@ -301,3 +301,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:102, :112
 **Caught by:** this review (isolated subagent, round 40)
+
+## 2026-09-27 — PR#130 — Append-only check compared against the base tip instead of the merge-base
+**What was wrong:** The prefix check compared the PR's log with the base branch's current tip. Once another PR merged its own log entries, which case-2 logging makes common, the tip was no longer a prefix of an open PR's copy, and a PR that only appended got a false EDITED, a CHANGES REQUESTED and a logged violation. It now compares against the merge-base (a simulated merged entry reproduced the false flag under the old check).
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md (append-only check)
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 41)

@@ -138,9 +138,11 @@ each with a severity, or to state plainly that it found none.
 
 The subagent does not see this PR's changes to `rejections.md` or `incidents.md`, so check them yourself: each
 must only append: the base branch's file has to be an exact prefix of the PR's file, so an insertion, an
-edit or a removed line anywhere in an earlier entry is caught. This must print nothing:
+edit or a removed line anywhere in an earlier entry is caught. Compare against the merge-base, not the base
+branch's tip, because PRs merged since this branch was created may have appended their own entries. This
+must print nothing:
 ```bash
-BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
+BASE=$(git merge-base "origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)" HEAD)
 for f in rejections incidents; do
   p=".claude/context/$f.md"
   if git cat-file -e "${BASE}:$p" 2>/dev/null; then
