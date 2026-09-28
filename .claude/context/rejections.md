@@ -415,3 +415,33 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38
 **Caught by:** this review (isolated subagent, round 1)
+
+## 2026-09-28 — PR#131 — Round 2: move-check commands used an unset BASE (regression of this PR's round 1 fix)
+**What was wrong:** The round-1 move-check block used $BASE, which nothing sets; git diff "" fails with no stdout, so the "prints nothing" test passes on a failed command, and base tip vs merge-base was unstated. Repeats PR#130 Round 35 and the merge-base entry.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (rejections.md migration bullet)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: new guarded paths miss the hook prefilter
+**What was wrong:** The spec adds scripts/gate_exceptions.txt and scripts/prep_review.py to both glob lists, but guard_protected_paths.py's _PROTECTED_FRAGMENTS prefilter matches neither, so the live guard would skip them.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (guard_protected_paths.py bullet)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: acceptance criterion could not fail
+**What was wrong:** "check_grep_gates.py against origin/develop reports no hits" is vacuous: every rule is scoped to BASE...HEAD, which is empty on develop.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Testing Strategy)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: pragma port described as a config edit
+**What was wrong:** Pragma's Gate 8 is abstraction bloat, it has no CSV-concurrency gate, and architecture is Gate 10, so a script hardcoding FinanceTracker's gate set needs more than renumbering.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Future Extension Points)
+**Caught by:** this review (isolated subagent, round 2)
+
+## 2026-09-28 — PR#131 — Round 2: regression and logging rules changed behavior silently
+**What was wrong:** The one-line regression rule raises returning advisory MEDIUMs and non-blocking incidents.md items to HIGH without saying so, and the logging row drops manual-verification fixes, contradicting the spec's own kept-jobs table.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Decisions: Regressions, Logging rows)
+**Caught by:** this review (isolated subagent, round 2)
