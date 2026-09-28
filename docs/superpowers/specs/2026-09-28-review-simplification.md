@@ -5,9 +5,9 @@
 
 ## Overview
 `/review` grew from about 160 lines to 298 lines across PRs #126, #127 and #130: 57 commits, and PR #130's
-review rounds on the skill itself added 47 `rejections.md` entries. This spec cuts `/review` down to the four things no other stage
+review rounds on the skill itself added 47 `rejections.md` entries. This spec cuts `/review` down to the five things no other stage
 does: pin the PR's SHA against the gate summary, run the isolated judgment subagent, run the design and
-code-quality checklists, and keep the violation log. Deterministic work moves into scripts and CI. The
+code-quality checklists, keep the violation log, and give the verdict. Deterministic work moves into scripts and CI. The
 severity and logging rules are stated once, in a shorter form. Pipeline-text violations get their own
 log, so app reviews stop reading them. Nothing in the app target changes.
 
@@ -36,7 +36,7 @@ The simplified skill is also the version that gets ported to pragma afterwards (
 | Regressions within a PR (current lines 184-194) | Same behavior, stated in three sentences: a finding that matches a blocking fix made earlier in this PR is a regression and is rated HIGH. An entry this PR added to `rejections.md` counts as blocking; a PR-body fix or an `incidents.md` entry this PR added is rated on the severity scale from what it describes. A returning non-blocking item, or one never fixed, keeps its own severity. The session makes this comparison, not the isolated subagent, which sees only base-branch log copies and gets the PR number only to name it in findings. | The current paragraph mixes these rules with the severity scale and the logging rules. Changing the behavior (for example, raising every returning item to HIGH) would turn advisory MEDIUMs and non-blocking `incidents.md` items into blockers, so this spec only restates it. |
 | Logging (current lines 233-260) | One list instead of two cases: log each blocking item in this verdict, and each blocking fix the PR body documents (from a `code-review` round, an earlier `/review` round or manual verification, rated as the regression rule rates PR-body fixes). Skip anything already logged for this PR. A regression gets a new entry that names what it repeats. | Same behavior as today's case 1 and case 2, in one place. |
 | Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. For the one-time move of existing entries, an entry goes there when the first path in its **File:** is under `.claude/` (except `.claude/context/`), `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`; later paths in the same field do not count. For new entries, whoever logs a finding picks the file by what the violation is about: pipeline text, including a spec or plan for pipeline work under `docs/superpowers/`, goes to `pipeline-rejections.md`. | 57 of the 65 current entries move (4 are app code, 2 are `CHANGELOG.md` and 2 name `.claude/context/` first, and those 8 stay). App reviews should repeat-check against app violations only. |
-| Who reads pipeline-rejections.md | The /review and `/parallel-review` subagents only when the diff touches a pipeline path (for this purpose, `.claude/context/` does not count, so `/spec`'s `decisions.md` append does not trigger it); `/pipeline-review` always | Keeps repeat detection for skill PRs without feeding pipeline history to app reviews |
+| Who reads pipeline-rejections.md | The /review and `/parallel-review` subagents, and `/feature` and `/bugfix`, when the work touches a pipeline path or is a spec or plan for pipeline work under `docs/superpowers/` (for this purpose, `.claude/context/` does not count, so `/spec`'s `decisions.md` append alone does not trigger it); `/pipeline-review` always | Keeps repeat detection for skill PRs without feeding pipeline history to app reviews |
 | Size target | `review/SKILL.md` at or under 180 lines | A measurable exit criterion for this spec |
 
 ## Architecture
@@ -48,9 +48,12 @@ Pipeline only. No app layers are touched.
   lands first on its own `chore/*` PR; a file missing on `BASE` means no exceptions), and exits non-zero on any unexcepted hit. It prints each hit as
   `gate:rule:path:line`.
 - `scripts/prep_review.py` (new): takes the PR's base ref. It writes `pr.diff` (without the two logs, and
-  without `pipeline-rejections.md`) and the base-branch log copies to a temp dir, and prints
+  without `pipeline-rejections.md`) and the base-branch copies of all three logs to a temp dir, and prints
   `INPUTS <dir>`, `EMPTY`, `LOG-ONLY` or `STOP <reason>`. It also runs the append-only check on all three
-  logs against the merge-base and prints `EDITED <path>` along with the diff.
+  logs against the merge-base and prints `EDITED <path>` along with the diff. The isolated reviewer, and
+  `/parallel-review`, rate repeats only against those base-branch copies and never open the working-tree
+  copy of any of the three logs, as they already do for `rejections.md`. /review's clean-tree check in the
+  SHA pin (`review/SKILL.md:44`) exempts `pipeline-rejections.md` as well as `rejections.md`.
 - `.github/workflows/gates.yml` (new): the `gates` job moves here from `pr-checks.yml`, unchanged apart
   from the points below, with the same `pull_request` trigger and branches but no `paths:` filter, so
   it runs on every PR. Its existing `if:` (skip `release/*` PRs to `main`) stays; those PRs are exempt from
@@ -99,6 +102,13 @@ Pipeline only. No app layers are touched.
 
 ## Data Models / Domain Services / Navigation / Design
 None. This spec touches no Swift code, views or tokens.
+
+## Requirements carried to /plan
+Found in review and left to `/plan` rather than further spec rounds:
+- The move check also verifies that only entries matching the move rule moved, and in their original order.
+- `gates.yml` uses its own `concurrency` group, not `pr-checks.yml`'s `pr-<N>` group (`pr-checks.yml:32-34`),
+  or the two workflows cancel each other.
+- Line references in this spec are as of `develop` at 2026-09-28 and may shift by a line or two.
 
 ## Future Extension Points
 - **Pragma port:** after this merges, `/sync-workflow` carries the simplified `/review`, both scripts, the
