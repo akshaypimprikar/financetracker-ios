@@ -331,3 +331,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** .claude/skills/review/SKILL.md:101, :147
 **Caught by:** code-review pass (code-review:code-review on PR#130, after round 47)
+
+## 2026-09-27 — PR#130 — /parallel-review claimed /review's repeat rule without its earlier-PRs-only scope
+**What was wrong:** parallel-review/SKILL.md said it used "the same rule as /review" for repeats, but it still read the working-tree rejections.md with nothing excluding the current PR's own entries. Re-run during rework, a match to one of those entries would become a blocking HIGH repeat, the behavior this PR removed from /review.
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/parallel-review/SKILL.md:22
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 48)
