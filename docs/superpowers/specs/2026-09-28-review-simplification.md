@@ -1,0 +1,91 @@
+# /review Simplification — Design Spec
+
+**Date:** 2026-09-28
+**Status:** Draft
+
+## Overview
+`/review` grew from about 160 lines to 298 lines across PRs #126, #127 and #130: 57 commits, and PR #130's
+review rounds on the skill itself added 47 `rejections.md` entries. This spec cuts `/review` down to the four things no other stage
+does: pin the PR's SHA against the gate summary, run the isolated judgment subagent, run the design and
+code-quality checklists, and keep the violation log. Deterministic work moves into scripts and CI. The
+severity and logging rules are stated once, in a shorter form. Pipeline-text violations get their own
+log, so app reviews stop reading them. Nothing in the app target changes.
+
+The simplified skill is also the version that gets ported to pragma afterwards (see "Pragma port").
+
+## What /review does that nothing else does (kept)
+| Job | Why it stays in /review |
+|---|---|
+| SHA pin: the PR head equals the `Gates run at <sha>` line | CI cannot read the gate summary's claim |
+| Isolated judgment subagent | `code-review:code-review` sees the PR summary, commits and blame, so it is not isolated |
+| Design-system and domain checklists | `code-review` drops general quality issues that `CLAUDE.md` does not name, and `AGENTS.md` has no Theme or magic-number rules |
+| Writing the violation logs | `/feature`, `/bugfix` and `/parallel-review` read them. Nothing else writes them. |
+| APPROVED / CHANGES REQUESTED verdict | `code-review` gives no verdict, only issues scored 80 or higher |
+
+## Decisions & Constraints
+| Decision | Choice | Rationale |
+|---|---|---|
+| Overall approach | Keep /review, cut what it repeats (option 1 of 3) | Retiring it loses isolation, repeat escalation and the verdict. Keeping it as is keeps 298 lines. |
+| Gate-script re-runs in /review | Remove | The CI `gates` job already runs both scripts from the base branch, and /review already requires `gates` to pass |
+| Grep-only gates (3, 4, 5, 8, 9-grep) | Move to a new base-branch script that the CI `gates` job runs | Deterministic checks belong in CI, where the other two scripts already run. /review then checks only the SHA and that CI passed. |
+| Accepted grep-gate exceptions (for example `percentUsed`) | **Needs your approval.** Recommended: a guarded `scripts/gate_exceptions.txt` with one `path:pattern  # reason` line per exception | CI cannot read the gate summary. A guarded file (Gate 13 already protects `scripts/check_*`, so this adds one glob) keeps exceptions reviewable in the diff. Alternative: an inline `// gate-allow: <rule>` comment on the line, which is simpler but lets the PR author waive a check in the same diff. |
+| UI-selector check (Gate 9) | The script cross-checks each `app.<element>["id"]` literal against `accessibilityIdentifier` strings in `FinanceTracker/Views/` | Today this is checked by hand. A script makes it pass or fail. |
+| Subagent input prep (STOP / EMPTY / LOG-ONLY block) and the append-only log check | Move to `scripts/prep_review.py`, run from the base branch | About 50 lines of shell in the skill become a tested script. Running it from base means a PR cannot edit its own reviewer's inputs. |
+| TODO/FIXME checklist item | Remove | Gate 3's grep covers it |
+| Severity and blocking rules | State them once in a "Severity and blocking" section, and point to it | They are currently stated in four places (lines 139-142, 178-183, 230, 235) |
+| Regressions within a PR (current lines 184-194) | One rule: a finding that matches a fix described in the PR body or an entry this PR added to a log is a regression and is rated HIGH, unless it is a wording or style issue | Drops the step where the session rates PR-body fixes on the severity scale, which was the densest paragraph in the skill |
+| Logging (current lines 233-260) | Log each blocking item in this verdict, and each fix the PR body credits to a `code-review` round or an earlier `/review` round. Skip anything already logged for this PR. A regression gets a new entry that names what it repeats. | `code-review` only reports issues scored 80 or higher, so its fixes count as blocking without re-rating them. This removes case 1 vs case 2. |
+| Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. An entry goes there when its **File:** is under `.claude/`, `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`. | 59 of the 65 current entries are about pipeline text (4 are app code, 2 are `CHANGELOG.md`, and those 6 stay). App reviews should repeat-check against app violations only. |
+| Who reads pipeline-rejections.md | The /review subagent only when the diff touches a pipeline path; `/pipeline-review` always | Keeps repeat detection for skill PRs without feeding pipeline history to app reviews |
+| Size target | `review/SKILL.md` at or under 180 lines | A measurable exit criterion for this spec |
+
+## Architecture
+Pipeline only. No app layers are touched.
+
+- `scripts/check_grep_gates.py` (new, guarded by the `scripts/check_*` glob): takes `BASE` and the head
+  branch name, runs Gates 3, 4, 5, 8 and the Gate 9 greps against `BASE...HEAD`, applies
+  `scripts/gate_exceptions.txt`, and exits non-zero on any unexcepted hit. It prints each hit as
+  `gate:rule:path:line`.
+- `scripts/prep_review.py` (new): takes the PR's base ref. It writes `pr.diff` (without the two logs, and
+  without `pipeline-rejections.md`) and the base-branch log copies to a temp dir, and prints
+  `INPUTS <dir>`, `EMPTY`, `LOG-ONLY` or `STOP <reason>`. It also runs the append-only check on all three
+  logs against the merge-base and prints `EDITED <path>` along with the diff.
+- `.github/workflows/pr-checks.yml`: the `gates` job adds `check_grep_gates.py` to its trusted-script loop,
+  and adds a step that runs `python3 -m unittest discover scripts/tests`.
+- `.claude/skills/gates/SKILL.md`: Gates 3, 4, 5, 8 and 9 each call the script instead of inline greps, so
+  the local and CI checks cannot drift apart. The gate summary stops listing accepted exceptions, because
+  the exceptions file now holds them.
+- `.claude/skills/review/SKILL.md`: rewritten per the decisions above.
+- `.claude/skills/pipeline-review/SKILL.md`: reads `pipeline-rejections.md`.
+- `.claude/skills/parallel-review/SKILL.md`: gets the same regression and severity wording by pointing to
+  /review's section, and reads `pipeline-rejections.md` under the same path condition.
+- `.claude/hooks/guard_protected_paths.py` and `check_gate_integrity.py`: add
+  `scripts/gate_exceptions.txt` and `scripts/prep_review.py` to both glob lists. They must stay in step,
+  which CI's self-test already checks.
+- `.claude/context/rejections.md`: entries whose **File:** is a pipeline path move to
+  `pipeline-rejections.md`, verbatim and in their original order. This one-time migration is the only
+  non-append edit to either log. The PR body must name it, because the append-only check will flag it.
+
+## Data Models / Domain Services / Navigation / Design
+None. This spec touches no Swift code, views or tokens.
+
+## Future Extension Points
+- **Pragma port:** after this merges, `/sync-workflow` carries the simplified `/review`, both scripts, the
+  CI step and the log split to pragma. Pragma's gate numbers (9 and 11 instead of 11 and 13) and its
+  `<AppName>` placeholders are substituted. `check_grep_gates.py` takes its layer paths and money stems
+  from a config block at the top of the script, not hardcoded FinanceTracker paths, so the port is a
+  config edit.
+- **An AST-based money check** (SwiftSyntax) stays out of scope, as `gates/SKILL.md` already states.
+
+## Testing Strategy
+- `scripts/tests/test_check_grep_gates.py`: one passing and one failing fixture per rule, built with a
+  temp git repo and two commits. It also checks that an exceptions-file entry suppresses exactly its own
+  hit, and that a hit on a detached HEAD still reads the branch from the argument.
+- `scripts/tests/test_prep_review.py`: covers EMPTY, LOG-ONLY, a normal diff with the logs stripped, a
+  missing base (STOP), an append-only pass, an edit to an earlier entry (EDITED), and a log missing on the
+  base.
+- The tests run in the CI `gates` job.
+- **Acceptance:** `/review` run on this spec's implementation PR and on the next app PR both produce a
+  verdict without hitting the review-loop stopping rule (2 rounds). `review/SKILL.md` is 180 lines or
+  fewer. `check_grep_gates.py` against `origin/develop` reports no hits except the exceptions listed in
+  the file.
