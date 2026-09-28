@@ -232,7 +232,8 @@ Final verdict:
 
 ## Logging violations to rejections.md
 
-Only blocking items (HIGH, or a blocking MEDIUM) go in `.claude/context/rejections.md`, whoever logs them:
+Only blocking items (a failed gate-verification check, a HIGH, or a blocking MEDIUM) go in
+`.claude/context/rejections.md`, whoever logs them:
 this review, a code-review round, or a person by hand. Append one entry per violation in **two** cases, not
 just one:
 
