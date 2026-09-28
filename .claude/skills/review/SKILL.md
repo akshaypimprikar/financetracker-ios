@@ -108,8 +108,8 @@ for f in rejections incidents; do
 done
 echo "subagent inputs in: $T"
 ```
-`CHANGELOG.md` stays in the diff: it is part of the change under review. Its entries describe what changed,
-not how the review went, so they carry no implementer's account. Then give it these, using the directory the
+`CHANGELOG.md` stays in the diff: it is part of the change under review. Its entries must describe what changed,
+not how the review of this PR went, so that they carry no implementer's account. Then give it these, using the directory the
 block printed as `$T`:
 - the PR number, to name in its findings (not to fetch anything with)
 - the diff: `$T/pr.diff`
