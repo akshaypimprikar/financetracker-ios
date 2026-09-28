@@ -475,3 +475,27 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
 **Caught by:** this review (isolated subagent, round 4)
+
+## 2026-09-28 — PR#131 — Round 5: decisions.md contradicted the spec on the TODO item
+**What was wrong:** The decisions.md entry said option (1) cuts the TODO checklist item; the spec (after round 1) keeps it.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/context/decisions.md:52
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: pipeline specs logged to pipeline-rejections.md but never read it
+**What was wrong:** New findings on pipeline specs under docs/superpowers/ go to pipeline-rejections.md, but that path does not trigger reading the file, so repeat detection is lost for them.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md:38-39
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: reviewer's copy of pipeline-rejections.md unscoped
+**What was wrong:** The spec did not require the isolated reviewer and /parallel-review to get only the base-branch copy of pipeline-rejections.md, as they do for rejections.md; built as written it would reintroduce the PR#130 own-log-entries leak.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (prep_review.py and parallel-review bullets)
+**Caught by:** this review (isolated subagent, round 5)
+
+## 2026-09-28 — PR#131 — Round 5: clean-tree check not updated for the new log
+**What was wrong:** review/SKILL.md:44 exempts only rejections.md from git status; /review writing pipeline-rejections.md would fail the SHA-pin clean-tree check on the next round.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-review-simplification.md (Architecture)
+**Caught by:** this review (isolated subagent, round 5)
