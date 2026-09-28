@@ -33,9 +33,9 @@ The simplified skill is also the version that gets ported to pragma afterwards (
 | Subagent input prep (STOP / EMPTY / LOG-ONLY block) and the append-only log check | Move to `scripts/prep_review.py`, run from the base branch | About 31 lines of shell in the skill (`review/SKILL.md:100-118` and `159-170`) become a tested script. Running it from base means a PR cannot edit its own reviewer's inputs. |
 | TODO/FIXME checklist item | Keep | Gate 3 greps only `*.swift` and has no "unless tracked in an issue" allowance, so it does not cover non-Swift code such as this spec's own scripts |
 | Severity and blocking rules | State them once in a "Severity and blocking" section, and point to it | They are currently stated in four places (lines 139-142, 178-183, 230, 235) |
-| Regressions within a PR (current lines 184-194) | Same behavior, stated in three sentences: a finding that matches a blocking fix made earlier in this PR is a regression and is rated HIGH. An entry this PR added to `rejections.md` counts as blocking; a PR-body fix or an `incidents.md` entry this PR added is rated on the severity scale from what it describes. A returning non-blocking item, or one never fixed, keeps its own severity. | The current paragraph mixes these rules with the severity scale and the logging rules. Changing the behavior (for example, raising every returning item to HIGH) would turn advisory MEDIUMs and non-blocking `incidents.md` items into blockers, so this spec only restates it. |
+| Regressions within a PR (current lines 184-194) | Same behavior, stated in three sentences: a finding that matches a blocking fix made earlier in this PR is a regression and is rated HIGH. An entry this PR added to `rejections.md` counts as blocking; a PR-body fix or an `incidents.md` entry this PR added is rated on the severity scale from what it describes. A returning non-blocking item, or one never fixed, keeps its own severity. The session makes this comparison, not the isolated subagent, which sees only base-branch log copies and gets the PR number only to name it in findings. | The current paragraph mixes these rules with the severity scale and the logging rules. Changing the behavior (for example, raising every returning item to HIGH) would turn advisory MEDIUMs and non-blocking `incidents.md` items into blockers, so this spec only restates it. |
 | Logging (current lines 233-260) | One list instead of two cases: log each blocking item in this verdict, and each blocking fix the PR body documents (from a `code-review` round, an earlier `/review` round or manual verification, rated as the regression rule rates PR-body fixes). Skip anything already logged for this PR. A regression gets a new entry that names what it repeats. | Same behavior as today's case 1 and case 2, in one place. |
-| Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. An entry goes there when the first path in its **File:** is under `.claude/`, `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`; later paths in the same field do not count. | 59 of the 65 current entries are about pipeline text (4 are app code, 2 are `CHANGELOG.md`, and those 6 stay). App reviews should repeat-check against app violations only. |
+| Pipeline-text violations | Split them into `.claude/context/pipeline-rejections.md`. For the one-time move of existing entries, an entry goes there when the first path in its **File:** is under `.claude/`, `scripts/`, `.github/`, or is `AGENTS.md`/`CLAUDE.md`; later paths in the same field do not count. For new entries, whoever logs a finding picks the file by what the violation is about: pipeline text, including a spec or plan for pipeline work under `docs/superpowers/`, goes to `pipeline-rejections.md`. | 59 of the 65 current entries are about pipeline text (4 are app code, 2 are `CHANGELOG.md`, and those 6 stay). App reviews should repeat-check against app violations only. |
 | Who reads pipeline-rejections.md | The /review and `/parallel-review` subagents only when the diff touches a pipeline path (for this purpose, `.claude/context/` does not count, so `/spec`'s `decisions.md` append does not trigger it); `/pipeline-review` always | Keeps repeat detection for skill PRs without feeding pipeline history to app reviews |
 | Size target | `review/SKILL.md` at or under 180 lines | A measurable exit criterion for this spec |
 
@@ -51,7 +51,9 @@ Pipeline only. No app layers are touched.
   without `pipeline-rejections.md`) and the base-branch log copies to a temp dir, and prints
   `INPUTS <dir>`, `EMPTY`, `LOG-ONLY` or `STOP <reason>`. It also runs the append-only check on all three
   logs against the merge-base and prints `EDITED <path>` along with the diff.
-- `.github/workflows/pr-checks.yml`: the `gates` job adds `check_grep_gates.py` to its trusted-script loop,
+- `.github/workflows/pr-checks.yml`: the `gates` job adds `check_grep_gates.py` to its trusted-script loop
+  and passes it `"$HEAD_REF"` as well, as the loop already does for `check_gate_integrity.py` (CI checks out a
+  detached HEAD, so Gate 4 needs the branch name as an argument),
   and adds a step that runs `python3 -m unittest discover scripts/tests`. The job's comment (lines 80-82)
   still says the UI-selector cross-check "stays local to /gates", which stays true; its list of what CI runs
   is updated to include the grep gates. The two new guarded files
@@ -70,7 +72,10 @@ Pipeline only. No app layers are touched.
   the hook skips those writes before it reaches the glob match, and the self-test does not compare that
   list.
 - `.claude/context/rejections.md`: entries whose first **File:** path is a pipeline path move to
-  `pipeline-rejections.md`, verbatim and in their original order. This one-time move is the only
+  `pipeline-rejections.md`, verbatim and in their original order. The new file starts with the same
+  append-only header comment as `rejections.md`, plus one line recording that its first entries were
+  moved from `rejections.md` on that PR. `rejections.md` itself is left untouched apart from the removals,
+  because the move check requires that it gains no line. This one-time move is the only
   non-append edit to either log, so it lands second, on its own `chore/*` PR that changes nothing else,
   after the implementation PR has put `prep_review.py --verify-move` and the new /review rule on
   `develop`. The implementation PR itself runs its own `prep_review.py` from the PR copy, reported as
