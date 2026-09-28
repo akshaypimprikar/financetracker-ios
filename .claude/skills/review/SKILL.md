@@ -99,8 +99,10 @@ copies of them. Prepare those in one shell call (`BASE` does not carry over from
 outside the repo so the working tree stays clean:
 ```bash
 BASE=origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)
+git rev-parse -q --verify "$BASE" >/dev/null || { echo "STOP: base branch not found ($BASE)"; exit 1; }
 T=$(mktemp -d)
 git diff "${BASE}...HEAD" -- . ':!.claude/context/rejections.md' ':!.claude/context/incidents.md' > "$T/pr.diff"
+[ -s "$T/pr.diff" ] || { echo "STOP: the diff is empty"; exit 1; }
 for f in rejections incidents; do
   if git cat-file -e "${BASE}:.claude/context/$f.md" 2>/dev/null; then
     git show "${BASE}:.claude/context/$f.md" > "$T/$f.md"
@@ -108,6 +110,8 @@ for f in rejections incidents; do
 done
 echo "subagent inputs in: $T"
 ```
+If this block or the log check below prints `STOP`, it did not run: fix the cause (for example
+`gh auth login` or `git fetch`) and run it again. Never post a verdict on a block that stopped.
 `CHANGELOG.md` stays in the diff: it is part of the change under review. Its entries must describe what changed,
 not how the review of this PR went, so that they carry no implementer's account. Then give it these, using the directory the
 block printed as `$T`:
@@ -145,6 +149,7 @@ branch's tip, because PRs merged since this branch was created may have appended
 must print nothing:
 ```bash
 BASE=$(git merge-base "origin/$(gh pr view <PR> --json baseRefName -q .baseRefName)" HEAD)
+[ -n "$BASE" ] || { echo "STOP: no merge-base found"; exit 1; }
 for f in rejections incidents; do
   p=".claude/context/$f.md"
   if git cat-file -e "${BASE}:$p" 2>/dev/null; then

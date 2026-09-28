@@ -325,3 +325,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:157, :181-183
 **Caught by:** this review (isolated subagent, round 45)
+
+## 2026-09-27 — PR#130 — Command blocks passed silently when BASE came back empty
+**What was wrong:** If `gh pr view` or `git merge-base` failed, BASE was empty or just `origin/`. The log check then compared the log with itself and passed, so edited entries would get through (reproduced on the branch). The prep block produced an empty diff but still reported its directory, so the subagent reviewed nothing. Both blocks now print STOP and exit, and a STOP means re-run before any verdict (each failure mode tested).
+**Rule violated:** no formal rule, caught before this review
+**File:** .claude/skills/review/SKILL.md:101, :147
+**Caught by:** code-review pass (code-review:code-review on PR#130, after round 47)
