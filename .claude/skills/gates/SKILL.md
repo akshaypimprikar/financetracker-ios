@@ -318,6 +318,9 @@ to relitigate history.
 Pass: script exits 0 (no violations, or nothing in scope to check).
 Fail: script lists each violation (file, commit, reason) — fix by re-doing the task as two
 commits (test-only, confirm it fails, then implementation) per `/feature`'s per-task rules.
+Nothing checked (exit 2): the script warns that no file in the repo matches `SCOPED_LAYER_DIRS`,
+which happens if the layer folders were renamed or moved. Update `SCOPED_LAYER_DIRS` to the
+current folders and re-run. Do not treat exit 2 as a pass; it means the gate checked nothing.
 Rewriting already-pushed history is not required or expected; this gate only evaluates the
 branch as it stands when `/gates` runs.
 Skip this gate if the branch adds no new files under the scoped directories.
