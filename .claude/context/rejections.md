@@ -607,3 +607,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** scripts/check_citations.py:48
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#137 — Round 1: re-cited a false claim about where the unit tests run
+**What was wrong:** The spec's gates.yml bullet says every script "and the unit tests" run from the base checkout, and this PR re-cited it to gates.yml:70-96, which stops before the unit-test step; that step runs on the PR head (gates.yml:97-100).
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:88-90
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#137 — Round 1: lane command base wrong for a hotfix's second PR
+**What was wrong:** The new /gates Lane command said <base> is main for hotfix/*, but a hotfix's second PR targets develop (gates/SKILL.md:428, AGENTS.md), so its Lane line would diff against main.
+**Rule violated:** AGENTS.md PR creation rule (a hotfix's second PR to develop passes --base develop)
+**File:** .claude/skills/gates/SKILL.md:238
+**Caught by:** this review (isolated subagent)

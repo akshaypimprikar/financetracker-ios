@@ -44,7 +44,7 @@ Evaluated in this order; the first that applies wins.
 
 | Lane | Chosen when | Evidence (FinanceTracker config) |
 |---|---|---|
-| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/gates.yml:7-9`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths, including when that list is empty. A PR from a fork never gets this lane or `sync`, and a `release/*` PR whose `develop...head` compare fails, or hits GitHub's 300-file cap, makes `review-evidence` exit with an error rather than guess. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
+| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/gates.yml:7-9`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths, including when the release branch's `develop...head` list is empty. A PR from a fork never gets this lane or `sync`, and a `release/*` PR whose `develop...head` compare fails, or hits GitHub's 300-file cap, makes `review-evidence` exit with an error rather than guess. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
 | `sync` | head `sync/*` **and** every changed path is on the config's `sync_paths` (pragma: `.claude/skills/**`, `scaffold/**`, the only paths `/sync-workflow` stages). Otherwise laned by paths. Only in configs that define it. | `synced_from`: a line naming the source PR, whose content was already reviewed there |
 | `app` | any changed path matches `app` globs | `gate_summary`, `review_verdict`, `code_review` |
 | `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `code_review`, `motivating_incident` |
@@ -85,8 +85,8 @@ Pipeline only. No app code changes.
   `gates` job moved from `pr-checks.yml` with no `paths:` filter, reading base and head from
   `github.event.pull_request.base.ref` and `.head.ref`, plus `check_citations.py` and
   `python3 -m unittest discover scripts/tests`. It keeps today's two checkouts (PR head, and the base branch
-  as the trusted copy) and runs every script, `check_citations.py` and the unit tests included, from the base
-  checkout, with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
+  as the trusted copy) and runs every gate script, `check_citations.py` included, from the base
+  checkout (the unit tests run on the PR head, since they test the PR's own scripts: `.github/workflows/gates.yml:97-100`), with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
   (`.github/workflows/gates.yml:70-96`). A PR therefore cannot edit a gate script and have its own
   copy judge it. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
   exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
