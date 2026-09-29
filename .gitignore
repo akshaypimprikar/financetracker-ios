@@ -30,3 +30,7 @@ Pods/
 
 # Gate 12 visual-verification screenshots (evidence artifacts, not source)
 .gates-artifacts/
+
+# Python bytecode (scripts/ and scripts/tests/)
+__pycache__/
+*.pyc

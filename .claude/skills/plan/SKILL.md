@@ -18,13 +18,15 @@ A plan document saved to `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`.
 
 Before writing, read:
 - The spec document (passed as argument)
-- `AGENTS.md/CLAUDE.md` — build commands, architecture rules, simulator name
+- `AGENTS.md` — build commands, architecture rules, simulator name
 - `.claude/context/invariants.md` — inviolable rules (skip if absent)
 - `.claude/context/decisions.md` — past spec choices; build on the chosen approach, do not re-derive (skip if absent)
 - `.claude/context/feature-log.md` — release history; know what already exists (skip if absent)
 - All files the spec says will be touched
 
 When a task depends on the exact behavior of an Apple API, fetch `https://developer.apple.com/documentation/<path>.md` (append `.md` to any doc URL) instead of the HTML page — clean Markdown, lighter to load.
+
+Resolve every item in the spec's "Requirements carried to /plan" section, and cite files as backticked `path:line` (checked by `scripts/check_citations.py` in `gates`), opening each cited line before relying on it.
 
 The plan must be executable by a subagent with no prior context. Every task needs:
 - Exact file paths (all source files live under `FinanceTracker/` at the git root)
@@ -58,4 +60,4 @@ The plan must be executable by a subagent with no prior context. Every task need
 - UI tests: `FinanceTrackerUITests/`
 
 ## Done when
-The user reviews and approves the plan. Then hand off to `/feature`. After the PR is open, `/pr-followup` chains `/review`, then `/test`, then `code-review:code-review`, in that order, not in parallel.
+The user reviews and approves the plan. Then hand off to `/feature`. `/feature` is followed by `/test` (coverage-gap audit) and `/gates`; after the PR is open, `/pr-followup` runs `code-review:code-review`, then `/review`.

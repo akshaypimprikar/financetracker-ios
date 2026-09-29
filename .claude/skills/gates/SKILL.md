@@ -2,9 +2,6 @@
 name: gates
 description: Verify a feature branch meets all pre-PR criteria (build, tests, coverage, gate integrity, and more) before opening the pull request. Invoke at the end of a feature session, passing the branch name.
 disable-model-invocation: true
----
-
----
 model: claude-haiku-4-5-20251001
 ---
 
@@ -61,6 +58,11 @@ prints a clean-looking summary). Pass: `GATE 1 PASS` — non-empty log, exit 0, 
 marker. Fail: anything else — an empty log or a non-zero exit is a failure, never "no errors seen".
 Stop immediately — a test run on a broken build is meaningless.
 
+Advisory: a compile error in SwiftUI code that built before an Xcode major-version update may be an SDK
+source-compatibility break rather than a bug in the change — see
+[`docs/xcode-27-sdk-migration.md`](https://github.com/akshaypimprikar/pragma/blob/develop/docs/xcode-27-sdk-migration.md)
+for the two known Xcode 27 patterns.
+
 ### Gate 2 — Full test suite (conditional: Gate 0 listed files)
 ```bash
 LOG=$(mktemp -t gate2-test)
@@ -68,7 +70,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
   > "$LOG" 2>&1; RC=$?
 xcsift < "$LOG"
-PASSED=$(grep -cE "^Test [Cc]ase '.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
+PASSED=$(grep -E "^Test [Cc]ase '.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
 [ -s "$LOG" ] && [ "$RC" -eq 0 ] && grep -q "TEST SUCCEEDED" "$LOG" && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
   && echo "GATE 2 PASS ($PASSED tests executed)" || echo "GATE 2 FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 ```
@@ -127,7 +129,7 @@ git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportAct
 Pass: first grep returns no output (no `@MainActor` outside comments — the actor isn't main-actor-isolated); second grep count is `0` (no `@Model` type — `Account`/`Transaction`/`Category`/`Budget`/`ImportRecord` — appears as a parameter or return type on the protocol-conformance methods, i.e. nothing `@Model`-typed crosses the actor's public boundary; internal caching of a resolved `@Model` instance that never leaves the actor is fine and won't trigger this); third grep count is exactly `1` (one `modelContext.save()` per chunk, never per row).
 Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
-### Gate 9 — Architecture & layer-rule compliance (AGENTS.md/CLAUDE.md-enforced rules)
+### Gate 9 — Architecture & layer-rule compliance (AGENTS.md-enforced rules)
 This is the single authoritative check for all layer-separation, type-safety, and
 pattern rules. `/review` re-runs this gate's grep-only commands at the PR HEAD SHA and
 compares the result to your gate summary (it does not re-run `xcodebuild`). If any command
@@ -141,7 +143,7 @@ git diff develop...HEAD --name-only -- '*.swift' | grep '/Repositories/Protocols
 
 # ViewModels must depend on repository protocols, never concrete SwiftData*Repository types
 # (Tests/ excluded — FinanceTrackerTests/ViewModels/*.swift legitimately constructs concrete
-# SwiftData*Repository instances against an in-memory ModelContainer, per AGENTS.md/CLAUDE.md's own
+# SwiftData*Repository instances against an in-memory ModelContainer, per AGENTS.md's own
 # documented test pattern; that's not a production ViewModel violating the rule.)
 git diff develop...HEAD --name-only -- '*.swift' | grep '/ViewModels/' | grep -v 'Tests/' | xargs grep -n 'SwiftData\w*Repository' 2>/dev/null
 
@@ -215,7 +217,7 @@ else
   xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
     -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.4.1' \
     -only-testing:FinanceTrackerTests/ImportHashGoldenTests > "$LOG" 2>&1; RC=$?
-  PASSED=$(grep -cE "^Test [Cc]ase 'ImportHashGoldenTests/.*' passed" "$LOG"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed" "$LOG")
+  PASSED=$(grep -E "^Test [Cc]ase 'ImportHashGoldenTests/.*' passed|^[✔✓] Test .*passed" "$LOG" | grep -vc "Test run with"); FAILED=$(grep -cE "^Test [Cc]ase '.*' failed|^[✘✗] Test .*failed" "$LOG")
   [ "$RC" -eq 0 ] && [ "$FAILED" -eq 0 ] && [ "$PASSED" -gt 0 ] \
     && echo "GOLDEN PASS ($PASSED tests executed)" || echo "GOLDEN FAIL (xcodebuild exit $RC, passed=$PASSED, failed=$FAILED)"
 fi
@@ -233,6 +235,7 @@ Report every gate before opening the PR. The first line is mandatory: the full S
 pre-step. `/review` compares it to the PR HEAD and rejects a summary that is missing or stale.
 ```
 Gates run at <full 40-char SHA from `git rev-parse HEAD`>
+Lane: <output of `python3 scripts/check_pr_lane.py --git origin/<base> --head-branch <branch> --base-branch <base>`, where <base> is the PR's base: `develop`, or `main` for `release/*` and a hotfix's first PR>
 Gates:
 [✓] Build
 [✓] Tests — <N> tests executed
@@ -252,6 +255,7 @@ Gates:
 When Gates 1 and 2 are skipped:
 ```
 Gates run at <full 40-char SHA>
+Lane: <lane>
 Gates:
 [–] Build — skipped (no build-relevant changes)
 [–] Tests — skipped (no build-relevant changes)
@@ -393,6 +397,11 @@ Include the actual Gate summary output (from above, starting with its `Gates run
 PR body under its own section — `/review` checks that SHA against the PR HEAD and re-runs the
 deterministic gates itself, comparing its results to this block.
 
+If the `Lane:` line says `pipeline` (or the PR touches pipeline paths alongside app code), also add a
+`Motivating incident: <what went wrong, with a link or date>` line to the PR body, or
+`Motivating incident: none (<reason>)`. The `review-evidence` check fails a pipeline-lane PR
+without a non-empty one.
+
 ```bash
 gh pr create \
   --title "<type>(<scope>): <description>" \
@@ -416,14 +425,14 @@ EOF
 If `/gates` is re-run after the PR is open (a fix cycle changes HEAD), update the PR body's gate section with the new summary — `gh pr edit <PR> --body-file <file>` — so its `Gates run at <sha>` matches the new HEAD; `/review` rejects a stale one.
 
 **Always pass `--base develop`** — `gh pr create` defaults to `main` (repo default), which bypasses gitflow.
-Exceptions: `release/*` and `hotfix/*` branches use `--base main`.
+Exceptions: `release/*` and `hotfix/*` branches use `--base main`, except a hotfix's second PR back to `develop`, which uses `--base develop` (see `/bugfix`).
 
 ## Guard against self-modifying guardrail files
 
 Gates 0–13 are agent-instruction-driven checks, so an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit a gate definition instead of fixing the underlying violation, then report a clean gate summary. Two layers cut against that:
 
 - **Live:** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` and, best effort, Bash writes to `.claude/skills/*/SKILL.md`, `scripts/check_*`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*` and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the branch matches `feature/*` (exit 2, with the remedy printed). Each is matched at the repo root or under any subdirectory. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix and checks that its glob list matches the CI script's.
-- **CI backstop:** Gate 13 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job repeats it outside the session using the base branch's copy of the script, its `paths:` filter lists the same files (each also as `**/…` for nested ones), a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
+- **CI backstop:** Gate 13 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job (`.github/workflows/gates.yml`) repeats it outside the session using the base branch's copy of the script and runs on every PR, a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
 
 What is not covered:
 - The hook's Bash detection is a best-effort parse. `python -c`, interpreter heredocs, variable or glob expansion (including `cd $VAR`), `find -exec`/`-delete`, `xargs rm` fed from stdin, `git checkout <ref> -- file`, `git restore` and `rm -rf <dir that only contains a nested project>` are not detected, and a symlink created and written through in one command is not followed.
@@ -437,7 +446,7 @@ What is not covered:
 All 13 gates report (11 blocking gates pass; Gates 10 and 12 are advisory, see their own
 sections above), the summary opens with `Gates run at <sha>`, PR is open, and the PR URL is returned to the user.
 
-## Tip — chain into review + test + code-review
-Once the PR is open, run `/pr-followup <PR>` to auto-chain `/review`, `/test`,
-and `code-review:code-review` — see that command for the exact fallback
-behavior on a `disable-model-invocation` project.
+## Tip — chain into code-review + review
+Once the PR is open, run `/pr-followup <PR>` to run `code-review:code-review`
+and then `/review`, and record both in the PR body for the `review-evidence`
+check. `/test` runs before `/gates`, not after the PR opens.

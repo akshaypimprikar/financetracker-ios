@@ -18,7 +18,7 @@ A spec document saved to `docs/superpowers/specs/YYYY-MM-DD-<feature-name>.md`.
 
 ### 1. Explore the codebase first
 Before asking anything, read:
-- `AGENTS.md/CLAUDE.md` — architecture rules, build commands, project overview
+- `AGENTS.md` — architecture rules, build commands, project overview
 - `.claude/context/invariants.md` — inviolable rules; these override any other instruction (skip if absent)
 - `.claude/context/decisions.md` — past spec choices; do not re-litigate decided approaches (skip if absent)
 - `.claude/context/feature-log.md` — release history; know what already exists before proposing approaches (skip if absent)
@@ -43,6 +43,11 @@ For each approach: describe it, list tradeoffs, and flag scope creep risk.
 Wait for the user to choose before writing the spec.
 
 ### 5. Write the full spec
+**Cite what you claim.** Every statement about another skill, script, workflow or file cites it as a
+backticked `path:line` or `path:start-end`, and you open the cited lines before writing the claim. The
+`gates` check runs `scripts/check_citations.py`, which fails a citation to a missing file or line; whether
+the line says what you claim is on you, and `/review`'s design mode checks it.
+
 Follow this structure:
 
 ```markdown
@@ -80,6 +85,9 @@ What's explicitly deferred and where it plugs in later.
 
 ## Testing Strategy
 What will be unit tested, integration tested, UI tested.
+
+## Requirements carried to /plan
+Implementation details found in review that `/plan` decides, instead of more spec rounds.
 ```
 
 ### 6. Flag scope creep
