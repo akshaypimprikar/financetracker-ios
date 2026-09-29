@@ -44,7 +44,7 @@ Evaluated in this order; the first that applies wins.
 
 | Lane | Chosen when | Evidence (FinanceTracker config) |
 |---|---|---|
-| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/pr-checks.yml:94-95`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
+| `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/pr-checks.yml:94-95`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths, including when that list is empty. A PR from a fork never gets this lane or `sync`, and a `release/*` PR whose `develop...head` compare fails, or hits GitHub's 300-file cap, makes `review-evidence` exit with an error rather than guess. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
 | `sync` | head `sync/*` **and** every changed path is on the config's `sync_paths` (pragma: `.claude/skills/**`, `scaffold/**`, the only paths `/sync-workflow` stages). Otherwise laned by paths. Only in configs that define it. | `synced_from`: a line naming the source PR, whose content was already reviewed there |
 | `app` | any changed path matches `app` globs | `gate_summary`, `review_verdict`, `code_review` |
 | `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `code_review`, `motivating_incident` |
@@ -52,7 +52,7 @@ Evaluated in this order; the first that applies wins.
 
 Evidence items (the first three are tied to a SHA and subject to the carryover rule):
 - `gate_summary`: `Gates run at <sha>` in the PR body.
-- `review_verdict`: the latest `## Review Agent verdict:` review is APPROVED (a full round or `--confirm`) and contains `Reviewed at <sha>`.
+- `review_verdict`: the latest `## Review Agent verdict:` review posted by an owner, member or collaborator (other accounts' reviews are ignored) is APPROVED (a full round or `--confirm`) and contains `Reviewed at <sha>`.
 - `code_review`: a `code-review: <comment URL> at <sha>` or `code-review: no issues at <sha>` line in the PR body.
 - `motivating_incident`, `synced_from`: a non-empty line with that label in the PR body.
 

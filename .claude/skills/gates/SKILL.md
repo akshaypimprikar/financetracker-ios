@@ -235,7 +235,7 @@ Report every gate before opening the PR. The first line is mandatory: the full S
 pre-step. `/review` compares it to the PR HEAD and rejects a summary that is missing or stale.
 ```
 Gates run at <full 40-char SHA from `git rev-parse HEAD`>
-Lane: <output of `python3 scripts/check_pr_lane.py --git origin/develop --head-branch <branch> --base-branch develop`>
+Lane: <output of `python3 scripts/check_pr_lane.py --git origin/<base> --head-branch <branch> --base-branch <base>`, where <base> is `develop`, or `main` for `release/*` and `hotfix/*`>
 Gates:
 [✓] Build
 [✓] Tests — <N> tests executed
@@ -432,7 +432,7 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`, except a hotf
 Gates 0–13 are agent-instruction-driven checks, so an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit a gate definition instead of fixing the underlying violation, then report a clean gate summary. Two layers cut against that:
 
 - **Live:** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` and, best effort, Bash writes to `.claude/skills/*/SKILL.md`, `scripts/check_*`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*` and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the branch matches `feature/*` (exit 2, with the remedy printed). Each is matched at the repo root or under any subdirectory. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix and checks that its glob list matches the CI script's.
-- **CI backstop:** Gate 13 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job repeats it outside the session using the base branch's copy of the script, its `paths:` filter lists the same files (each also as `**/…` for nested ones), a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
+- **CI backstop:** Gate 13 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job (`.github/workflows/gates.yml`) repeats it outside the session using the base branch's copy of the script and runs on every PR, a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
 
 What is not covered:
 - The hook's Bash detection is a best-effort parse. `python -c`, interpreter heredocs, variable or glob expansion (including `cd $VAR`), `find -exec`/`-delete`, `xargs rm` fed from stdin, `git checkout <ref> -- file`, `git restore` and `rm -rf <dir that only contains a nested project>` are not detected, and a symlink created and written through in one command is not followed.
