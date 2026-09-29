@@ -59,6 +59,8 @@ PROTECTED_GLOBS = (
     ".claude/hooks/*",
     "CONSTRAINTS.md",
     "FinanceTrackerTests/ImportHashGoldenTests.swift",
+    "scripts/pipeline_lanes.json",
+    ".github/workflows/*",
 )
 GUARDED_BRANCH = re.compile(r"^feature/")
 FILE_TOOLS = ("Write", "Edit", "MultiEdit")
@@ -156,6 +158,7 @@ _PROTECTED_FRAGMENTS = tuple(
         "skill.md", "scripts/check_", "agents.md", "claude.md",
         "invariants.md", "settings.json", ".claude/hooks/", "constraints.md",
         "importhashgoldentests.swift",
+        "pipeline_lanes.json", ".github/workflows/",
     )
 )
 

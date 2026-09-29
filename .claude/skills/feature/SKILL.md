@@ -55,7 +55,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green, and all blocking `/gates` criteria pass (Gates 10 and 12 are advisory). Then open a PR to `develop`. `/review` runs first on the PR; after it passes, `/test` and `code-review:code-review` both run automatically via `/pr-followup` — no manual trigger needed (see that command for the `disable-model-invocation` fallback).
+All tasks complete, full test suite green, `/test`'s coverage-gap audit done, and all blocking `/gates` criteria pass (Gates 10 and 12 are advisory). Then open a PR to `develop` and run `/pr-followup`, which runs `code-review:code-review` and then `/review` and records both in the PR body for the `review-evidence` check.
 
 To drive the entire feature-to-gates cycle autonomously:
 ```
