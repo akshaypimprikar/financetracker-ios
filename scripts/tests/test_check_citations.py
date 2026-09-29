@@ -101,6 +101,13 @@ class RepoTests(unittest.TestCase):
         self.write("README.md", "`scripts/nope.py:1`\n")
         self.assertEqual(self.run_check().returncode, 0)
 
+    def test_renamed_and_edited_file_is_checked(self):
+        self.git("mv", "docs/superpowers/specs/s.md", "docs/superpowers/specs/t.md")
+        self.write("docs/superpowers/specs/t.md", "old `scripts/gone.py:1` citation\nnew `scripts/nope.py:1`\n")
+        out = self.run_check()
+        self.assertEqual(out.returncode, 1)
+        self.assertIn("scripts/nope.py", out.stdout)
+
     def test_skill_files_are_in_scope(self):
         os.makedirs(os.path.join(self.repo, ".claude", "skills", "x"))
         self.write(".claude/skills/x/SKILL.md", "`scripts/nope.py:1`\n")

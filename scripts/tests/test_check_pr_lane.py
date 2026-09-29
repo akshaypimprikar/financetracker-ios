@@ -67,6 +67,10 @@ class LaneForTests(unittest.TestCase):
             "app",
         )
 
+    def test_release_branch_with_unknown_commits_is_laned_by_paths(self):
+        # No release-branch file list (compare failed or not supplied) must not mean "release".
+        self.assertEqual(self.lane(["App/Model.swift"], base="main", head="release/1.5.0"), "app")
+
     def test_release_branch_to_develop_is_not_release(self):
         self.assertEqual(self.lane(["CHANGELOG.md"], base="develop", head="release/1.5.0"), "docs")
 

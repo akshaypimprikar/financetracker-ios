@@ -10,8 +10,9 @@ OLD = "b" * 40
 CARRY = [".claude/context/rejections.md"]
 
 
-def verdict(state, sha, when):
-    return {"body": f"## Review Agent verdict: {state}\n\nReviewed at {sha}\nRound 1\n", "submitted_at": when}
+def verdict(state, sha, when, association="OWNER"):
+    return {"body": f"## Review Agent verdict: {state}\n\nReviewed at {sha}\nRound 1\n", "submitted_at": when,
+            "author_association": association}
 
 
 def changed_between_factory(mapping):
@@ -64,8 +65,18 @@ class EvaluateTests(unittest.TestCase):
 
     def test_approved_confirm_verdict(self):
         body = f"## Review Agent verdict: APPROVED (confirm)\n\nReviewed at {HEAD}\nRound confirm\n"
-        r = self.run_eval(["review_verdict"], reviews=[{"body": body, "submitted_at": "2026-09-28T10:00:00Z"}])
+        r = self.run_eval(["review_verdict"], reviews=[{"body": body, "submitted_at": "2026-09-28T10:00:00Z",
+                                                        "author_association": "OWNER"}])
         self.assertTrue(r["review_verdict"])
+
+    def test_verdict_from_outside_account_ignored(self):
+        r = self.run_eval(["review_verdict"], reviews=[verdict("APPROVED", HEAD, "2026-09-28T10:00:00Z", "NONE")])
+        self.assertFalse(r["review_verdict"])
+
+    def test_outside_verdict_cannot_override_owner_verdict(self):
+        reviews = [verdict("APPROVED", HEAD, "2026-09-28T10:00:00Z"),
+                   verdict("CHANGES REQUESTED", HEAD, "2026-09-28T11:00:00Z", "CONTRIBUTOR")]
+        self.assertTrue(self.run_eval(["review_verdict"], reviews=reviews)["review_verdict"])
 
     def test_verdict_without_sha_fails(self):
         r = self.run_eval(["review_verdict"], reviews=[{"body": "## Review Agent verdict: APPROVED\n",
@@ -103,6 +114,21 @@ class EvaluateTests(unittest.TestCase):
 
     def test_none_body_is_treated_as_empty(self):
         self.assertFalse(self.run_eval(["gate_summary"], body=None)["gate_summary"])
+
+
+class LaneHeadTests(unittest.TestCase):
+    def pr(self, ref, repo):
+        return {"head": {"ref": ref, "repo": {"full_name": repo} if repo else None}}
+
+    def test_same_repo_head_unchanged(self):
+        self.assertEqual(ev.lane_head(self.pr("release/1.5.0", "o/r"), "o/r"), "release/1.5.0")
+
+    def test_fork_head_cannot_claim_release_or_sync(self):
+        head = ev.lane_head(self.pr("release/1.5.0", "someone/r"), "o/r")
+        self.assertFalse(head.startswith("release/") or head.startswith("sync/") or head == "main")
+
+    def test_deleted_fork_is_treated_as_fork(self):
+        self.assertNotEqual(ev.lane_head(self.pr("main", None), "o/r"), "main")
 
 
 if __name__ == "__main__":
