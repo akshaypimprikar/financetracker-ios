@@ -13,6 +13,7 @@
 - **Concurrency:** each workflow has its own group (`gates-<PR>`, `review-evidence-<PR>`) with `cancel-in-progress`; a cancelled run is always superseded by the newer run of the same workflow.
 - **Unit tests run on the PR head, not the base.** A correction to the spec: running the base's tests would test the base's scripts, not the PR's. The tamper protection is about the *gate* scripts, which still run from the base.
 - **`none (<reason>)`** satisfies `motivating_incident`.
+- **Bootstrap branch kept minimal:** `review-evidence.yml` keeps its warn-and-pass step for a base branch without the scripts; it only fires before rollout and is left as-is rather than removed afterwards.
 - The back-merge PR and the `pull_request_target` head-SHA attachment are verified at rollout step 5, as the spec says.
 
 ## Tasks

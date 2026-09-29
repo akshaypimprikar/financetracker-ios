@@ -25,7 +25,10 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
 ## Process
 1. Run `python3 scripts/check_pr_lane.py --git origin/<base> --head-branch <head> --base-branch <base>`.
    For the `docs`, `release` and `sync` lanes, report the lane and stop: they
-   need neither step below.
+   need neither step below. For the `pipeline` lane (or a PR that also touches
+   pipeline paths), make sure the PR body has a non-empty
+   `Motivating incident: <what went wrong, with a link or date>` line (or
+   `none (<reason>)`); add it if missing, since `review-evidence` fails without it.
 2. Run `code-review:code-review` against the PR once. Fix any issue it posts,
    commit and push. Then add or replace one line in the PR body with the head
    SHA it reviewed: `code-review: <comment URL> at <sha>`, or

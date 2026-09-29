@@ -397,6 +397,11 @@ Include the actual Gate summary output (from above, starting with its `Gates run
 PR body under its own section — `/review` checks that SHA against the PR HEAD and re-runs the
 deterministic gates itself, comparing its results to this block.
 
+If the `Lane:` line says `pipeline` (or the PR touches pipeline paths alongside app code), also add a
+`Motivating incident: <what went wrong, with a link or date>` line to the PR body, or
+`Motivating incident: none (<reason>)`. The `review-evidence` check fails a pipeline-lane PR
+without a non-empty one.
+
 ```bash
 gh pr create \
   --title "<type>(<scope>): <description>" \
