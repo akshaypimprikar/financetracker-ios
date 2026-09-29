@@ -7,6 +7,7 @@ applies wins:
 
   release   head release/* into main, or the main -> develop back-merge, and
             every path changed on the release branch itself is a release path
+            (a release branch with no known changed paths is laned by paths)
   sync      head starts with the config's sync prefix and every changed path
             is a sync path (only when the config defines "sync")
   <lanes>   the first configured lane with a matching changed path
@@ -102,7 +103,7 @@ def lane_for(config, base, head, changed, release_changed):
     release = config.get("release")
     if release:
         if head.startswith("release/") and base == "main":
-            # An empty list means the release branch's commits are unknown: never assume release.
+            # An empty list means the release branch's changes are unknown or there are none: never assume release.
             if release_changed and all(_matches_any(release["paths"], p) for p in release_changed):
                 return "release"
         elif head == "main" and base == "develop":
