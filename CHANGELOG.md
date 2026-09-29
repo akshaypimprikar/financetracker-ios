@@ -4,7 +4,7 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
-## [Unreleased]
+## [1.5.0] — 2026-09-29
 
 ### Changed
 - **Pipeline lanes and enforced merges.** `scripts/check_pr_lane.py` sorts each PR into `app`, `pipeline`, `docs` or `release` from its changed paths, using `scripts/pipeline_lanes.json`, which also lists what each lane needs to merge. A new `review-evidence` check (`.github/workflows/review-evidence.yml`, run from the base branch on `pull_request_target`, reading the PR only through the API) verifies that evidence: a gate summary, a `/review` APPROVED verdict and a `code-review:` line at the head SHA, and a `Motivating incident:` line for pipeline changes. The `gates` job moved to `.github/workflows/gates.yml` and runs on every PR, with its scripts still taken from the base branch; it also runs the new `scripts/check_citations.py` (fails a `path:line` citation to a missing file or line in added spec, plan or skill text) and the script unit tests. Once the release lands, `develop` and `main` require both checks.
