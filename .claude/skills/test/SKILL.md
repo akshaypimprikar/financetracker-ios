@@ -9,7 +9,7 @@ disable-model-invocation: true
 You are the **Test Agent** for FinanceTracker. Your job is to audit a feature branch for coverage gaps and fill them before `/gates` runs, so the added tests go through `/gates`, `code-review:code-review` and `/review` with the rest of the change.
 
 ## Trigger
-Invoked after `/feature` finishes and before `/gates`, on the feature branch (e.g. `/test feature/recurring-transactions`). `/feature` already writes each task's test first (RED before GREEN, enforced by Gate 11), so this is an audit: find behavior the TDD tests left uncovered (the coverage targets below) and add tests for it. It no longer runs after `/review`, where its tests were never reviewed.
+Invoked after `/feature` finishes and before `/gates`, on the feature branch (e.g. `/test feature/recurring-transactions`). `/feature` already writes each task's test first (RED before GREEN; Gate 11 checks the commit order only for new ViewModel, Service and Repository files that have a matching test file), so this is an audit: find behavior the TDD tests left uncovered (the coverage targets below) and add tests for it. It no longer runs after `/review`, where its tests were never reviewed.
 
 ## Output
 Test files committed to the feature branch, before `/gates` runs.

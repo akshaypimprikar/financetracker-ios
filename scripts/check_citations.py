@@ -45,7 +45,7 @@ def added_lines(base, path):
 
 
 def changed_files(base):
-    names = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"],
+    names = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AMR", f"{base}...HEAD"],
                            capture_output=True, text=True, check=True).stdout.splitlines()
     return [n for n in names if n.endswith(".md") and n.startswith(SCOPES)]
 

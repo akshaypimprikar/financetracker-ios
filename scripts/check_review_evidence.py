@@ -32,6 +32,8 @@ import check_pr_lane  # noqa: E402
 
 SHA = r"([0-9a-f]{40})"
 VERDICT_HEADER = "## Review Agent verdict:"
+# Only verdicts posted by accounts with write-level standing count; anyone else's review is ignored.
+TRUSTED_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
 
 
 def _sha_ok(sha, head_sha, carryover, changed_between):
@@ -47,10 +49,19 @@ def _sha_ok(sha, head_sha, carryover, changed_between):
 
 
 def _latest_verdict(reviews):
-    verdicts = [r for r in reviews if (r.get("body") or "").lstrip().startswith(VERDICT_HEADER)]
+    verdicts = [r for r in reviews if (r.get("body") or "").lstrip().startswith(VERDICT_HEADER)
+                and r.get("author_association") in TRUSTED_ASSOCIATIONS]
     if not verdicts:
         return None
     return max(verdicts, key=lambda r: r.get("submitted_at") or "")
+
+
+def lane_head(pr, repo):
+    """The head branch name to lane by. A fork's branch never gets the release, sync or back-merge lanes."""
+    head = pr["head"]["ref"]
+    if (pr["head"].get("repo") or {}).get("full_name") != repo:
+        return "fork:" + head
+    return head
 
 
 def evaluate(items, head_sha, body, reviews, carryover, changed_between):
@@ -121,15 +132,19 @@ class Api:
                 return out
             page += 1
 
-    def compare_files(self, base, head):
-        """Files changed base...head, or None when base is not an ancestor of head."""
+    def compare_files(self, base, head, require_ancestor=True):
+        """Files changed base...head, or None when base is not an ancestor of head.
+
+        With require_ancestor=False a diverged base is fine (base...head is a
+        merge-base diff), and None means only that the compare was not found.
+        """
         try:
             data = self.get(f"/compare/{base}...{head}")
         except urllib.error.HTTPError as e:
             if e.code == 404:
                 return None
             raise
-        if data.get("status") not in ("ahead", "identical"):
+        if require_ancestor and data.get("status") not in ("ahead", "identical"):
             return None
         return [f["filename"] for f in data.get("files", [])]
 
@@ -148,7 +163,7 @@ def main(argv=None):
         config = check_pr_lane.load_config(args.config)
         api = Api(args.repo, token)
         pr = api.get(f"/pulls/{args.pr}")
-        head_sha, head, base = pr["head"]["sha"], pr["head"]["ref"], pr["base"]["ref"]
+        head_sha, head, base = pr["head"]["sha"], lane_head(pr, args.repo), pr["base"]["ref"]
         files = []
         for f in api.paged(f"/pulls/{args.pr}/files"):
             files.append(f["filename"])
@@ -156,7 +171,9 @@ def main(argv=None):
                 files.append(f["previous_filename"])
         release_changed = []
         if head.startswith("release/") and base == "main":
-            release_changed = api.compare_files("develop", head_sha) or []
+            release_changed = api.compare_files("develop", head_sha, require_ancestor=False)
+            if release_changed is None:
+                raise ValueError(f"cannot compare develop...{head_sha[:7]} to lane this release PR")
         lane = check_pr_lane.lane_for(config, base, head, files, release_changed)
         items = check_pr_lane.evidence_for_change(config, lane, files)
         reviews = api.paged(f"/pulls/{args.pr}/reviews")

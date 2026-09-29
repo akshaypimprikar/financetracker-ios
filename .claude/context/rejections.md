@@ -577,3 +577,33 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md
 **Caught by:** this review (isolated subagent, design mode, round 2)
+
+## 2026-09-29 — PR#133 — Round 1: release lane fails open when develop has moved on
+**What was wrong:** check_review_evidence.py turned a None compare result (diverged or 404) into an empty list, and lane_for's all() over an empty list returned the release lane, so a release/* PR with app or pipeline commits needed no evidence. Repeats PR#132 Round 1, "release lane decided by branch name alone".
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_review_evidence.py:159, scripts/check_pr_lane.py:105
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#133 — Round 1: overclaim that Gate 11 enforces RED before GREEN for every task
+**What was wrong:** test/SKILL.md said /feature's test-first order is "enforced by Gate 11", but Gate 11 checks only new ViewModel/Service/Repository files with a matching test file. Repeats PR#131 Round 1 and PR#105 Round 1 (overclaiming a gate's scope).
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/test/SKILL.md:12
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#133 — Round 1: any account could post the verdict review-evidence reads
+**What was wrong:** _latest_verdict accepted any review starting with the verdict header, without checking its author, so a third party could satisfy or block review_verdict.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_review_evidence.py:49
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#133 — Round 1: release and sync lanes trusted a fork's branch name
+**What was wrong:** lane_for received pr.head.ref without checking the head repo, so a fork branch named release/* or sync/* touching only lane paths could get an evidence-free lane.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_review_evidence.py:151
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#133 — Round 1: renamed files skipped the citation check
+**What was wrong:** check_citations.py listed files with --diff-filter=AM, so a renamed and edited spec or skill file (status R) had its added citations unchecked.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_citations.py:48
+**Caught by:** this review (isolated subagent)

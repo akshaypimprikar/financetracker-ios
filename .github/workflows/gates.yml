@@ -50,8 +50,12 @@ jobs:
           # Branch names are attacker-controlled: pass via env, never inline in run.
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
         run: |
           set -o pipefail
+          # A fork's branch never gets the release, sync or back-merge lanes (same rule as check_review_evidence.py).
+          [ "$HEAD_REPO" = "$REPO" ] || HEAD_REF="fork:$HEAD_REF"
           script="$GITHUB_WORKSPACE/base/scripts/check_pr_lane.py"
           config="$GITHUB_WORKSPACE/base/scripts/pipeline_lanes.json"
           if [ ! -f "$script" ] || [ ! -f "$config" ]; then

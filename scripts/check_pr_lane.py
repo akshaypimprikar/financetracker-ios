@@ -102,7 +102,8 @@ def lane_for(config, base, head, changed, release_changed):
     release = config.get("release")
     if release:
         if head.startswith("release/") and base == "main":
-            if all(_matches_any(release["paths"], p) for p in release_changed):
+            # An empty list means the release branch's commits are unknown: never assume release.
+            if release_changed and all(_matches_any(release["paths"], p) for p in release_changed):
                 return "release"
         elif head == "main" and base == "develop":
             if all(_matches_any(release["paths"], p) for p in changed):
