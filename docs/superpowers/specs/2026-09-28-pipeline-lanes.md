@@ -87,10 +87,10 @@ Pipeline only. No app code changes.
   `python3 -m unittest discover scripts/tests`. It keeps today's two checkouts (PR head, and the base branch
   as the trusted copy) and runs every script, `check_citations.py` and the unit tests included, from the base
   checkout, with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
-  (`.github/workflows/pr-checks.yml:112-141`). A PR therefore cannot edit a gate script and have its own
+  (`.github/workflows/gates.yml:70-96`). A PR therefore cannot edit a gate script and have its own
   copy judge it. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
   exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
-  delta (`.github/workflows/pr-checks.yml:94-99`).
+  delta (`.github/workflows/gates.yml:70-71`).
 - **`.github/workflows/review-evidence.yml`** (new, `pull_request_target` on `opened`, `synchronize`,
   `reopened`, `edited`): checks out the base branch only, gets changed files, the PR body, reviews and
   `compare` results from the GitHub API with the job's read-only `GITHUB_TOKEN`, then runs
@@ -130,7 +130,7 @@ A hand-authored pragma PR, not `/sync-workflow`, which stages only `.claude/skil
   `setup.sh`'s script-copy step (`pragma/scripts/setup.sh:117-124`, which copies named files, not the
   directory).
 - `scaffold/.github/workflows/gates.yml` and `review-evidence.yml`, and removal of the `gates` job from
-  `scaffold/.github/workflows/pr-checks.yml` (`pragma/scaffold/.github/workflows/pr-checks.yml:106`).
+  `scaffold/.github/workflows/pr-checks.yml` (done in pragma #85).
   `setup.sh` skips workflow files that already exist, so the pragma CHANGELOG tells existing adopters to
   delete that job by hand.
 - `scaffold/pipeline_lanes.json`, a template using `YOUR_PROJECT` like the scaffold workflows
