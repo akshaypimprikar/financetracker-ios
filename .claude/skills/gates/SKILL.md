@@ -103,6 +103,8 @@ Fail: section missing or empty — create the section and add a one-line summary
 using `git log develop..HEAD --oneline` to enumerate commits. `/feature`'s two-commit-per-task
 structure means only the GREEN (implementation) commit carries user-facing content — summarize
 those, skipping RED (test-only) commits, which have nothing to summarize.
+N/A: a `/release` feature-log PR that changes only `.claude/context/feature-log.md` (the release
+just renamed `[Unreleased]`, and the entry is not a user-facing change). Report `[–] N/A (feature-log only)`.
 
 ### Gate 6 — Coverage (conditional: new Swift files on branch)
 ```bash
@@ -320,10 +322,11 @@ Fail: script lists each violation (file, commit, reason) — fix by re-doing the
 commits (test-only, confirm it fails, then implementation) per `/feature`'s per-task rules.
 Nothing checked (exit 2): the script warns that no file in the repo matches `SCOPED_LAYER_DIRS`,
 which happens if the layer folders were renamed or moved. Update `SCOPED_LAYER_DIRS` to the
-current folders and re-run. Do not treat exit 2 as a pass; it means the gate checked nothing.
+current folders and re-run. Do not treat exit 2 as a pass; it means the gate checked nothing. Report it as `[✗]`.
 Rewriting already-pushed history is not required or expected; this gate only evaluates the
 branch as it stands when `/gates` runs.
-Skip this gate if the branch adds no new files under the scoped directories.
+Skip this gate if the branch adds no new files under the scoped directories, but only after
+confirming those directories still exist; if they were renamed, run the script to get exit 2.
 
 ### Gate 12 — Visual verification (advisory, conditional: Views/ changed)
 ```bash

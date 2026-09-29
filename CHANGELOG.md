@@ -7,7 +7,7 @@ All notable changes to FinanceTracker are documented here.
 ## [Unreleased]
 
 ### Fixed
-- **2026-09-29 pipeline-review fixes.** `/status` maps `hotfix/*` and `chore/*` branches and lists branch commits with `develop..HEAD`, not `develop...HEAD`, which also listed `develop` commits missing from the branch. Gate 11 says what exit 2 from `check_tdd_commit_order.py` means: no file matches `SCOPED_LAYER_DIRS`, so the gate checked nothing and must not count as a pass. `/release` says the back-merge PR's head must be `main` to get the `release` lane, and that the feature-log entry goes in its own `docs`-lane PR with a `Gates run at <sha>` line; it moved above Done when. `/plan` pins the simulator to `iPhone 17`, `OS=26.4.1`, as AGENTS.md does.
+- **2026-09-29 pipeline-review fixes.** `/status` maps `hotfix/*` and `chore/*` branches and lists branch commits with `develop..HEAD`, not `develop...HEAD`, which also listed `develop` commits missing from the branch. Gate 11 says what exit 2 from `check_tdd_commit_order.py` means: no file matches `SCOPED_LAYER_DIRS`, so the gate checked nothing and must not count as a pass. `/release` says the back-merge PR's head must be `main` to get the `release` lane, and that the feature-log entry goes in its own `docs`-lane PR off a synced `develop`, with a real `/gates` summary (Gate 5 N/A); it moved above Done when. Gate 11 marks exit 2 `[✗]` and is not skipped when its layer folders were renamed. `/plan` pins the simulator to `iPhone 17`, `OS=26.4.1`, as AGENTS.md does.
 
 ## [1.5.0] — 2026-09-29
 

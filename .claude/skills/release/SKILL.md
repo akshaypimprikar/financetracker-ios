@@ -113,7 +113,7 @@ git push origin --delete release/<version>
 
 Keep the back-merge PR's head as `main`: `check_pr_lane.py` gives the `release` lane to a back-merge only when its head is `main`. A `chore/*` back-merge branch carries `project.pbxproj`, so it is laned `app` and needs the full evidence.
 
-Then add the feature-log entry on its own `chore/v<version>-feature-log` branch off `develop` and open a separate PR to `develop`. Append to `.claude/context/feature-log.md`:
+Then add the feature-log entry in a separate PR to `develop`. Sync `develop` first (`git checkout develop && git pull`), then branch `chore/v<version>-feature-log` from it and append to `.claude/context/feature-log.md`:
 
 ```
 ## v<X.Y.Z> — YYYY-MM-DD
@@ -122,7 +122,7 @@ Then add the feature-log entry on its own `chore/v<version>-feature-log` branch 
 **Key architectural decisions:** <brief note or "none">
 ```
 
-That PR is laned `docs`, which needs a gate summary: put `Gates run at <full 40-char SHA from git rev-parse HEAD>` in its body, or `review-evidence` fails.
+That PR is laned `docs`, which needs a gate summary, or `review-evidence` fails. Run `/gates` on the branch and paste its summary; do not write a `Gates run at` line without a gate run. Gates 1–2 skip (no build-relevant change). Mark Gate 5 `[–] N/A (feature-log only)`: the release just renamed `[Unreleased]`, so the section is absent, and a feature-log entry is not a user-facing change.
 
 ### 8. Create GitHub release
 ```bash
