@@ -34,7 +34,7 @@ Also read the following files if they exist — skip silently if absent:
 This is a report-only run: do **not** append to `.claude/context/rejections.md` and do **not** merge — those steps belong to the post-PR `/review`.
 
 ### Check 2 — Line-level quality (`code-review:code-review`)
-Run the `code-review:code-review` skill against `git diff develop...HEAD`. On an invocation error, don't stall: print `/pr-followup`'s canonical warning string with its trailing `before merging` replaced by `before /gates` (nothing is merging yet at this pre-PR point) and continue to the Output format below.
+Run the `code-review:code-review` skill against `git diff develop...HEAD`. On an invocation error, don't stall: print `⚠️ code-review:code-review couldn't be agent-invoked (plugin not installed at user scope?) — run it yourself before /gates.` (this check still runs the plugin; `/pr-followup` uses the built-in `code-review`, so its warning no longer fits) and continue to the Output format below.
 
 ## Output format
 
