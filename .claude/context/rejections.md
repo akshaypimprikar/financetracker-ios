@@ -631,3 +631,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:172
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#152 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** The PR re-pointed two `gates.yml` citations in the spec's gates bullet (`:70-96`→`:71-97`, `:97-100`→`:99-102`) but left `.github/workflows/gates.yml:70-71` for the release-lane skip, which is now a blank line and the step name (the `if` is `:72`); the CHANGELOG line claimed the spec cites the current lines. Repeats PR#146's "corrected claim left in one spec sentence".
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:93
+**Caught by:** this review (isolated subagent)
