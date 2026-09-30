@@ -94,6 +94,7 @@ actor FakeCategorySuggesting: CategorySuggesting {
     private(set) var lastReceivedCandidates: [CategoryCandidate] = []
     private var resultsByPayee: [String: CategorySuggestionResult]
     private var delay: Duration?
+    private var callWaiters: [(threshold: Int, continuation: CheckedContinuation<Void, Never>)] = []
 
     init(isAvailable: Bool = true, resultsByPayee: [String: CategorySuggestionResult] = [:]) {
         self.isAvailable = isAvailable
@@ -104,9 +105,21 @@ actor FakeCategorySuggesting: CategorySuggesting {
         self.delay = delay
     }
 
+    /// Suspends until `suggestCategory` has been entered at least `count` times (before
+    /// any artificial delay), so a test can act at a known point instead of sleeping.
+    func waitUntilCalled(_ count: Int) async {
+        if suggestCallCount >= count { return }
+        await withCheckedContinuation { continuation in
+            callWaiters.append((threshold: count, continuation: continuation))
+        }
+    }
+
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
         suggestCallCount += 1
         lastReceivedCandidates = candidates
+        let ready = callWaiters.filter { suggestCallCount >= $0.threshold }
+        callWaiters.removeAll { suggestCallCount >= $0.threshold }
+        for waiter in ready { waiter.continuation.resume() }
         if let delay {
             try? await Task.sleep(for: delay)
         }
@@ -151,17 +164,4 @@ final class FailAfterNSavesCategoryRepo: CategoryRepositoryProtocol {
         guard saveCount <= failAfter else { throw RepoError.saveFailed }
         try wrapped.save(category)
     }
-}
-
-@discardableResult
-func waitUntil(
-    timeout: Duration = .seconds(2),
-    _ condition: @escaping () -> Bool
-) async throws -> Bool {
-    let deadline = ContinuousClock.now.advanced(by: timeout)
-    while ContinuousClock.now < deadline {
-        if condition() { return true }
-        try await Task.sleep(for: .milliseconds(10))
-    }
-    return condition()
 }

@@ -89,6 +89,8 @@ struct ImportHashGoldenTests {
 
     // MARK: Idempotency
 
+    // @MainActor: touches the main-actor ImportViewModel (see ImportViewModelTests, issue #136).
+    @MainActor
     @Test func importingTheSameCSVTwiceAddsNothingAndKeepsHashes() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
@@ -117,7 +119,8 @@ struct ImportHashGoldenTests {
         try await vm.applyMapping(mapping)
         #expect(vm.pendingTransactions.count == 3)
         vm.startImport(filename: "first.csv")
-        #expect(try await waitUntil { !vm.isImporting })
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
         #expect(vm.importFailure == nil)
 
         // Sorted "payee|hash" pairs: a duplicate row fails an #expect instead of trapping a Dictionary.
@@ -136,7 +139,8 @@ struct ImportHashGoldenTests {
         #expect(vm.pendingTransactions.isEmpty)
         #expect(vm.skippedCount == 3)
         vm.startImport(filename: "second.csv")
-        #expect(try await waitUntil { !vm.isImporting })
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
         #expect(vm.importFailure == nil)
 
         let secondPass = try ctx.fetch(FetchDescriptor<Transaction>())

@@ -3,7 +3,11 @@ import Foundation
 import SwiftData
 @testable import FinanceTracker
 
+// @MainActor: ImportViewModel is main-actor isolated (the app target's default isolation);
+// the test target has none, so without this the tests touch it from background threads,
+// racing the import task's main-actor `defer` (a ThreadSanitizer abort, issue #136).
 @Suite("ImportViewModel")
+@MainActor
 struct ImportViewModelTests {
 
     @Test func loadCSVAdvancesToColumnMapping() throws {
@@ -151,7 +155,8 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         // progress is 0 here, not 1.0 — reset() (called on successful completion, see
         // below) zeroes it as part of returning the ViewModel to its ready state, and
@@ -194,7 +199,8 @@ struct ImportViewModelTests {
 
         vm.startImport(filename: "first.csv")
         vm.startImport(filename: "second.csv")   // re-entrant call while isImporting — must be a no-op
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         let records = try SwiftDataImportRecordRepository(context: ctx).fetchAll()
         #expect(records.count == 1)
@@ -228,7 +234,8 @@ struct ImportViewModelTests {
         vm.startImport(filename: "test.csv")
         await fake.waitUntilChunksStarted(1)   // deterministic: at least one chunk write is in flight
         vm.cancelImport()
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         let savedChunkCount = await fake.savedChunkCount
         #expect(savedChunkCount < 5)   // cancellation interrupted at least one in-flight chunk
@@ -281,8 +288,8 @@ struct ImportViewModelTests {
         #expect(vm.pendingTransactions.map(\.payee) == ["SessionB"])
 
         // Let session A's stale task actually unwind and attempt its now-stale
-        // mutations.
-        try await Task.sleep(for: .milliseconds(400))
+        // mutations: wait on the task itself, not a guessed 400ms sleep.
+        await vm.waitForImport()
 
         // Regression guard: without the generation guard, session A's delayed
         // catch block would wipe out session B's state set up above.
@@ -315,7 +322,8 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         // No chunk succeeded (single chunk, single row, fails immediately) — no
         // best-effort ImportRecord is written since there's nothing to record.
@@ -355,7 +363,8 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         // Regression guard for the "silent partial persist, zero audit trail" bug:
         // one chunk's worth of transactions is durably in the store with no record
@@ -393,7 +402,8 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         // Regression guard for the "successful import misreported as total failure"
         // bug: both transactions are genuinely persisted (verified via a fresh fetch,
@@ -425,7 +435,8 @@ struct ImportViewModelTests {
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
         try await vm.applyMapping(mapping)
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
         #expect(vm.importFailure != nil)
 
         vm.reset()
@@ -793,7 +804,8 @@ struct ImportViewModelTests {
         vm.createAndAssignCategory(named: "Shopping", forPayee: "Amazon")
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         #expect(vm.importFailure == nil)
         let persisted = try SwiftDataCategoryRepository(context: ctx).fetchAll()
@@ -826,7 +838,8 @@ struct ImportViewModelTests {
         vm.createAndAssignCategory(named: "Electronics", forPayee: "Target")
 
         vm.startImport(filename: "test.csv")
-        try await waitUntil { !vm.isImporting }
+        await vm.waitForImport()
+        #expect(!vm.isImporting)
 
         #expect(vm.importFailure != nil)
         // Regression guard: "Shopping" saved successfully before "Electronics" failed —
@@ -860,7 +873,7 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         let loadTask = Task { await vm.loadSuggestions() }
-        try await Task.sleep(for: .milliseconds(50))   // let the call start, before its 200ms delay resolves
+        await fake.waitUntilCalled(1)   // the call has captured its generation and is inside its 200ms delay
         vm.reset()   // bumps importGeneration — simulates the user dismissing the sheet
         await loadTask.value
 

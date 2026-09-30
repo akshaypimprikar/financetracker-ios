@@ -303,6 +303,15 @@ final class ImportViewModel {
         importTask?.cancel()
     }
 
+    /// Suspends until the in-flight import (if any) has fully finished, including its
+    /// `defer` that clears `isImporting`. Lets a caller (tests) wait on the actual task
+    /// instead of polling `isImporting` against a wall-clock deadline. Captures the
+    /// current task, so it also waits out a cancelled task from a session that
+    /// `reset()` has already left.
+    func waitForImport() async {
+        _ = await importTask?.result
+    }
+
     func reset() {
         importGeneration += 1
         step = .filePicker
