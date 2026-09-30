@@ -7,6 +7,7 @@ All notable changes to FinanceTracker are documented here.
 ## [Unreleased]
 
 ### Changed
+- **Cheaper PR reviews.** `/pr-followup` runs the built-in `code-review` at `medium` effort instead of the `code-review:code-review` plugin, which started 10-20 subagents per run. `/review`'s isolated reviewer runs on Sonnet instead of inheriting the session model. `/parallel-review` still runs the plugin before a PR opens.
 - **`gates` and `review-evidence` are required checks** on `develop` and `main` (pinned to the `github-actions` app), so the Merge rule in AGENTS.md is now enforced by branch protection. Concurrency Advisory stays optional; whether to require it now that its ThreadSanitizer crash (#136) is fixed is still open. The 2026-09-29 pipeline review is closed (`addressed: true`).
 
 ### Fixed

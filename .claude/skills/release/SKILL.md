@@ -77,7 +77,7 @@ git push -u origin release/<version>
 ```
 
 ### 5. Verify the release branch only touches release files
-The `release` lane (`scripts/pipeline_lanes.json`) exempts `release/*` PRs from `/review` and `code-review:code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
+The `release` lane (`scripts/pipeline_lanes.json`) exempts `release/*` PRs from `/review` and `code-review` on the assumption that they never carry new logic — only the mechanical version bump/CHANGELOG commit. Confirm that assumption before opening the PR:
 ```bash
 git diff develop...HEAD --name-only
 ```

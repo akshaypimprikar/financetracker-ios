@@ -655,3 +655,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:876
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#154 — Round 1: parallel-review still claimed its warning is derived
+**What was wrong:** The PR gave `/parallel-review` Check 2 its own invocation-error warning (`:37`), but left `:11` ("derives its own by one documented substitution, not an independent copy") and `:52` (`/pr-followup`'s string with `before merging` → `before /gates`) saying it is derived from `/pr-followup`'s, so the file contradicted itself. Repeats "2026-09-08 — PR#105 — Round 3: duplication regression in the fallback wording".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/parallel-review/SKILL.md:11
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#154 — Round 1: review named only the plugin as the code-review source
+**What was wrong:** After the PR moved `/pr-followup` to the built-in `code-review`, `/review`'s logging rule still said "code-review round" PR-body sections come "from `code-review:code-review`", which misleads about where that content comes from.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:268
+**Caught by:** this review (isolated subagent)

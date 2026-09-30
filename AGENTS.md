@@ -39,7 +39,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 Skills in `.claude/skills/`: `/spec` `/plan` `/feature` `/gates` `/test` `/review` `/pr-followup` `/bugfix` `/release` `/sync-workflow` `/design` `/pipeline-review` `/status` `/parallel-review` `/trim-context` `/benchmark`
 
-Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/test` (coverage-gap audit) → `/gates` → PR targets `develop` → `/pr-followup` (`code-review:code-review` → `/review`, at most 2 rounds) → `/release` → `main`
+Standard pipeline: `/spec` → `/plan` → `/feature` (simplify per task) → `/test` (coverage-gap audit) → `/gates` → PR targets `develop` → `/pr-followup` (`code-review` at medium → `/review`, at most 2 rounds) → `/release` → `main`
 
 UI features: run `/design` before `/spec` if the feature introduces a visual pattern with no existing token.
 
