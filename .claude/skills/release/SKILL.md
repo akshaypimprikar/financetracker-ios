@@ -111,6 +111,19 @@ git branch -d release/<version>
 git push origin --delete release/<version>
 ```
 
+Keep the back-merge PR's head as `main`: `check_pr_lane.py` gives the `release` lane to a back-merge only when its head is `main`. A `chore/*` back-merge branch carries `project.pbxproj`, so it is laned `app` and needs the full evidence.
+
+Then add the feature-log entry in a separate PR to `develop`. Sync `develop` first (`git checkout develop && git pull`), then branch `chore/v<version>-feature-log` from it and append to `.claude/context/feature-log.md`:
+
+```
+## v<X.Y.Z> — YYYY-MM-DD
+**Features added:** <bullet list from CHANGELOG [version] section>
+**Key files changed:** <comma-separated key files or layers>
+**Key architectural decisions:** <brief note or "none">
+```
+
+That PR is laned `docs`, which needs a gate summary, or `review-evidence` fails. Run `/gates` on the branch and paste its summary; do not write a `Gates run at` line without a gate run. Gates 1–2 skip (no build-relevant change). Mark Gate 5 `[–] N/A (feature-log only)`: the release just renamed `[Unreleased]`, so the section is absent, and a feature-log entry is not a user-facing change.
+
 ### 8. Create GitHub release
 ```bash
 gh release create v<version> \
@@ -122,13 +135,4 @@ gh release create v<version> \
 Run `/pipeline-review` as a background task to capture any pipeline improvements surfaced during this release cycle. It will send a push notification when findings are ready.
 
 ## Done when
-PR merged to `main`, `main` tagged, `develop` updated, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.
-
-After all of the above, append to `.claude/context/feature-log.md`:
-
-```
-## v<X.Y.Z> — YYYY-MM-DD
-**Features added:** <bullet list from CHANGELOG [version] section>
-**Key files changed:** <comma-separated key files or layers>
-**Key architectural decisions:** <brief note or "none">
-```
+PR merged to `main`, `main` tagged, back-merge and feature-log PRs opened to `develop`, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.

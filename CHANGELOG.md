@@ -4,6 +4,13 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
+## [1.5.1] — 2026-09-30
+
+### Fixed
+- **Wording: `review-evidence` runs from the default branch.** The `gates.yml` header comment said `review-evidence.yml` "runs from the base branch", and the pipeline-lanes spec (`:30`, `:150`, `:172`) said it used the base branch's workflow. Under `pull_request_target` GitHub runs the workflow file from the default branch; only its scripts come from the base branch.
+- **`review-evidence` used `main`'s scripts and lane config for PRs into `develop`.** On `pull_request_target`, `actions/checkout` without a `ref` checks out the default branch, so lane or evidence changes merged to `develop` did not apply until the next release. The checkout now uses `github.event.pull_request.base.ref`, as `gates.yml` already does for its trusted scripts.
+- **2026-09-29 pipeline-review fixes.** `/status` maps `hotfix/*` and `chore/*` branches and lists branch commits with `develop..HEAD`, not `develop...HEAD`, which also listed `develop` commits missing from the branch. Gate 11 says what exit 2 from `check_tdd_commit_order.py` means: no file matches `SCOPED_LAYER_DIRS`, so the gate checked nothing and must not count as a pass. `/release` says the back-merge PR's head must be `main` to get the `release` lane, and that the feature-log entry goes in its own `docs`-lane PR off a synced `develop`, with a real `/gates` summary (Gate 5 N/A); it moved above Done when. Gate 11 marks exit 2 `[✗]` and is not skipped when its layer folders were renamed. `/plan` pins the simulator to `iPhone 17`, `OS=26.4.1`, as AGENTS.md does.
+
 ## [1.5.0] — 2026-09-29
 
 ### Changed
