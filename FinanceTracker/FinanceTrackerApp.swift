@@ -53,3 +53,5 @@ struct FinanceTrackerApp: App {
         .modelContainer(sharedModelContainer)
     }
 }
+
+// Throwaway: verifies required checks block an app-lane PR with no review verdict. Never merged.
