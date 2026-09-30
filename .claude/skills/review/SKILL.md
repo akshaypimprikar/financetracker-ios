@@ -113,7 +113,8 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
 ### Judgment checks — run by a fresh-context subagent, not this session
 
 The design compliance and code quality checklists below are judgment calls, so this session does not
-make them. Hand them to one fresh-context subagent. Give it these inputs, and nothing that carries the
+make them. Hand them to one fresh-context subagent, spawned with the Agent tool and `model: "sonnet"`
+(the default inherits the session model, and an Opus run per round was most of this command's cost). Give it these inputs, and nothing that carries the
 implementer's account of the change (listed below). This PR's own entries in `rejections.md` and
 `incidents.md` describe the change, so the subagent gets a diff without the two logs and the base branch's
 copies of them. Prepare those in one shell call (`BASE` does not carry over from step 2), with the copies

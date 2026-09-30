@@ -6,17 +6,18 @@ disable-model-invocation: true
 
 # PR Followup Agent
 
-Auto-chains `code-review:code-review` and then `/review` immediately after a PR
+Auto-chains the built-in `code-review` (at `medium` effort) and then `/review` immediately after a PR
 is opened, and records each result where the `review-evidence` CI check reads
 it (see `docs/superpowers/specs/2026-09-28-pipeline-lanes.md`).
 
-`code-review:code-review` runs first so its fixes land before the `/review`
+`code-review` runs first so its fixes land before the `/review`
 rounds; a fix after an APPROVED verdict would otherwise need `/review --confirm`.
 
-Note: `code-review:code-review` is a plugin. It must be installed at user scope
-to load in sessions launched from `~/Desktop/Claude/`; a project-local install
-does not load there (found 2026-09-28). If the invocation errors, step 3 catches
-it and continues to reporting rather than halting the whole command.
+Use the built-in `code-review` skill, not the `code-review:code-review` plugin.
+The plugin starts 10-20 subagents per run (Haiku triage, 5 Sonnet reviewers, a
+Haiku scorer per issue); from 2026-09-28, when it became the default here, it
+made each PR's review several times more expensive. `/review`'s isolated
+subagent already covers design and rule compliance.
 
 ## Trigger
 Invoked right after `gh pr create` succeeds, or manually against an existing
@@ -29,12 +30,12 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    pipeline paths), make sure the PR body has a non-empty
    `Motivating incident: <what went wrong, with a link or date>` line (or
    `none (<reason>)`); add it if missing, since `review-evidence` fails without it.
-2. Run `code-review:code-review` against the PR once. Fix any issue it posts,
-   commit and push. Then add or replace one line in the PR body with the head
+2. Run the built-in `code-review` once: `code-review <PR> medium --comment`.
+   Fix any issue it posts, commit and push. Then add or replace one line in the PR body with the head
    SHA it reviewed: `code-review: <comment URL> at <sha>`, or
    `code-review: no issues at <sha>` when it posted nothing.
 3. If the invocation errors (e.g. `Unknown skill`), don't stall. Print
-   `⚠️ code-review:code-review couldn't be agent-invoked (plugin not installed at user scope?) — run it yourself before merging.`
+   `⚠️ code-review couldn't be agent-invoked — run it yourself before merging.`
    and continue.
 4. Run `/review <PR>`. It posts the verdict and updates the PR body's `Review:`
    line. Stop at CHANGES REQUESTED until the issues are fixed; `/review` allows
