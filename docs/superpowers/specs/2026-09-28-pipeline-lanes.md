@@ -86,8 +86,8 @@ Pipeline only. No app code changes.
   `github.event.pull_request.base.ref` and `.head.ref`, plus `check_citations.py` and
   `python3 -m unittest discover scripts/tests`. It keeps today's two checkouts (PR head, and the base branch
   as the trusted copy) and runs every gate script, `check_citations.py` included, from the base
-  checkout (the unit tests run on the PR head, since they test the PR's own scripts: `.github/workflows/gates.yml:97-100`), with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
-  (`.github/workflows/gates.yml:70-96`). A PR therefore cannot edit a gate script and have its own
+  checkout (the unit tests run on the PR head, since they test the PR's own scripts: `.github/workflows/gates.yml:99-102`), with the same bootstrap fallback to the PR's copy only for a script the base does not have yet
+  (`.github/workflows/gates.yml:71-97`). A PR therefore cannot edit a gate script and have its own
   copy judge it. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
   exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
   delta (`.github/workflows/gates.yml:70-71`).
