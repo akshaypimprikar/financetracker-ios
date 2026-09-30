@@ -27,7 +27,7 @@ globs and each lane's evidence, so pragma ships them with its own config.
 | Relationship to #131 | Supersedes it | Keeps its two load-bearing ideas (the `gates` job runs on every PR; a missing check blocks). Drops the log split, the grep-gate script and the rule restatements, which lanes and the round cap make unnecessary. |
 | How a PR's lane is decided | `scripts/check_pr_lane.py` reads the changed paths, the head and base branches, and a per-project config; see "Lanes" | Deterministic, testable, the same code in every project. The `check_` prefix puts it under the existing `scripts/check_*` guard glob and the hook's `scripts/check_` fragment. |
 | What each lane requires | Listed in the config per lane, as evidence items (`gate_summary`, `review_verdict`, `code_review`, `motivating_incident`, `synced_from`) | Projects differ: pragma has no Xcode project, so it cannot produce a `/gates` summary, and its lanes simply do not list one |
-| Where enforcement lives | A `review-evidence` check that runs on `pull_request_target`: GitHub runs the workflow file from the **default branch**, and its checkout reads the scripts and config from the **base branch**. It never checks out PR code, plus branch protection requiring it and `gates` | A PR can edit a `pull_request` workflow to pass itself; it cannot edit the default branch's workflow or the base branch's scripts. Reading PR data only through the API keeps `pull_request_target` safe. |
+| Where enforcement lives | A `review-evidence` check that runs on `pull_request_target`: GitHub runs the workflow file from the **default branch**, and its checkout reads the scripts and config from the **base branch**. It never checks out PR code. Branch protection requires it and `gates` | A PR can edit a `pull_request` workflow to pass itself; it cannot edit the default branch's workflow or the base branch's scripts. Reading PR data only through the API keeps `pull_request_target` safe. |
 | Branch protection | Required checks `gates` and `review-evidence` on `develop` and `main`, in FinanceTracker and pragma, turned on last (see "Rollout order") | Confirmed by the user 2026-09-28. `enforce_admins` is already on in both repos. |
 | Evidence at a moved head | Evidence recorded at SHA `X` counts for head `H` when `X` = `H`, or `X` is an ancestor of `H` and every file changed in `X..H` is on the config's `carryover_paths` list (FinanceTracker: `.claude/context/rejections.md`, `.claude/context/incidents.md`) | /review's own log commit, and the `code-review` line edit, must not invalidate the verdict they follow |
 | Review rounds | At most 2 full rounds. Round 2 reviews only `X..H` since round 1 plus whether round-1 findings were fixed. After that, remaining non-HIGH findings become GitHub issues and the verdict is APPROVED; a remaining HIGH goes to the user. | #130 and #131 show unbounded rounds keep finding new detail |
@@ -169,8 +169,8 @@ None.
 - The release back-merge PR needs the `develop` PR requirement's settings (reviews: 0) to allow it; confirm.
 - Confirm on the rollout step-5 test PR that a `pull_request_target` check run attaches to the PR head SHA,
   so branch protection counts it as `review-evidence`.
-- The bootstrap warning path may be unreachable (`pull_request_target` has no workflow until the base has
-  one); keep it minimal or drop it.
+- The bootstrap warning path may be unreachable (`pull_request_target` has no workflow until the default
+  branch has one); keep it minimal or drop it.
 - Release PRs must be merged with a merge commit, not squashed, or the back-merge re-diffs the whole release.
 
 ## Future Extension Points

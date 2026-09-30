@@ -625,3 +625,9 @@
 **Rule violated:** no formal rule, caught in review (contradicts gates/SKILL.md "Report every gate before opening the PR" and review/SKILL.md's rule that a pasted summary is a claim to verify)
 **File:** .claude/skills/release/SKILL.md:125
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#146 — Round 1: corrected claim left in one spec sentence
+**What was wrong:** The PR corrected "review-evidence uses the base branch's workflow" at spec :30 and :150 but left the same claim at :172-173 ("`pull_request_target` has no workflow until the base has one"), so the spec still contradicted itself.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:172
+**Caught by:** this review (isolated subagent)
