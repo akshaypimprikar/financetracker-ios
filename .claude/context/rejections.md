@@ -637,3 +637,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:93
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: comment left describing the removed wait
+**What was wrong:** The PR replaced `waitUntil` with `waitForImport()` but left the comment beside it saying "the `defer { isImporting = false }` this waitUntil is gated on": it named the removed helper and a `defer` that does not exist (the real one is `defer { importTask = nil }`). Repeats PR#146's "corrected claim left in one spec sentence".
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:163
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: CHANGELOG called #136 both open and fixed
+**What was wrong:** The PR's new `[Unreleased]` Fixed bullet says the ThreadSanitizer crash (#136) is fixed, while the Changed bullet above it still said Concurrency Advisory stays optional "while its ThreadSanitizer crash (#136) is open".
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:10
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: test wait with no timeout could hang the suite
+**What was wrong:** The new `FakeCategorySuggesting.waitUntilCalled(1)` suspends on a continuation with no timeout, and the test using it had no time limit, so a regression that skipped the suggester would hang the test run instead of failing it.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:876
+**Caught by:** this review (isolated subagent)
