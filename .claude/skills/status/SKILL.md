@@ -29,12 +29,14 @@ Map branch prefix → pipeline phase:
 | `spec/*` | `/spec` — specification in progress |
 | `design/*` | `/design` — design tokens in progress |
 | `release/*` | `/release` — release in progress |
+| `hotfix/*` | `/bugfix` (hotfix) — fix off `main`, PRs to both `main` and `develop` |
+| `chore/*` | Maintenance (pipeline, docs, settings) |
 | `ci/*` | Pipeline/infrastructure work |
 | `develop` or `main` | No active feature branch |
 
 ### 2. Commits on branch vs develop
 ```bash
-git log develop...HEAD --oneline 2>/dev/null || git log --oneline -10
+git log develop..HEAD --oneline 2>/dev/null || git log --oneline -10
 ```
 
 ### 3. Open PRs

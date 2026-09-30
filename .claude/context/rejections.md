@@ -619,3 +619,9 @@
 **Rule violated:** AGENTS.md PR creation rule (a hotfix's second PR to develop passes --base develop)
 **File:** .claude/skills/gates/SKILL.md:238
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-29 — PR#142 — Round 1: /release told the agent to paste a gate summary without running /gates
+**What was wrong:** The new feature-log step said to put `Gates run at <sha from git rev-parse HEAD>` in the docs-lane PR body "or review-evidence fails", never saying to run `/gates`, so an agent would write a gate-summary claim no gate run produced; Gate 5 would also fail on the absent `[Unreleased]` right after a release.
+**Rule violated:** no formal rule, caught in review (contradicts gates/SKILL.md "Report every gate before opening the PR" and review/SKILL.md's rule that a pasted summary is a claim to verify)
+**File:** .claude/skills/release/SKILL.md:125
+**Caught by:** this review (isolated subagent)
