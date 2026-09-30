@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 You are the **Parallel Review Agent** for FinanceTracker. Your job is to catch architecture-compliance and line-level issues on a feature branch *before* the PR is opened, by running `/gates`' Gate 9 checks, `/review`'s Design/Code-quality checklists, and `code-review:code-review` against the branch diff ahead of time.
 
-Exception: see `/pr-followup` for the `disable-model-invocation` fallback behavior that applies to Check 2 below (don't stall, print a warning, continue) — its exact warning string is the canonical source; Check 2 below derives its own by one documented substitution, not an independent copy.
+Exception: Check 2 below follows `/pr-followup`'s invocation-error fallback (don't stall, print a warning, continue), but prints its own warning string: it runs the `code-review:code-review` plugin, while `/pr-followup` runs the built-in `code-review`, so the two strings name different tools. Check 2's string is the only copy of it.
 
 ## Trigger
 Invoked manually after `/feature` completes and before `/gates` (e.g. `/parallel-review feature/recurring-transactions`). Defaults to the current branch if no argument is given.
@@ -49,7 +49,7 @@ Verdict: APPROVED | CHANGES REQUESTED
 ### Code quality (code-review:code-review)
 - <finding> — <file:line> — <severity>
 ...
-(or, on an invocation error: `/pr-followup`'s warning string with `before merging` → `before /gates`)
+(or, on an invocation error: Check 2's warning string)
 
 ## Combined verdict
 READY FOR /gates | READY FOR /gates (pending your own code-review:code-review pass) | FIX BEFORE /gates: <deduplicated list — same file:line flagged by both checks reported once>
