@@ -9,6 +9,9 @@ All notable changes to FinanceTracker are documented here.
 ### Changed
 - **`gates` and `review-evidence` are required checks** on `develop` and `main` (pinned to the `github-actions` app), so the Merge rule in AGENTS.md is now enforced by branch protection. Concurrency Advisory stays optional while its ThreadSanitizer crash (#136) is open. The 2026-09-29 pipeline review is closed (`addressed: true`).
 
+### Fixed
+- **Gate 5's feature-log N/A no longer rests on a false premise (#143).** `/release` cuts the feature-log branch before the back-merge lands, so `develop` usually still has `[Unreleased]` and Gate 5 passes; the N/A now applies only when the gate actually fails on a feature-log-only PR. `/release` step 3 says to rename `[Unreleased]` to the version heading instead of adding a new section. `/gates`' `/loop` stop condition names the N/A (#144), and the pipeline-lanes spec cites the current `gates.yml` lines (#138).
+
 ## [1.5.1] — 2026-09-30
 
 ### Fixed

@@ -55,7 +55,7 @@ Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `FinanceTracker.xcod
 - `CURRENT_PROJECT_VERSION = <increment by 1>;`
 
 ### 3. Update CHANGELOG.md
-Add a new section at the top:
+Rename `## [Unreleased]` to the version heading, keeping its entries (add the section at the top if there is no `[Unreleased]`):
 
 ```markdown
 ## [<version>] — YYYY-MM-DD
@@ -67,7 +67,7 @@ Add a new section at the top:
 - <bug 1>
 ```
 
-Use `git log <last-tag>..HEAD --oneline` to find what changed.
+Only when there was no `[Unreleased]` section, use `git log <last-tag>..HEAD --oneline` to find what changed. Otherwise keep the renamed entries as they are, and do not add entries from `git log` on top of them.
 
 ### 4. Commit and push the release branch
 ```bash
@@ -122,7 +122,7 @@ Then add the feature-log entry in a separate PR to `develop`. Sync `develop` fir
 **Key architectural decisions:** <brief note or "none">
 ```
 
-That PR is laned `docs`, which needs a gate summary, or `review-evidence` fails. Run `/gates` on the branch and paste its summary; do not write a `Gates run at` line without a gate run. Gates 1–2 skip (no build-relevant change). Mark Gate 5 `[–] N/A (feature-log only)`: the release just renamed `[Unreleased]`, so the section is absent, and a feature-log entry is not a user-facing change.
+That PR is laned `docs`, which needs a gate summary, or `review-evidence` fails. Run `/gates` on the branch and paste its summary; do not write a `Gates run at` line without a gate run. Gates 1–2 skip (no build-relevant change). Gate 5 usually passes, because `develop` keeps its `[Unreleased]` entries until the back-merge lands; if it fails, mark it `[–] N/A (feature-log only)`, as Gate 5 allows.
 
 ### 8. Create GitHub release
 ```bash
