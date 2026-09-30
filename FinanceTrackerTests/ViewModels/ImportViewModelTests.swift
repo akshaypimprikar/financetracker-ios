@@ -160,8 +160,9 @@ struct ImportViewModelTests {
 
         // progress is 0 here, not 1.0 — reset() (called on successful completion, see
         // below) zeroes it as part of returning the ViewModel to its ready state, and
-        // that happens before the `defer { isImporting = false }` this waitUntil is
-        // gated on. Chunk/record assertions below are the meaningful completion checks.
+        // that happens before the import task's `defer { importTask = nil }`, which
+        // waitForImport() waits out. Chunk/record assertions below are the meaningful
+        // completion checks.
         let savedChunkCount = await fake.savedChunkCount
         #expect(savedChunkCount == 3)   // 5 items, chunkSize 2 → chunks of 2, 2, 1
         #expect(vm.step == .filePicker)
@@ -848,7 +849,10 @@ struct ImportViewModelTests {
         #expect(persisted.isEmpty)
     }
 
-    @Test func loadSuggestionsStopsWritingAfterResetBumpsGeneration() async throws {
+    // A regression that skips the suggester would leave waitUntilCalled(1) suspended
+    // forever; the time limit turns that hang into a failure.
+    @Test(.timeLimit(.minutes(1)))
+    func loadSuggestionsStopsWritingAfterResetBumpsGeneration() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         try ctx.save()
