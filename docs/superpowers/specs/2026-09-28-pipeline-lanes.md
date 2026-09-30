@@ -90,7 +90,7 @@ Pipeline only. No app code changes.
   (`.github/workflows/gates.yml:71-97`). A PR therefore cannot edit a gate script and have its own
   copy judge it. It runs on every PR so the required check always reports. For the `release` lane it prints the lane and
   exits 0 without running the scripts, as today's job skips release PRs because they diff the whole release
-  delta (`.github/workflows/gates.yml:70-71`).
+  delta (`.github/workflows/gates.yml:72`).
 - **`.github/workflows/review-evidence.yml`** (new, `pull_request_target` on `opened`, `synchronize`,
   `reopened`, `edited`): checks out the base branch only, gets changed files, the PR body, reviews and
   `compare` results from the GitHub API with the job's read-only `GITHUB_TOKEN`, then runs

@@ -67,7 +67,7 @@ Rename `## [Unreleased]` to the version heading, keeping its entries (add the se
 - <bug 1>
 ```
 
-Use `git log <last-tag>..HEAD --oneline` to find what changed.
+Only when there was no `[Unreleased]` section, use `git log <last-tag>..HEAD --oneline` to find what changed. Otherwise keep the renamed entries as they are, and do not add entries from `git log` on top of them.
 
 ### 4. Commit and push the release branch
 ```bash
