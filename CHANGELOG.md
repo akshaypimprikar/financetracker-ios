@@ -4,7 +4,7 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
-## [Unreleased]
+## [1.5.1] — 2026-09-30
 
 ### Fixed
 - **Wording: `review-evidence` runs from the default branch.** The `gates.yml` header comment said `review-evidence.yml` "runs from the base branch", and the pipeline-lanes spec (`:30`, `:150`, `:172`) said it used the base branch's workflow. Under `pull_request_target` GitHub runs the workflow file from the default branch; only its scripts come from the base branch.
