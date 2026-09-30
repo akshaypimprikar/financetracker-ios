@@ -4,6 +4,11 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **`gates` and `review-evidence` are required checks** on `develop` and `main` (pinned to the `github-actions` app), so the Merge rule in AGENTS.md is now enforced by branch protection. Concurrency Advisory stays optional while its ThreadSanitizer crash (#136) is open. The 2026-09-29 pipeline review is closed (`addressed: true`).
+
 ## [1.5.1] — 2026-09-30
 
 ### Fixed
