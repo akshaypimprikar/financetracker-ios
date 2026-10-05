@@ -6,6 +6,7 @@ on:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
+      - 'FinanceTracker.xcodeproj/**'
       - 'FinanceTrackerTests/**'
       - 'FinanceTrackerUITests/**'
       # The unit-test job runs select_simulator.py, slim_simulator.sh and check_coverage.py,
