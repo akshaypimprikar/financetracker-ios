@@ -1,9 +1,9 @@
 """Gate 0's build-relevance pathspec must keep matching project-file changes.
 
-Both copies of the pathspec in .claude/skills/gates/SKILL.md (Gate 0 and the
-importHash golden-test skip under Gate 9) are run against a scratch git repo,
-so dropping a pattern, or the two copies drifting apart, fails here instead of
-silently skipping build and test (#158).
+Gate 0 in .claude/skills/gates/SKILL.md holds the only copy of the pathspec;
+the importHash golden-test skip under Gate 9 reads Gate 0's result file. The
+pathspec is run against a scratch git repo, so dropping a pattern, or a second
+copy appearing, fails here instead of silently skipping build and test (#158).
 """
 import os
 import re
@@ -15,7 +15,8 @@ import unittest
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 SKILL = os.path.join(ROOT, ".claude", "skills", "gates", "SKILL.md")
 WORKFLOWS = os.path.join(ROOT, ".github", "workflows")
-PATHSPEC = re.compile(r"git diff develop\.\.\.HEAD --name-only -- ('\*\.swift'[^|\n]*?)\s*(?:\||$)", re.M)
+# Any `git diff` line naming a project-bundle pattern, however its flags are written.
+PATHSPEC = re.compile(r"^.*\bgit diff\b.*?\s--\s+(.*?\*\.xcodeproj.*?)\s*(?:\||>|$)", re.M)
 
 BUILD_RELEVANT = [
     "App.xcodeproj/project.pbxproj",
@@ -27,14 +28,16 @@ BUILD_RELEVANT = [
     "App/Info.plist",
     "Config/Debug.xcconfig",
     "App.xctestplan",
+    "App/App.entitlements",
+    "Package.swift",
+    "Package.resolved",
 ]
 NOT_BUILD_RELEVANT = ["docs/notes.md", "README.md"]
 
 
 def pathspecs():
     with open(SKILL) as f:
-        # Gates 3-13 grep '*.swift' alone; only the build-relevance pathspec lists more.
-        return [m.group(1).strip() for m in PATHSPEC.finditer(f.read()) if m.group(1).strip() != "'*.swift'"]
+        return [m.group(1).strip() for m in PATHSPEC.finditer(f.read())]
 
 
 def git(cwd, *args):
@@ -57,10 +60,15 @@ def changed(spec, path):
 
 
 class Gate0PathspecTests(unittest.TestCase):
-    def test_both_copies_present_and_identical(self):
+    def test_exactly_one_copy(self):
         specs = pathspecs()
-        self.assertEqual(len(specs), 2, specs)
-        self.assertEqual(specs[0], specs[1])
+        self.assertEqual(len(specs), 1, specs)
+
+    def test_golden_skip_reads_gate0_result(self):
+        with open(SKILL) as f:
+            text = f.read()
+        self.assertIn('[ ! -s "$GATE0" ]', text)
+        self.assertEqual(text.count('GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"'), 2)
 
     def test_project_and_build_inputs_listed(self):
         spec = pathspecs()[0]
@@ -75,13 +83,32 @@ class Gate0PathspecTests(unittest.TestCase):
                 self.assertEqual(changed(spec, path), [])
 
 
+def path_filters(text):
+    """Each `paths:` list in a workflow, as a list of its entries."""
+    blocks, current, indent = [], None, None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped == "paths:":
+            current, indent = [], len(line) - len(line.lstrip())
+            blocks.append(current)
+        elif current is not None:
+            if stripped.startswith("- ") and len(line) - len(line.lstrip()) > indent:
+                current.append(stripped[2:].strip("'\""))
+            elif stripped and not stripped.startswith("#"):
+                current = None
+    return blocks
+
+
 class WorkflowPathFilterTests(unittest.TestCase):
-    def test_app_workflows_trigger_on_project_bundle(self):
+    def test_every_app_paths_filter_includes_project_bundle(self):
         for name in ("pr-checks.yml", "ui-tests.yml", "concurrency-advisory.yml"):
-            with self.subTest(workflow=name), open(os.path.join(WORKFLOWS, name)) as f:
-                text = f.read()
-                self.assertEqual(text.count("- 'FinanceTracker/**'"), text.count("- 'FinanceTracker.xcodeproj/**'"))
-                self.assertIn("- 'FinanceTracker.xcodeproj/**'", text)
+            with open(os.path.join(WORKFLOWS, name)) as f:
+                blocks = path_filters(f.read())
+            self.assertTrue(blocks, name)
+            for i, entries in enumerate(blocks):
+                with self.subTest(workflow=name, block=i):
+                    self.assertIn("FinanceTracker/**", entries)
+                    self.assertIn("FinanceTracker.xcodeproj/**", entries)
 
 
 if __name__ == "__main__":
