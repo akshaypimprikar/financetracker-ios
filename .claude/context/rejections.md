@@ -667,3 +667,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:268
 **Caught by:** this review (isolated subagent)
+
+## 2026-10-05 — PR#160 — Round 1: Gate 0 filter left as two copies
+**What was wrong:** Issue #158 asked for one copy of the build-relevance pathspec, but Gate 0 and the importHash golden-test skip each kept a literal copy; the new test only caught them drifting apart, and the CHANGELOG and SKILL.md presented the two copies as intended.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:36,212
+**Caught by:** this review (isolated subagent)
+
+## 2026-10-05 — PR#160 — Round 1: pathspec test matched only one exact spelling
+**What was wrong:** `test_gate0_pathspec.py` extracted the pathspec only from `git diff develop...HEAD --name-only -- '*.swift' …`, so a copy written with other flags or ordering would not be checked.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/tests/test_gate0_pathspec.py
+**Caught by:** this review (isolated subagent)

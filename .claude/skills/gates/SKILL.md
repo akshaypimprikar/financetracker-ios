@@ -33,12 +33,16 @@ the SHA, because the gate summary must describe the commit that actually opens t
 
 ### Gate 0 — Build-relevant change check (runs first; determines if Gates 1–2 apply)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xcscheme' '*.xctestplan'
+GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"   # untracked, so the tree stays clean
+git diff develop...HEAD --name-only -- '*.swift' '*.xcodeproj/**' '*.xcworkspace/**' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xctestplan' | tee "$GATE0"
 ```
+This is the only copy of the build-relevance list: later steps that depend on Gate 0 read `$GATE0` (the file is named
+after the pinned SHA, so a stale result from another commit is never read) instead of repeating it.
 If this returns **no output**, skip Gates 1 and 2 — nothing that affects the build or test suite changed. Continue from Gate 3.
 If any file is listed, run Gates 1 and 2 as normal. Project, config, plist, entitlement and
 package-manifest, scheme and test-plan changes are included on purpose (a test-plan edit changes which tests run; add any other build input your project has — asset or string catalogs, data models): a build-setting flip (e.g. `SWIFT_DEFAULT_ACTOR_ISOLATION`
 in the `.pbxproj`, or in the `.xcproj` that the Xcode 27.2 beta can convert a project to) can break the build or change runtime behavior without touching a `.swift` file.
+The project and workspace bundles are matched whole (`*.xcodeproj/**`, `*.xcworkspace/**`), not by file extension, so `project.pbxproj`, the `project.xcproj` that replaces it after `xcodebuild -convert-project xcproj`, shared schemes and workspace settings all count, and so does any file a later Xcode adds to the bundle. `scripts/tests/test_gate0_pathspec.py` fails if a second copy of this list appears or if it stops matching those files.
 Gates 3–13 still scope their own greps to `*.swift` where they say so.
 
 ### Gate 1 — Build (conditional: Gate 0 listed files)
@@ -208,7 +212,10 @@ which silently breaks CSV dedup on re-import. The behavioral check is the Swift 
 `ImportHashGoldenTests` (`FinanceTrackerTests/ImportHashGoldenTests.swift`). This is the one Gate 9 step
 that runs `xcodebuild`, so it is `/gates`-only — `/review` does not re-run it:
 ```bash
-if ! git diff develop...HEAD --name-only -- '*.swift' '*.pbxproj' '*.xcproj' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xcscheme' '*.xctestplan' | grep -q .; then
+GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"
+if [ ! -f "$GATE0" ]; then
+  echo "GOLDEN FAIL: no Gate 0 result for this commit; run Gate 0 first"
+elif [ ! -s "$GATE0" ]; then
   echo "GOLDEN SKIP: no build-relevant changes (Gate 0 empty)"
 elif ! git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
   echo "GOLDEN SKIP: ImportHashGoldenTests not on develop yet (merge-order dependency)"

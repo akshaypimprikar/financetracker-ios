@@ -9,6 +9,7 @@ on:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
+      - 'FinanceTracker.xcodeproj/**'
       - 'FinanceTrackerTests/**'
       - 'scripts/**'
       - '.github/**'

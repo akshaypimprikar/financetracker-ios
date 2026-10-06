@@ -6,11 +6,13 @@ on:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
+      - 'FinanceTracker.xcodeproj/**'
       - 'FinanceTrackerUITests/**'
   push:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
+      - 'FinanceTracker.xcodeproj/**'
       - 'FinanceTrackerUITests/**'
 
 concurrency:
