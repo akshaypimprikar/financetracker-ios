@@ -395,6 +395,6 @@ All 13 gates report (11 blocking gates pass; Gates 10 and 12 are advisory, see t
 sections above), the summary opens with `Gates run at <sha>`, PR is open, and the PR URL is returned to the user.
 
 ## Tip — chain into code-review + review
-Once the PR is open, run `/pr-followup <PR>` to run `code-review` (medium)
-and then `/review`, and record both in the PR body for the `review-evidence`
+Once the PR is open, run `/pr-followup <PR>` to run `code-review` (medium, `app` lane
+only) and then `/review`, and record each in the PR body for the `review-evidence`
 check. `/test` runs before `/gates`, not after the PR opens.
