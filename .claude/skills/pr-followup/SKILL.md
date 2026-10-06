@@ -30,7 +30,12 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    pipeline paths), make sure the PR body has a non-empty
    `Motivating incident: <what went wrong, with a link or date>` line (or
    `none (<reason>)`); add it if missing, since `review-evidence` fails without it.
-2. Run the built-in `code-review` once: `code-review <PR> medium --comment`.
+   A `pipeline` PR gets one reviewer: skip steps 2–3 and go to step 4. Only the
+   `app` lane (which also covers a PR touching app and pipeline paths) runs both,
+   because on pipeline diffs the second reviewer doubled the token cost and added
+   design suggestions rather than defects (2026-10-05: the same 4-line Gate 0 fix
+   got 7 inline comments across FinanceTracker #157 and pragma #100).
+2. `app` lane only: run the built-in `code-review` once: `code-review <PR> medium --comment`.
    Fix any issue it posts, commit and push. Then add or replace one line in the PR body with the head
    SHA it reviewed: `code-review: <comment URL> at <sha>`, or
    `code-review: no issues at <sha>` when it posted nothing.
@@ -40,11 +45,11 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
 4. Run `/review <PR>`. It posts the verdict and updates the PR body's `Review:`
    line. Stop at CHANGES REQUESTED until the blocking issues are fixed. `/review`
    runs one round by default and a second only to confirm blocking fixes.
-5. Report both results and the lane.
+5. Report the results (one for a `pipeline` PR, two for `app`) and the lane.
 
 `/test` is not in this chain: it now runs between `/feature` and `/gates`.
 
 ## Done when
-Both results are reported and recorded in the PR body (or the fallback warning
-printed). Do not merge — per AGENTS.md's Merge rule, the required checks decide
+Each result the lane needs is reported and recorded in the PR body (or the
+fallback warning printed). Do not merge — per AGENTS.md's Merge rule, the required checks decide
 mergeability and the user merges.
