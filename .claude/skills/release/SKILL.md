@@ -41,7 +41,7 @@ If any check fails, stop and report what must be fixed.
 
 All commands run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`.
 
-Read `.claude/context/feature-log.md` if it exists — skip silently if absent. Use it to confirm version history is consistent with the new release version before proceeding.
+Read `.claude/context/feature-log.md` if it exists — skip silently if absent (step 3 creates it if missing). Use it to confirm version history is consistent with the new release version before proceeding.
 
 ### 1. Create the release branch off develop
 ```bash
