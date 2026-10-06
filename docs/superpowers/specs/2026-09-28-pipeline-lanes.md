@@ -118,7 +118,7 @@ Pipeline only. No app code changes.
 - **`.claude/skills/test/SKILL.md`**: a coverage-gap audit between `/feature` and `/gates`.
 - **`.claude/skills/gates/SKILL.md`**: the gate summary prints the lane.
 - **`.claude/skills/release/SKILL.md`**: the back-merge from `main` to `develop`
-  (`.claude/skills/release/SKILL.md:114-118`) becomes a PR, which the `release` lane covers, instead of a
+  (`.claude/skills/release/SKILL.md:116-119`) becomes a PR, which the `release` lane covers, instead of a
   direct push that the existing `develop` protection already forbids.
 - **`AGENTS.md`**: the "Standard pipeline" line and the Merge rule point to lanes. The Merge rule becomes one
   sentence: the required checks decide mergeability, and the user merges.
