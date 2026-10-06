@@ -38,8 +38,8 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    `⚠️ code-review couldn't be agent-invoked — run it yourself before merging.`
    and continue.
 4. Run `/review <PR>`. It posts the verdict and updates the PR body's `Review:`
-   line. Stop at CHANGES REQUESTED until the issues are fixed; `/review` allows
-   at most two full rounds.
+   line. Stop at CHANGES REQUESTED until the blocking issues are fixed. `/review`
+   runs one round by default and a second only to confirm blocking fixes.
 5. Report both results and the lane.
 
 `/test` is not in this chain: it now runs between `/feature` and `/gates`.

@@ -51,6 +51,7 @@ import tempfile
 # Repo-relative globs. fnmatch's `*` also crosses `/`, so nested paths match.
 PROTECTED_GLOBS = (
     ".claude/skills/*/SKILL.md",
+    ".claude/skills/*/reference.md",
     "scripts/check_*",
     "AGENTS.md",
     "CLAUDE.md",

@@ -69,9 +69,18 @@ Rename `## [Unreleased]` to the version heading, keeping its entries (add the se
 
 Only when there was no `[Unreleased]` section, use `git log <last-tag>..HEAD --oneline` to find what changed. Otherwise keep the renamed entries as they are, and do not add entries from `git log` on top of them.
 
+Then append the feature-log entry to `.claude/context/feature-log.md` in the same commit, so it reaches `develop` with the back-merge and needs no PR of its own (a separate feature-log PR made every release three PRs per repo):
+
+```
+## v<X.Y.Z> — YYYY-MM-DD
+**Features added:** <bullet list from CHANGELOG [version] section>
+**Key files changed:** <comma-separated key files or layers>
+**Key architectural decisions:** <brief note or "none">
+```
+
 ### 4. Commit and push the release branch
 ```bash
-git add FinanceTracker.xcodeproj/project.pbxproj CHANGELOG.md
+git add FinanceTracker.xcodeproj/project.pbxproj CHANGELOG.md .claude/context/feature-log.md
 git commit -m "chore: bump version to <version>"
 git push -u origin release/<version>
 ```
@@ -113,17 +122,6 @@ git push origin --delete release/<version>
 
 Keep the back-merge PR's head as `main`: `check_pr_lane.py` gives the `release` lane to a back-merge only when its head is `main`. A `chore/*` back-merge branch carries `project.pbxproj`, so it is laned `app` and needs the full evidence.
 
-Then add the feature-log entry in a separate PR to `develop`. Sync `develop` first (`git checkout develop && git pull`), then branch `chore/v<version>-feature-log` from it and append to `.claude/context/feature-log.md`:
-
-```
-## v<X.Y.Z> — YYYY-MM-DD
-**Features added:** <bullet list from CHANGELOG [version] section>
-**Key files changed:** <comma-separated key files or layers>
-**Key architectural decisions:** <brief note or "none">
-```
-
-That PR is laned `docs`, which needs a gate summary, or `review-evidence` fails. Run `/gates` on the branch and paste its summary; do not write a `Gates run at` line without a gate run. Gates 1–2 skip (no build-relevant change). Gate 5 usually passes, because `develop` keeps its `[Unreleased]` entries until the back-merge lands; if it fails, mark it `[–] N/A (feature-log only)`, as Gate 5 allows.
-
 ### 8. Create GitHub release
 ```bash
 gh release create v<version> \
@@ -135,4 +133,4 @@ gh release create v<version> \
 Run `/pipeline-review` as a background task to capture any pipeline improvements surfaced during this release cycle. It will send a push notification when findings are ready.
 
 ## Done when
-PR merged to `main`, `main` tagged, back-merge and feature-log PRs opened to `develop`, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.
+PR merged to `main`, `main` tagged, back-merge PR opened to `develop`, GitHub release created, `CHANGELOG.md` committed, and `/pipeline-review` triggered.
