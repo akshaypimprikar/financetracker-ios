@@ -205,7 +205,10 @@ Merge its output into the verdict:
   when it is a defect in lines this PR adds or changes, and not on an item marked *(advisory)*. A MEDIUM
   about code the PR did not change, or one that proposes solving the problem a different way (for
   example a more general mechanism) without naming a defect in the diff, does not block: open an issue
-  for it. An accepted LOW finding never blocks. A finding that does not block is still reported, with
+  for it. Two exceptions still block: a MEDIUM on unchanged code that the PR's change depends on to
+  work (the diff is unsafe or wrong without it), and any MEDIUM that names a concrete input or
+  sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or `scripts/check_*`, since a
+  hole in a guardrail is a defect in what the PR ships even when the line is old. An accepted LOW finding never blocks. A finding that does not block is still reported, with
   its issue link. Keep the severity the subagent assigned. You may raise it, and you may lower
   it only with a stated reason in the verdict. Two floors never move: a repeat rated HIGH under the
   rule above, a regression of a blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays

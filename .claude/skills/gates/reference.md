@@ -7,6 +7,7 @@ Background for `SKILL.md`. Nothing here is a gate command, threshold or pass rul
 `xcodebuild` writes to a log file and `xcsift` reads that file afterwards — there is no pipeline, so
 its own exit status is captured directly (a `| xcsift` pipeline hides it unless `pipefail`,
 `PIPESTATUS` (bash) or `pipestatus` (zsh) is used, and `2>&1 | xcsift` on an empty or crashed run
+prints a clean-looking summary).
 
 Advisory: a compile error in SwiftUI code that built before an Xcode major-version update may be an SDK
 source-compatibility break rather than a bug in the change — see
@@ -19,6 +20,7 @@ Pass: `GATE 2 PASS` with an executed-test count above zero. The count is require
 `xcodebuild test` reports `** TEST SUCCEEDED **` with exit 0 when a test filter or scheme change
 matches nothing (verified 2026-09-20: `-only-testing:FinanceTrackerTests/<nonexistent suite>` ran zero
 tests and still printed `TEST SUCCEEDED`). Fail: empty log, non-zero exit, any failed test case, or zero
+executed tests (a test that fails once and passes on `-retry-tests-on-failure` still counts as failed here — fail-closed on purpose).
 
 ## Gate 11 — why commit order is checked
 
@@ -54,8 +56,8 @@ fallback.
 
 This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made against
 the plan's UI intent — scoring that automatically would make this an LLM-as-judge check, which
-every other gate here avoids (see Gate 10 above, the existing precedent for "advisory, reports
-candidates/evidence, never blocks"). Report status as `[i]`, the same symbol Gate 10 uses for
+every other gate here avoids (see Gate 10 in `SKILL.md`, the existing precedent for "advisory, reports
+candidates/evidence, never blocks"). Report status as `[i]`, the same symbol Gate 10 in `SKILL.md` uses for
 the same "advisory" contract — never `[✓]`/`[✗]`, since this gate cannot fail. The "does this
 look right" call is Akshay's, made by looking at the screenshot before merging.
 
@@ -64,6 +66,8 @@ likely already caught by Gate 1; don't treat it as a new failure mode here — n
 capture screenshot, see Gate 1" and move on.
 
 ## Autonomous gate-fixing loop
+
+The stop condition below must match the gate list in `SKILL.md` (13 gates, 2 advisory). Change both in the same commit.
 
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```

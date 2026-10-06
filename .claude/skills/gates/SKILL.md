@@ -272,7 +272,7 @@ Gates:
 Fix any failures before continuing.
 
 ## Autonomous gate-fixing loop
-If gates fail and need iterative fixes, use the `/loop` prompts in `reference.md` § Autonomous gate-fixing loop, run as a separate top-level command.
+If gates fail and need iterative fixes, use the `/loop` prompts in `reference.md` § Autonomous gate-fixing loop, run as a separate top-level command. Adding, renaming or removing a gate: update that loop's stop condition (gate count, advisory list) in the same commit.
 
 ### Gate 10 — Abstraction bloat / duplication (heuristic, advisory)
 ```bash

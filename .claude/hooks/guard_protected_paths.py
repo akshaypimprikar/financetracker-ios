@@ -157,7 +157,7 @@ def is_protected_dir_prefix(rel_dir):
 # the dominant cost.
 _PROTECTED_FRAGMENTS = tuple(
     frag.lower() for frag in (
-        "skill.md", "reference.md", "scripts/check_", "agents.md", "claude.md",
+        "skill.md", "/reference.md", "scripts/check_", "agents.md", "claude.md",
         "invariants.md", "settings.json", ".claude/hooks/", "constraints.md",
         "importhashgoldentests.swift",
         "pipeline_lanes.json", ".github/workflows/",

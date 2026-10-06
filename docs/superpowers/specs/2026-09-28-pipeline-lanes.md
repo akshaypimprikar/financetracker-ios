@@ -37,7 +37,7 @@ globs and each lane's evidence, so pragma ships them with its own config.
 | Cross-file claims in specs, plans and skills | Must cite `path:line` (or `path:start-end`); `scripts/check_citations.py` fails a citation whose file is missing or whose line is past the end | Catches the cheap half of the false-claim problem mechanically. Whether the cited line *says* what the text claims stays a review question. |
 | `/test` | Becomes a coverage-gap audit that runs after `/feature` and before `/gates` | Today it writes tests after `/review` APPROVED, so they are never reviewed and skip RED-before-GREEN |
 | Pipeline-change brake | The `pipeline` lane requires a `Motivating incident:` line naming a PR, issue or report that shows the problem, or `none (<reason>)` | 51 of the last 60 PRs were pipeline, docs or release work; the pipeline should change in response to observed failures. `none (<reason>)` keeps genuine one-offs possible and visible. |
-| `code-review` on pipeline PRs | Required in the `pipeline` lane too | The user's standing rule: run `code-review:code-review` on pipeline and tooling PRs, not only app PRs |
+| `code-review` on pipeline PRs | Required in the `pipeline` lane too | The user's standing rule: run `code-review:code-review` on pipeline and tooling PRs, not only app PRs. Superseded 2026-10-05 (FT #163): `pipeline` PRs get `/review` only; `code-review` runs on `app` PRs |
 
 ## Lanes
 Evaluated in this order; the first that applies wins.
@@ -47,7 +47,7 @@ Evaluated in this order; the first that applies wins.
 | `release` | (head `release/*` and base `main`) or (head `main` and base `develop`, the back-merge), **and** every path changed on the release branch itself is on the config's `release_paths`: for a `release/*` PR that is `develop...head` (the commits unique to the release branch, the same check `/release` runs at `.claude/skills/release/SKILL.md:82`), not the PR's diff against `main`, which holds the whole release delta (`.github/workflows/gates.yml:7-9`); for the back-merge it is the PR's diff (FinanceTracker: `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, `.claude/context/feature-log.md`). Otherwise the PR is laned by its paths, including when the release branch's `develop...head` list is empty. A PR from a fork never gets this lane or `sync`, and a `release/*` PR whose `develop...head` compare fails, or hits GitHub's 300-file cap, makes `review-evidence` exit with an error rather than guess. | none (the `gates` check still runs; `/release`'s pre-flight test run is the gate) |
 | `sync` | head `sync/*` **and** every changed path is on the config's `sync_paths` (pragma: `.claude/skills/**`, `scaffold/**`, the only paths `/sync-workflow` stages). Otherwise laned by paths. Only in configs that define it. | `synced_from`: a line naming the source PR, whose content was already reviewed there |
 | `app` | any changed path matches `app` globs | `gate_summary`, `review_verdict`, `code_review` |
-| `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `code_review`, `motivating_incident` |
+| `pipeline` | any changed path matches `pipeline` globs | `gate_summary`, `review_verdict`, `motivating_incident` (2026-10-05: `code_review` dropped, one reviewer on pipeline diffs; FT #163) |
 | `docs` | otherwise | `gate_summary` |
 
 Evidence items (the first three are tied to a SHA and subject to the carryover rule):
