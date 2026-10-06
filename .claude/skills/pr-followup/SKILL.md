@@ -28,7 +28,7 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    The script prints the lane: `app`, `pipeline`, `docs`, `release` or `sync`.
    For the `docs`, `release` and `sync` lanes, report the lane and stop: they
    need neither step below.
-   For the `pipeline` lane, make sure the PR body has a non-empty
+   For the `pipeline` lane, or any PR that also touches pipeline paths (an `app`-lane PR still owes the pipeline lane's `motivating_incident`, per `evidence_for_change` in `scripts/check_pr_lane.py`), make sure the PR body has a non-empty
    `Motivating incident: <what went wrong, with a link or date>` line (or
    `none (<reason>)`); add it if missing, since `review-evidence` fails without it.
    **Lane routing:** a `pipeline` PR gets one reviewer, so skip steps 2–3 and go to step 4.
