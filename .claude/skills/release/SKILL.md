@@ -78,7 +78,7 @@ Then append the feature-log entry to `.claude/context/feature-log.md` in the sam
 **Key architectural decisions:** <brief note or "none">
 ```
 
-If the release branch is amended or re-cut before it merges (version or date changes, a fix folded in), update this entry in a new commit on the branch so it matches the final CHANGELOG section. An abandoned release takes its entry with the branch. A later standalone correction to `feature-log.md` is a `docs`-lane PR (it matches no `app` or `pipeline` glob), which needs only the gate summary.
+If the release branch is amended or re-cut before it merges (version or date changes, a fix folded in), update this entry in a new commit on the branch so it matches the final CHANGELOG section. An abandoned release takes its entry with the branch. A later standalone correction to `feature-log.md` is a `docs`-lane PR (it matches no `app` or `pipeline` glob), which needs only the gate summary; Gate 5 reports N/A on it.
 
 ### 4. Commit and push the release branch
 ```bash

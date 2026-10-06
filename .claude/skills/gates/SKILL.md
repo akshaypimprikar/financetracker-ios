@@ -97,6 +97,8 @@ Fail: section missing or empty — create the section and add a one-line summary
 using `git log develop..HEAD --oneline` to enumerate commits. `/feature`'s two-commit-per-task
 structure means only the GREEN (implementation) commit carries user-facing content — summarize
 those, skipping RED (test-only) commits, which have nothing to summarize.
+N/A: a PR that changes only `.claude/context/feature-log.md` (a standalone feature-log correction; `/release` now puts its entry in the release commit), and only if
+this gate fails on it. A feature-log entry is not a user-facing change. Report `[–] N/A (feature-log only)`.
 
 ### Gate 6 — Coverage (conditional: new Swift files on branch)
 ```bash
@@ -386,7 +388,7 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`, except a hotf
 
 ## Guard against self-modifying guardrail files
 
-`.claude/hooks/guard_protected_paths.py` (a `PreToolUse` hook) blocks edits to the guarded files on a `feature/*` branch, and Gate 13 plus the `gates` CI job catch the same set on a plain commit and push. What each layer covers, what it misses, and where the pattern came from: `reference.md` § Guard.
+`.claude/hooks/guard_protected_paths.py` (a `PreToolUse` hook) blocks edits to the guarded files on a `feature/*` branch, and Gate 13 plus the `gates` CI job catch the same set on a plain commit and push. What each layer covers, what it misses, and where the pattern came from: `reference.md` § Guard. Known gaps, so a clean gate summary is not read as proof: the hook fails open on a detached HEAD and allows every edit off `feature/*`, it does not load in a session started from `~/Desktop/Claude` (the parent directory), and its Bash-write detection is best effort.
 
 ## Done when
 All 13 gates report (11 blocking gates pass; Gates 10 and 12 are advisory, see their own
