@@ -19,6 +19,32 @@ CONFIG = {
 }
 
 
+SMALL = dict(CONFIG, lanes=[CONFIG["lanes"][0], dict(
+    CONFIG["lanes"][1], evidence=["gate_summary", "review_verdict"],
+    small_pr={"max_changed_lines": 30, "evidence": ["gate_summary"]})])
+
+
+class SmallPrTests(unittest.TestCase):
+    def test_small_pipeline_pr_skips_review(self):
+        self.assertEqual(lane.evidence_for_change(SMALL, "pipeline", ["scripts/a.py"], 29), ["gate_summary"])
+
+    def test_at_threshold_keeps_review(self):
+        self.assertEqual(lane.evidence_for_change(SMALL, "pipeline", ["scripts/a.py"], 30),
+                         ["gate_summary", "review_verdict"])
+
+    def test_unknown_line_count_keeps_review(self):
+        self.assertEqual(lane.evidence_for_change(SMALL, "pipeline", ["scripts/a.py"]),
+                         ["gate_summary", "review_verdict"])
+
+    def test_app_lane_pr_never_skips_review(self):
+        self.assertIn("review_verdict", lane.evidence_for_change(SMALL, "app", ["App/a.swift", "scripts/a.py"], 5))
+
+    def test_bad_small_pr_config_rejected(self):
+        bad = dict(SMALL, lanes=[SMALL["lanes"][0], dict(SMALL["lanes"][1], small_pr={"max_changed_lines": 0})])
+        with self.assertRaises(lane.ConfigError):
+            lane.validate_config(bad)
+
+
 class GlobMatchTests(unittest.TestCase):
     def test_double_star_matches_nested(self):
         self.assertTrue(lane.glob_match("App/**", "App/Views/Home.swift"))
