@@ -33,6 +33,10 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    For the `pipeline` lane, or any PR that also touches pipeline paths (an `app`-lane PR still owes the pipeline lane's `motivating_incident`, per `evidence_for_change` in `scripts/check_pr_lane.py`), make sure the PR body has a non-empty
    `Motivating incident: <what went wrong, with a link or date>` line (or
    `none (<reason>)`); add it if missing, since `review-evidence` fails without it.
+   **Small pipeline PRs:** when the lane is `pipeline` and the PR changes fewer than 30 lines
+   (additions plus deletions, `small_pr` in `scripts/pipeline_lanes.json`), skip `/review` too: the gates,
+   the lane check and `review-evidence` decide, and `review_verdict` is not required. Report
+   "small pipeline PR, no model review" and stop. Count with `git diff --shortstat origin/<base>...HEAD`.
    **Lane routing:** a `pipeline` PR gets one reviewer, so skip steps 2–3 and go to step 4.
    Only the `app` lane (which also covers a PR touching app and pipeline paths) runs both,
    because on pipeline diffs the second reviewer doubled the token cost and added

@@ -35,13 +35,23 @@
         "CONSTRAINTS.md",
         "docs/superpowers/**"
       ],
-      "evidence": ["gate_summary", "review_verdict", "motivating_incident"]
+      "evidence": ["gate_summary", "review_verdict", "motivating_incident"],
+      "small_pr": {
+        "max_changed_lines": 30,
+        "evidence": ["gate_summary", "motivating_incident"]
+      }
     }
   ],
   "default": {
     "name": "docs",
     "evidence": ["gate_summary"]
   },
+  "review_carryover_paths": [
+    "docs/*.md",
+    "docs/pipeline-review/**",
+    "CHANGELOG.md",
+    "README.md"
+  ],
   "carryover_paths": [
     ".claude/context/rejections.md",
     ".claude/context/incidents.md"

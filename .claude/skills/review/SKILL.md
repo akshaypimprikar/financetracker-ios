@@ -39,6 +39,11 @@ finding and post APPROVED; a remaining HIGH goes to the user for a decision. Eac
 PR and adds new surface to review, so findings that are not defects in this diff do not earn one
 (2026-09-28 to 10-05: FinanceTracker #130 ran 56 rounds; #160's round 2 found LOW items in round-1 fixes).
 
+**Round cap is enforced.** `review-evidence` fails a PR with a third full-round `## Review Agent verdict:` review
+(`scripts/check_review_evidence.py`; a `Round confirm` verdict does not count). Do not post one: after round 2 open issues, or ask the user to add a
+`Round cap override: <reason>` line to the PR body. A later commit that touches only `docs/*.md`,
+`docs/pipeline-review/**`, `CHANGELOG.md` or `README.md` (not `docs/superpowers/`) keeps the verdict valid, so a docs fix needs no `--confirm`.
+
 **`/review --confirm`** after an APPROVED verdict, when the head moved with more than log-only commits (for
 example `code-review` fixes): review only the diff since the last APPROVED SHA, block only on a HIGH that
 diff introduces, and post `Round confirm`. It is not a round.
@@ -213,6 +218,12 @@ Merge its output into the verdict:
   it only with a stated reason in the verdict. Two floors never move: a repeat rated HIGH under the
   rule above, a regression of a blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays
   HIGH, and a required checklist FAIL stays at least MEDIUM.
+- Before rating, pipe each finding's `path:line` citation through
+  `python3 scripts/check_finding_lines.py --base origin/<base>`. Lower an `OUTSIDE` MEDIUM to LOW and say
+  "cites lines outside the diff" in the verdict, unless one of the two exceptions above applies. `UNCITED`
+  and `INSIDE` findings keep their severity.
+- A cosmetic finding (wording, wrap width, naming, formatting with no behavior effect) is never raised to
+  HIGH by the regression rule below, however many times it returns; it stays LOW.
 - Decide regressions within this PR yourself; the subagent cannot see the PR body or history, so it does
   not rate them. Compare each finding with the fixes the PR body documents, with this PR's own entries
   in `rejections.md`, and with the `incidents.md` entries this PR's diff adds (an entry this PR added to
