@@ -2,6 +2,7 @@
   "release": {
     "paths": [
       "FinanceTracker.xcodeproj/project.pbxproj",
+      "FinanceTracker.xcodeproj/project.xcproj",
       "CHANGELOG.md",
       ".claude/context/feature-log.md"
     ],

@@ -7,6 +7,7 @@ All notable changes to FinanceTracker are documented here.
 ## [Unreleased]
 
 ### Changed
+- **`/release` and the `release` lane accept `project.xcproj`.** The version bump, the step-5 path check and `scripts/pipeline_lanes.json` handle a project converted with `xcodebuild -convert-project xcproj`, so its version-bump PR is laned `release` and not `app` (#159).
 - **Cheaper PR reviews.** `/pr-followup` runs the built-in `code-review` at `medium` effort instead of the `code-review:code-review` plugin, which started 10-20 subagents per run. `/review`'s isolated reviewer runs on Sonnet instead of inheriting the session model. `/parallel-review` still runs the plugin before a PR opens.
 - **`gates` and `review-evidence` are required checks** on `develop` and `main` (pinned to the `github-actions` app), so the Merge rule in AGENTS.md is now enforced by branch protection. Concurrency Advisory stays optional; whether to require it now that its ThreadSanitizer crash (#136) is fixed is still open. The 2026-09-29 pipeline review is closed (`addressed: true`).
 - **`/review` decides what blocks with a script (PR B).** `scripts/review_verdict.py` takes the accepted findings (severity plus `in_diff`, `advisory`, `depends_on_unchanged`, `guard_bypass` flags) and prints the verdict, blocking ids and issue ids, so the MEDIUM-blocking rule is no longer prose the reviewer re-reads and re-argues each round.

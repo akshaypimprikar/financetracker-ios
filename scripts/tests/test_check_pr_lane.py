@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import check_pr_lane as lane  # noqa: E402
 
 CONFIG = {
-    "release": {"paths": ["App.xcodeproj/project.pbxproj", "CHANGELOG.md"], "evidence": []},
+    "release": {"paths": ["App.xcodeproj/project.pbxproj", "App.xcodeproj/project.xcproj", "CHANGELOG.md"], "evidence": []},
     "sync": {"branch_prefix": "sync/", "paths": [".claude/skills/**", "scaffold/**"], "evidence": ["synced_from"]},
     "lanes": [
         {"name": "app", "paths": ["App/**", "*.xcodeproj/**", "**/*.xctestplan"], "evidence": ["gate_summary"]},
@@ -88,6 +88,13 @@ class LaneForTests(unittest.TestCase):
         self.assertEqual(
             self.lane(["App/Model.swift", "CHANGELOG.md"], base="main", head="release/1.5.0",
                       release_changed=["CHANGELOG.md", "App.xcodeproj/project.pbxproj"]),
+            "release",
+        )
+
+    def test_release_lane_accepts_xcproj_version_bump(self):
+        self.assertEqual(
+            self.lane(["App.xcodeproj/project.xcproj", "CHANGELOG.md"], base="main", head="release/1.5.0",
+                      release_changed=["CHANGELOG.md", "App.xcodeproj/project.xcproj"]),
             "release",
         )
 
