@@ -34,6 +34,7 @@ the SHA, because the gate summary must describe the commit that actually opens t
 ### Gate 0 — Build-relevant change check (runs first; determines if Gates 1–2 apply)
 ```bash
 GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"   # untracked, so the tree stays clean
+find "$(git rev-parse --git-dir)" -maxdepth 1 -name 'gate0-*' ! -name "gate0-$(git rev-parse HEAD)" -delete   # results for other commits
 git diff develop...HEAD --name-only -- '*.swift' '*.xcodeproj/**' '*.xcworkspace/**' '*.xcconfig' '*Info.plist' '*.entitlements' '*Package.resolved' '*Package.swift' '*.xctestplan' | tee "$GATE0"
 ```
 This is the only copy of the build-relevance list: later steps that depend on Gate 0 read `$GATE0` (the file is named

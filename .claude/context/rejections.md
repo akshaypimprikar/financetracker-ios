@@ -727,3 +727,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** scripts/review_verdict.py
 **Caught by:** this review
+
+## 2026-10-07 — PR#178 — Round 1: review SKILL.md contradicts review_verdict.py
+**What was wrong:** `review/SKILL.md:210` said the verdict flags "default false", but this PR makes `review_verdict.py` exit 2 on a non-advisory MEDIUM with none of `in_diff`, `depends_on_unchanged` or `guard_bypass` set.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:210
+**Caught by:** this review
