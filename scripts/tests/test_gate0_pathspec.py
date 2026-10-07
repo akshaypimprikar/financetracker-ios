@@ -70,6 +70,12 @@ class Gate0PathspecTests(unittest.TestCase):
         self.assertIn('[ ! -s "$GATE0" ]', text)
         self.assertEqual(text.count('GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"'), 2)
 
+    def test_gate0_tees_its_result(self):
+        with open(SKILL) as f:
+            lines = [l for l in f if PATHSPEC.match(l)]
+        self.assertEqual(len(lines), 1, lines)
+        self.assertTrue(lines[0].rstrip().endswith('| tee "$GATE0"'), lines[0])
+
     def test_project_and_build_inputs_listed(self):
         spec = pathspecs()[0]
         for path in BUILD_RELEVANT:
