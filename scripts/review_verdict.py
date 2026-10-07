@@ -16,6 +16,7 @@ Rules (the same ones review/SKILL.md "Merge its output" describes):
   LOW     never blocks
 A finding that does not block gets an issue instead.
 
+The verdict covers findings only; a failed gate-verification check still forces CHANGES REQUESTED.
 Output: {"verdict": "APPROVED"|"CHANGES REQUESTED", "blocking": [ids], "issues": [ids]}
 Usage: review_verdict.py < findings.json
 Exit codes: 0 verdict printed, 2 bad input.
@@ -24,6 +25,7 @@ import json
 import sys
 
 SEVERITIES = ("HIGH", "MEDIUM", "LOW")
+FLAGS = ("dismissed", "advisory", "in_diff", "depends_on_unchanged", "guard_bypass")
 
 
 def blocks(f):
@@ -49,9 +51,16 @@ def main(argv=None):
         findings = json.load(sys.stdin)
         if not isinstance(findings, list):
             raise ValueError("input must be a JSON list")
+        seen = set()
         for f in findings:
-            if not isinstance(f, dict) or "id" not in f or f.get("severity") not in SEVERITIES:
-                raise ValueError(f"bad finding {f!r}: needs 'id' and severity one of {SEVERITIES}")
+            if not isinstance(f, dict) or f.get("severity") not in SEVERITIES:
+                raise ValueError(f"bad finding {f!r}: needs severity one of {SEVERITIES}")
+            if not isinstance(f.get("id"), str) or not f["id"] or f["id"] in seen:
+                raise ValueError(f"bad finding {f!r}: 'id' must be a non-empty string, unique in the list")
+            seen.add(f["id"])
+            for flag in FLAGS:
+                if flag in f and not isinstance(f[flag], bool):
+                    raise ValueError(f"bad finding {f!r}: '{flag}' must be true or false")
         print(json.dumps(decide(findings)))
         return 0
     except ValueError as e:

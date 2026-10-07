@@ -709,3 +709,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** scripts/check_review_evidence.py
 **Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: script verdict could override a failed gate
+**What was wrong:** `review/SKILL.md:209-216` said `review_verdict.py` "prints the verdict", but it returns APPROVED whenever no finding blocks and never sees the gate-verification failures that force CHANGES REQUESTED.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md
+**Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: dangling "two exceptions above" reference
+**What was wrong:** `review/SKILL.md:224` referred to "the two exceptions above" after this PR deleted the text that defined them.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:224
+**Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: flags not type-checked
+**What was wrong:** `review_verdict.py` accepted non-bool flags, so `"advisory": "false"` (a truthy string) turned a blocking MEDIUM into APPROVED.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/review_verdict.py
+**Caught by:** this review

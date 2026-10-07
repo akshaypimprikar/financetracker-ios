@@ -211,7 +211,7 @@ Merge its output into the verdict:
   "depends_on_unchanged", "guard_bypass"}`, flags default false. `in_diff` means a defect in lines this PR adds
   or changes. `depends_on_unchanged` means unchanged code the PR's change needs to work. `guard_bypass` means
   a concrete input or sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or
-  `scripts/check_*`. It prints the verdict, the blocking ids and the ids that get an issue instead: HIGH always
+  `scripts/check_*`. It prints a findings verdict, the blocking ids and the ids that get an issue instead (a failed gate-verification check still forces CHANGES REQUESTED, whatever the script prints): HIGH always
   blocks, MEDIUM blocks only when not advisory and one of the three flags is true, LOW never blocks. A MEDIUM
   that only proposes a different design or concerns unchanged code sets no flag. Use its lists as printed; a
   finding that does not block is still reported, with
@@ -221,7 +221,7 @@ Merge its output into the verdict:
   HIGH, and a required checklist FAIL stays at least MEDIUM.
 - Before rating, pipe each finding's `path:line` citation through
   `python3 scripts/check_finding_lines.py --base origin/<base>`. Lower an `OUTSIDE` MEDIUM to LOW and say
-  "cites lines outside the diff" in the verdict, unless one of the two exceptions above applies. `UNCITED`
+  "cites lines outside the diff" in the verdict, unless the finding sets `depends_on_unchanged` or `guard_bypass`. `UNCITED`
   and `INSIDE` findings keep their severity.
 - A cosmetic finding (wording, wrap width, naming, formatting with no behavior effect) is never raised to
   HIGH by the regression rule below, however many times it returns; it stays LOW.
@@ -274,7 +274,7 @@ Every verdict carries two lines right under its heading, which the `review-evide
 `Reviewed at <full PR HEAD SHA>` and `Round <1 | 2 | confirm>`, plus the lane.
 
 Final verdict:
-- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks only as a defect in this PR's diff and not on advisory items, LOW never blocks), eligible to merge once the required checks pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and `scripts/review_verdict.py` lists no blocking finding (see "Merge its output" above), eligible to merge once the required checks pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
