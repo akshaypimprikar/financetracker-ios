@@ -50,7 +50,7 @@ git checkout -b release/<version>
 ```
 
 ### 2. Version bump
-Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `FinanceTracker.xcodeproj/project.pbxproj`:
+Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `FinanceTracker.xcodeproj/project.pbxproj`, or `project.xcproj` if the project was converted (`xcodebuild -convert-project xcproj`) — use whichever exists:
 - `MARKETING_VERSION = <version>;`
 - `CURRENT_PROJECT_VERSION = <increment by 1>;`
 
@@ -82,7 +82,7 @@ If the release branch is amended or re-cut before it merges (version or date cha
 
 ### 4. Commit and push the release branch
 ```bash
-git add FinanceTracker.xcodeproj/project.pbxproj CHANGELOG.md .claude/context/feature-log.md
+git add FinanceTracker.xcodeproj/project.p* CHANGELOG.md .claude/context/feature-log.md
 git commit -m "chore: bump version to <version>"
 git push -u origin release/<version>
 ```
@@ -92,7 +92,7 @@ The `release` lane (`scripts/pipeline_lanes.json`) exempts `release/*` PRs from 
 ```bash
 git diff develop...HEAD --name-only
 ```
-Every path in the output must be one of `FinanceTracker.xcodeproj/project.pbxproj`, `CHANGELOG.md`, or `.claude/context/feature-log.md`. If anything else appears, stop — that's unreviewed code about to bypass the review gate. Investigate before continuing. `check_pr_lane.py` applies the same rule in CI, so such a PR is laned by its paths and needs the full evidence.
+Every path in the output must be one of `FinanceTracker.xcodeproj/project.pbxproj` (or `project.xcproj`), `CHANGELOG.md`, or `.claude/context/feature-log.md`. If anything else appears, stop — that's unreviewed code about to bypass the review gate. Investigate before continuing. `check_pr_lane.py` applies the same rule in CI, so such a PR is laned by its paths and needs the full evidence.
 
 ### 6. Open PR to main
 ```bash
@@ -122,7 +122,7 @@ git branch -d release/<version>
 git push origin --delete release/<version>
 ```
 
-Keep the back-merge PR's head as `main`: `check_pr_lane.py` gives the `release` lane to a back-merge only when its head is `main`. A `chore/*` back-merge branch carries `project.pbxproj`, so it is laned `app` and needs the full evidence.
+Keep the back-merge PR's head as `main`: `check_pr_lane.py` gives the `release` lane to a back-merge only when its head is `main`. A `chore/*` back-merge branch carries `project.pbxproj` (or `project.xcproj`), so it is laned `app` and needs the full evidence.
 
 ### 8. Create GitHub release
 ```bash
