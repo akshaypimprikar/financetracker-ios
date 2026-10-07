@@ -110,6 +110,12 @@ class EvaluateTests(unittest.TestCase):
     def test_third_verdict_fails(self):
         self.assertFalse(self.run_eval(["review_verdict"], reviews=self.three_verdicts())["review_verdict"])
 
+    def test_confirm_verdict_is_not_a_round(self):
+        confirm = {"body": f"## Review Agent verdict: APPROVED\n\nReviewed at {HEAD}\nRound confirm\n",
+                   "submitted_at": "2026-09-28T12:00:00Z", "author_association": "OWNER"}
+        r = self.run_eval(["review_verdict"], reviews=self.three_verdicts()[1:] + [confirm])
+        self.assertTrue(r["review_verdict"])
+
     def test_third_verdict_with_override_passes(self):
         r = self.run_eval(["review_verdict"], body="Round cap override: user decided", reviews=self.three_verdicts())
         self.assertTrue(r["review_verdict"])

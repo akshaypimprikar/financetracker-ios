@@ -39,10 +39,10 @@ finding and post APPROVED; a remaining HIGH goes to the user for a decision. Eac
 PR and adds new surface to review, so findings that are not defects in this diff do not earn one
 (2026-09-28 to 10-05: FinanceTracker #130 ran 56 rounds; #160's round 2 found LOW items in round-1 fixes).
 
-**Round cap is enforced.** `review-evidence` fails a PR with a third `## Review Agent verdict:` review
-(`scripts/check_review_evidence.py`). Do not post one: after round 2 open issues, or ask the user to add a
-`Round cap override: <reason>` line to the PR body. A later commit that touches only `docs/**`,
-`CHANGELOG.md` or `README.md` keeps the verdict valid, so a docs fix needs no `--confirm`.
+**Round cap is enforced.** `review-evidence` fails a PR with a third full-round `## Review Agent verdict:` review
+(`scripts/check_review_evidence.py`; a `Round confirm` verdict does not count). Do not post one: after round 2 open issues, or ask the user to add a
+`Round cap override: <reason>` line to the PR body. A later commit that touches only `docs/*.md`,
+`docs/pipeline-review/**`, `CHANGELOG.md` or `README.md` (not `docs/superpowers/`) keeps the verdict valid, so a docs fix needs no `--confirm`.
 
 **`/review --confirm`** after an APPROVED verdict, when the head moved with more than log-only commits (for
 example `code-review` fixes): review only the diff since the last APPROVED SHA, block only on a HIGH that

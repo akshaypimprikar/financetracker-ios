@@ -697,3 +697,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** CHANGELOG.md:12
 **Caught by:** this review
+
+## 2026-10-07 — PR#164 — Round 1: citation regex drops the leading dot
+**What was wrong:** `scripts/check_finding_lines.py` parsed `.claude/skills/review/SKILL.md:40` as path `claude/skills/...`, so every `.claude/` finding was classed OUTSIDE and a real MEDIUM would be lowered to LOW.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_finding_lines.py
+**Caught by:** this review
+
+## 2026-10-07 — PR#164 — Round 1: round cap counts confirm verdicts
+**What was wrong:** `check_review_evidence.py` counted `Round confirm` verdicts toward the two-round cap, contradicting `review/SKILL.md`, which says a confirm is not a round.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_review_evidence.py
+**Caught by:** this review

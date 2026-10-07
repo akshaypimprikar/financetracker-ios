@@ -44,6 +44,15 @@ class ClassifyTests(unittest.TestCase):
     def test_backticked_citation(self):
         self.assertEqual(fl.classify("- `a.py:12` MEDIUM x", self.ranges), ("INSIDE", "a.py:12"))
 
+    def test_leading_dot_path_is_kept(self):
+        ranges = {".claude/skills/review/SKILL.md": [(39, 41)]}
+        self.assertEqual(fl.classify("`.claude/skills/review/SKILL.md:40` x", ranges),
+                         ("INSIDE", ".claude/skills/review/SKILL.md:40"))
+
+    def test_added_line_starting_plus_plus_is_not_a_header(self):
+        ranges = fl.changed_ranges("+++ b/a.py\n@@ -1 +1,2 @@\n+++ not a header\n+z\n")
+        self.assertEqual(ranges, {"a.py": [(1, 2)]})
+
     def test_uncited_is_never_lowered(self):
         self.assertEqual(fl.classify("no citation here", self.ranges)[0], "UNCITED")
 

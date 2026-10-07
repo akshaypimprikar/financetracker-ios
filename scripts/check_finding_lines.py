@@ -17,7 +17,7 @@ import re
 import subprocess
 import sys
 
-CITATION = re.compile(r"^\W*`?([A-Za-z0-9_.][A-Za-z0-9_./-]*):(\d+)(?:-(\d+))?`?")
+CITATION = re.compile(r"^[^\w.]*`?([A-Za-z0-9_.][A-Za-z0-9_./-]*):(\d+)(?:-(\d+))?`?")
 HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
 
@@ -25,8 +25,8 @@ def changed_ranges(diff):
     """{path: [(start, end)]} of new-side lines each file's hunks add or change."""
     out, path = {}, None
     for line in diff.splitlines():
-        if line.startswith("+++ "):
-            path = line[4:].removeprefix("b/") if line != "+++ /dev/null" else None
+        if line.startswith("+++ b/") or line == "+++ /dev/null":
+            path = line[6:] if line != "+++ /dev/null" else None
         elif path and (m := HUNK.match(line)):
             start, count = int(m.group(1)), int(m.group(2) if m.group(2) is not None else 1)
             if count:

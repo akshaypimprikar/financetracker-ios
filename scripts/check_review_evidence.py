@@ -17,7 +17,7 @@ verdict also accepts the config's review_carryover_paths, such as docs):
   review_verdict       latest "## Review Agent verdict:" review posted by an
                        OWNER, MEMBER or COLLABORATOR is APPROVED and contains
                        "Reviewed at <sha>"; other accounts' reviews are ignored.
-                       A third such review fails the check (the two-round cap)
+                       A third full-round review (not a `Round confirm`) fails the check (the two-round cap)
                        unless the PR body has a non-empty "Round cap override:" line
   code_review          a "code-review: <url or 'no issues'> at <sha>" body line
   motivating_incident  a non-empty "Motivating incident:" body line
@@ -63,6 +63,11 @@ def _verdicts(reviews):
             and r.get("author_association") in TRUSTED_ASSOCIATIONS]
 
 
+def _rounds(reviews):
+    """Verdict reviews that count against the cap: a `Round confirm` is not a round."""
+    return [r for r in _verdicts(reviews) if not re.search(r"(?m)^Round confirm\b", r["body"])]
+
+
 def _latest_verdict(reviews):
     verdicts = _verdicts(reviews)
     if not verdicts:
@@ -105,10 +110,10 @@ def evaluate(items, head_sha, body, reviews, carryover, changed_between, review_
                 results.append((item, False, "latest verdict has no 'Reviewed at <sha>' line"))
                 continue
             ok, detail = _sha_ok(m.group(1), head_sha, list(carryover) + list(review_carryover), changed_between)
-            count = len(_verdicts(reviews))
+            count = len(_rounds(reviews))
             if ok and count > MAX_VERDICT_REVIEWS \
                     and re.search(r"(?m)^Round cap override:[ \t]*\S", body) is None:
-                ok, detail = False, (f"{count} verdict reviews exceed the {MAX_VERDICT_REVIEWS}-round cap; "
+                ok, detail = False, (f"{count} round reviews exceed the {MAX_VERDICT_REVIEWS}-round cap; "
                                      "open issues for the remaining findings or add a 'Round cap override: <reason>' body line")
             results.append((item, ok, detail))
         elif item == "code_review":

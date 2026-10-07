@@ -47,7 +47,8 @@
     "evidence": ["gate_summary"]
   },
   "review_carryover_paths": [
-    "docs/**",
+    "docs/*.md",
+    "docs/pipeline-review/**",
     "CHANGELOG.md",
     "README.md"
   ],

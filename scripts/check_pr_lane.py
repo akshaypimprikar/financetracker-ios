@@ -88,6 +88,8 @@ def validate_config(config):
             raise ConfigError(f"lane '{name}' needs a 'paths' list")
         small = entry.get("small_pr")
         if small is not None:
+            if not isinstance(small, dict):
+                raise ConfigError(f"lane '{name}' small_pr must be an object")
             if not isinstance(small.get("max_changed_lines"), int) or small["max_changed_lines"] < 1:
                 raise ConfigError(f"lane '{name}' small_pr needs a positive integer 'max_changed_lines'")
             unknown = set(small.get("evidence", [])) - EVIDENCE_ITEMS

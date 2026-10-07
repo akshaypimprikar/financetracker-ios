@@ -39,6 +39,11 @@ class SmallPrTests(unittest.TestCase):
     def test_app_lane_pr_never_skips_review(self):
         self.assertIn("review_verdict", lane.evidence_for_change(SMALL, "app", ["App/a.swift", "scripts/a.py"], 5))
 
+    def test_non_object_small_pr_rejected(self):
+        bad = dict(SMALL, lanes=[SMALL["lanes"][0], dict(SMALL["lanes"][1], small_pr=5)])
+        with self.assertRaises(lane.ConfigError):
+            lane.validate_config(bad)
+
     def test_bad_small_pr_config_rejected(self):
         bad = dict(SMALL, lanes=[SMALL["lanes"][0], dict(SMALL["lanes"][1], small_pr={"max_changed_lines": 0})])
         with self.assertRaises(lane.ConfigError):
