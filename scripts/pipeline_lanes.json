@@ -1,4 +1,9 @@
 {
+  "project": {
+    "persistence": "swiftdata",
+    "ui": "swiftui",
+    "architecture": "mvvm"
+  },
   "release": {
     "paths": [
       "FinanceTracker.xcodeproj/project.pbxproj",

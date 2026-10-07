@@ -31,6 +31,10 @@ jobs:
         with:
           xcode-version: '~26.4'
 
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
+
       - name: Unit tests under ThreadSanitizer
         run: |
           set -o pipefail

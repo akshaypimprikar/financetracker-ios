@@ -30,7 +30,7 @@ Before starting any task:
   1. **RED commit** — the new/modified test file(s) only, no production code. Commit message must quote the actual failing-test output (the assertion/error line, not just "test written"). Never bundle a test file and the production file it exercises in the same commit — that's the exact pattern that made prior task commits unverifiable (see Gate 11 in `/gates`).
   2. **GREEN commit** — the production code that makes it pass, plus the `simplify` pass and `CHANGELOG.md` entry. Commit message must quote the passing-test output line.
 - Run the full test suite (including UI tests) after every task — do not proceed if tests fail. Use the "Full test suite" command below; never add `-skip-testing` or `-only-testing` flags.
-- Never edit `project.pbxproj` — files auto-compile via `PBXFileSystemSynchronizedRootGroup`
+- Never hand-edit `project.pbxproj`. With synchronized groups (`scripts/detect_file_registration.sh . FinanceTracker` prints `synchronized`) files auto-compile; with `classic` groups run `ruby scripts/register_files.rb . FinanceTracker <new files>` after creating each file; on `xcproj` or `stop`, ask the human
 
 ## Build commands (all run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`)
 
@@ -47,11 +47,14 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```
 
+## Project settings
+Read `project` in `scripts/pipeline_lanes.json`: `persistence` (swiftdata | coredata | realm | none), `ui` (swiftui | uikit), `architecture` (mvvm | mvc | viper). If the key is absent, assume swiftdata, swiftui, mvvm. FinanceTracker sets swiftdata, swiftui, mvvm. Apply the persistence and UI rules below for the configured values. Read "ViewModel" as Controller (mvc) or Presenter (viper).
+
 ## Architecture rules (from AGENTS.md)
-- Domain Services: zero SwiftData imports
+- Domain Services: zero persistence-framework imports (SwiftData, CoreData, RealmSwift)
 - Repository Protocols: Foundation-only imports
 - Money values: `Decimal`, never `Double`
-- ViewModels depend on protocols, never concrete implementations
+- ViewModels (or Controllers / Presenters) depend on protocols, never concrete implementations
 - Views contain no business logic
 
 ## Done when

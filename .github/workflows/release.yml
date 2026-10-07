@@ -25,6 +25,10 @@ jobs:
           restore-keys: |
             deriveddata-release-${{ runner.os }}-
 
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
+
       - name: Run unit and integration tests (Release)
         run: |
           set -o pipefail
@@ -78,6 +82,10 @@ jobs:
           key: deriveddata-release-ui-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerUITests/**/*.swift') }}
           restore-keys: |
             deriveddata-release-ui-${{ runner.os }}-
+
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
 
       - name: Run UI tests (Release)
         run: |

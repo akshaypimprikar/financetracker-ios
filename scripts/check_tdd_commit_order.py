@@ -11,19 +11,61 @@ test red.
 Usage: python3 scripts/check_tdd_commit_order.py [base_ref]
   base_ref defaults to 'develop'
 """
+import json
+import os
 import subprocess
 import sys
 
 BASE_REF = sys.argv[1] if len(sys.argv) > 1 else "develop"
 
-# Path segments (not full prefixes) so this doesn't depend on the app's root
-# folder name being repeated in the match. Repositories/SwiftData/ only —
-# not all of Repositories/ — since the sibling Repositories/Protocols/ layer
-# has no 1:1 <Type>.swift -> <Type>Tests.swift convention (a protocol
-# declaration isn't tested directly, only its concrete implementations are);
-# broadening to all of Repositories/ would flag protocol files as violations
-# for having no matching test.
-SCOPED_LAYER_DIRS = ("/ViewModels/", "/Services/", "/Repositories/SwiftData/")
+# Path segments (not full prefixes) so this works regardless of your app's
+# root folder name. Only layers that have a 1:1 "<Type>.swift" ->
+# "<Type>Tests.swift" convention belong here; a Views/ or Models/ layer
+# usually doesn't. The layers come from `project.architecture` in
+# scripts/pipeline_lanes.json (mvvm if absent); `project.scoped_layer_dirs`
+# overrides the preset with your own list.
+# The mvvm preset lists Repositories/SwiftData/ only, not all of Repositories/:
+# the sibling Repositories/Protocols/ layer has no 1:1 <Type>.swift ->
+# <Type>Tests.swift convention (a protocol declaration isn't tested directly,
+# only its concrete implementations are); broadening to all of Repositories/
+# would flag protocol files as violations for having no matching test.
+ARCHITECTURE_PRESETS = {
+    "mvvm": ("/ViewModels/", "/Services/", "/Repositories/SwiftData/"),
+    "mvc": ("/Controllers/", "/Services/"),
+    "viper": ("/Presenters/", "/Interactors/", "/Entities/"),
+}
+
+
+def load_scoped_layer_dirs(config_path):
+    try:
+        with open(config_path) as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        return ARCHITECTURE_PRESETS["mvvm"]
+    except (OSError, ValueError) as e:
+        print(f"ERROR: cannot read {config_path}: {e}")
+        sys.exit(2)
+    project = config.get("project", {}) if isinstance(config, dict) else {}
+    if not isinstance(project, dict):
+        print("ERROR: 'project' in scripts/pipeline_lanes.json must be an object.")
+        sys.exit(2)
+    custom = project.get("scoped_layer_dirs")
+    if custom:
+        if not isinstance(custom, list) or not all(isinstance(x, str) for x in custom):
+            print("ERROR: project.scoped_layer_dirs must be a list of strings.")
+            sys.exit(2)
+        return tuple(custom)
+    arch = project.get("architecture", "mvvm")
+    if arch not in ARCHITECTURE_PRESETS:
+        print(f"ERROR: unknown project.architecture {arch!r}; use one of {sorted(ARCHITECTURE_PRESETS)} or set scoped_layer_dirs.")
+        sys.exit(2)
+    return ARCHITECTURE_PRESETS[arch]
+
+
+SCOPED_LAYER_DIRS = load_scoped_layer_dirs(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipeline_lanes.json")
+)
+
 TEST_ROOT = "FinanceTrackerTests/"
 
 # core.quotepath=false: without it, git wraps any path containing a
@@ -126,9 +168,9 @@ if checked == 0:
     if not repo_has_any_scoped_file():
         print(
             f"WARNING: no file anywhere in this repo matches SCOPED_LAYER_DIRS {SCOPED_LAYER_DIRS} — "
-            "these layer folders may have been renamed or moved. Update SCOPED_LAYER_DIRS at the top "
-            "of this file before trusting this gate; until then, every run will silently no-op instead "
-            "of checking anything."
+            "these layer names match nothing here. Set project.architecture or project.scoped_layer_dirs in "
+            "scripts/pipeline_lanes.json to match your project's actual layer folders before trusting this gate; "
+            "until then, every run will silently no-op instead of checking anything."
         )
         sys.exit(2)
     print("No new ViewModel/Service/Repository files with matching tests on this branch — skipping.")
