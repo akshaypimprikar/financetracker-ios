@@ -35,7 +35,7 @@
         "CONSTRAINTS.md",
         "docs/superpowers/**"
       ],
-      "evidence": ["gate_summary", "review_verdict", "code_review", "motivating_incident"]
+      "evidence": ["gate_summary", "review_verdict", "motivating_incident"]
     }
   ],
   "default": {

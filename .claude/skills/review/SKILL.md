@@ -30,10 +30,14 @@ and state the lane in the verdict. The `docs`, `release` and `sync` lanes need n
 `app` and `pipeline` continue. `scripts/pipeline_lanes.json` lists what each lane needs to merge; the
 `review-evidence` CI check enforces it.
 
-**At most two full rounds per PR.** Round 1 reviews the whole PR. Round 2 gives the subagent only the diff
-since the round-1 `Reviewed at` SHA plus the round-1 findings, and asks whether each was fixed and whether the
-delta introduced anything new. There is no round 3: after round 2, open a GitHub issue for each remaining
-non-HIGH finding and post APPROVED with the issue links; a remaining HIGH goes to the user for a decision.
+**One round by default.** Round 1 reviews the whole PR. Only a blocking finding (see "Merge its output"
+below) sends the PR back. Every other finding gets a GitHub issue and the verdict is APPROVED with the issue
+links. Round 2 runs only after a CHANGES REQUESTED round 1: the subagent gets only the diff since the
+round-1 `Reviewed at` SHA plus the round-1 blocking findings, and checks whether each was fixed and whether
+the delta introduced a HIGH. There is no round 3: after round 2, open an issue for each remaining non-HIGH
+finding and post APPROVED; a remaining HIGH goes to the user for a decision. Each extra round re-reads the
+PR and adds new surface to review, so findings that are not defects in this diff do not earn one
+(2026-09-28 to 10-05: FinanceTracker #130 ran 56 rounds; #160's round 2 found LOW items in round-1 fixes).
 
 **`/review --confirm`** after an APPROVED verdict, when the head moved with more than log-only commits (for
 example `code-review` fixes): review only the diff since the last APPROVED SHA, block only on a HIGH that
@@ -197,9 +201,15 @@ Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
   is listed in the posted verdict — never dropped silently.
-- An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks,
-  except on an item marked *(advisory)*. An accepted LOW finding never blocks. A finding that does not
-  block is still reported. Keep the severity the subagent assigned. You may raise it, and you may lower
+- An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks only
+  when it is a defect in lines this PR adds or changes, and not on an item marked *(advisory)*. A MEDIUM
+  about code the PR did not change, or one that proposes solving the problem a different way (for
+  example a more general mechanism) without naming a defect in the diff, does not block: open an issue
+  for it. Two exceptions still block: a MEDIUM on unchanged code that the PR's change depends on to
+  work (the diff is unsafe or wrong without it), and any MEDIUM that names a concrete input or
+  sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or `scripts/check_*`, since a
+  hole in a guardrail is a defect in what the PR ships even when the line is old. An accepted LOW finding never blocks. A finding that does not block is still reported, with
+  its issue link. Keep the severity the subagent assigned. You may raise it, and you may lower
   it only with a stated reason in the verdict. Two floors never move: a repeat rated HIGH under the
   rule above, a regression of a blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays
   HIGH, and a required checklist FAIL stays at least MEDIUM.
@@ -252,7 +262,7 @@ Every verdict carries two lines right under its heading, which the `review-evide
 `Reviewed at <full PR HEAD SHA>` and `Round <1 | 2 | confirm>`, plus the lane.
 
 Final verdict:
-- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks except on advisory items, LOW never blocks), eligible to merge once the required checks pass (see AGENTS.md "Merge rule")
+- **APPROVED** — every gate-verification check that ran passes (a `NOT VERIFIED` script is reported as a visible note, never as a pass, and does not block on its own; a pending `gates` job is handled as in step 3) and no accepted finding blocks (see "Merge its output" above: HIGH always blocks, MEDIUM blocks only as a defect in this PR's diff and not on advisory items, LOW never blocks), eligible to merge once the required checks pass (see AGENTS.md "Merge rule")
 - **CHANGES REQUESTED** — list issues that must be fixed before merge
 
 ## Logging violations to rejections.md
@@ -284,18 +294,9 @@ the PR-body fix if that fix has no entry yet.
 Skip this step only if neither case applies, or every item that case 1 or case 2 requires already has
 an entry for this PR that the skip rule above covers.
 
-## Context isolation: what is and isn't isolated
+## Context isolation
 
-By default `/review` runs in the same session as `/feature` and `/gates` — `gates/SKILL.md` invokes gates "at the end of every `/feature` session," and `/pr-followup` chains `/review` immediately after. This command splits its work so that session context matters as little as possible:
-
-- **Gate verification** stays in this session, but it is evidence-based: the deterministic gates are re-run at the PR HEAD SHA instead of trusting the pasted summary, so a wrong or stale summary is caught by output, not by the reviewer's impression.
-- **Judgment checks** (design compliance, code quality) run in a fresh-context subagent that gets only the inputs listed under "Judgment checks" above, and never the implementer's transcript, the PR body, commit messages, the gate summary, or this PR's own log entries. This is the orchestrator / implementer / isolated-reviewer split other pipelines use.
-
-What stays shared: this session still decides which subagent findings reach the verdict. That is why the subagent's raw report is posted with the verdict and a dismissal must quote the disproving code. Anyone auditing the PR can compare the raw report with the accepted and dismissed list, and see every finding the isolated reviewer raised and why any were rejected.
-
-FinanceTracker also gets **external auditability**: posting the verdict as a real, separate GitHub review object (below) means anyone auditing the repo from outside the session can see review happened and compare its content against the diff.
-
-Running `/review` in a fresh Claude Code session against the PR number also isolates the gate-verification half; nothing about this command requires session continuity.
+Gate verification stays in this session but re-runs the deterministic gates; judgment checks run in the isolated subagent. What is and isn't isolated: `reference.md` § Context isolation.
 
 ## Posting the verdict to GitHub
 
@@ -318,13 +319,6 @@ Use `--comment`, not `--approve` — GitHub blocks self-approval on PRs authored
 Posting a review does not trigger the `review-evidence` check (it runs on `pull_request_target`, which review
 events do not fire). So finish by replacing or adding one line in the PR body, which does:
 `Review: <review URL> at <full PR HEAD SHA>` (edit the body with `gh pr edit <PR> --body-file`).
-
-## Tip — automate the review-fix loop
-While a PR sits in CHANGES REQUESTED (or waiting on CI), the user can avoid manually re-checking by running, as a separate top-level command:
-```
-/loop 5m "Check PR <N> for new review comments or failing CI. If found, fix them, push, and rebase on develop if behind. Stop once the PR is approved and CI is green."
-```
-This is the generic `/loop` skill with a literal prompt — there is no dedicated `/babysit` command. `/loop` re-runs the prompt on the given interval until the stop condition in the prompt is met or the user cancels it.
 
 ## Done when
 Any required `rejections.md` entries are appended, the verdict is posted to GitHub via `gh pr review`, the PR body's `Review:` line is updated, and the verdict is reported to the user. Do **not** merge the PR — per AGENTS.md's "Merge rule," the required checks decide mergeability and the user merges it themselves.
