@@ -208,7 +208,7 @@ Merge its output into the verdict:
   is listed in the posted verdict — never dropped silently.
 - Decide which accepted findings block with `scripts/review_verdict.py`, not by judgment. Pipe it a JSON list
   of the accepted findings (dismissed ones may be left out): `{"id", "severity", "in_diff", "advisory",
-  "depends_on_unchanged", "guard_bypass"}`, flags default false. `in_diff` means a defect in lines this PR adds
+  "depends_on_unchanged", "guard_bypass"}`, flags default false, except that a MEDIUM that is not advisory must set one of the three explicitly (the script exits 2 otherwise). `in_diff` means a defect in lines this PR adds
   or changes. `depends_on_unchanged` means unchanged code the PR's change needs to work. `guard_bypass` means
   a concrete input or sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or
   `scripts/check_*`. It prints a findings verdict, the blocking ids and the ids that get an issue instead (a failed gate-verification check still forces CHANGES REQUESTED, whatever the script prints): HIGH always
