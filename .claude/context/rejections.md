@@ -679,3 +679,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** scripts/tests/test_gate0_pathspec.py
 **Caught by:** this review (isolated subagent)
+
+## 2026-10-07 — PR#163 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** `docs/superpowers/specs/2026-09-28-pipeline-lanes.md:128` still cited `sync-workflow/SKILL.md:65` after this PR's own edit moved the cited line to `:67`. `check_citations.py` only checks that the line exists.
+**Rule violated:** no formal rule, caught in review (repeats "2026-09-30 — PR#152 — Round 1: stale citation left in the re-cited spec bullet")
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:128
+**Caught by:** this review
+
+## 2026-10-07 — PR#163 — Round 1: a new header claims the file restates no rules
+**What was wrong:** `gates/reference.md:3` said nothing in it is a gate command, threshold or pass rule, while the file restates Gate 2's pass/fail reasoning, Gate 12's `[i]` status and the `/loop` stop condition.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/reference.md:3
+**Caught by:** this review
+
+## 2026-10-07 — PR#163 — Round 1: CHANGELOG states the blocking rule without its two exceptions
+**What was wrong:** `CHANGELOG.md:12` said a MEDIUM blocks only as a defect in lines the PR changes, leaving out the unchanged-code-dependency and guard-bypass exceptions that `review/SKILL.md` keeps.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:12
+**Caught by:** this review

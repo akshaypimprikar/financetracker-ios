@@ -97,7 +97,7 @@ Fail: section missing or empty — create the section and add a one-line summary
 using `git log develop..HEAD --oneline` to enumerate commits. `/feature`'s two-commit-per-task
 structure means only the GREEN (implementation) commit carries user-facing content — summarize
 those, skipping RED (test-only) commits, which have nothing to summarize.
-N/A: a PR that changes only `.claude/context/feature-log.md` (a standalone feature-log correction; `/release` now puts its entry in the release commit), and only if
+N/A: a PR that changes only `.claude/context/feature-log.md` (a standalone feature-log correction; `/release` puts its entry in the release commit), and only if
 this gate fails on it. A feature-log entry is not a user-facing change. Report `[–] N/A (feature-log only)`.
 
 ### Gate 6 — Coverage (conditional: new Swift files on branch)

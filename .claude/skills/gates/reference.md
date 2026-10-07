@@ -1,6 +1,6 @@
 # Gates — reference
 
-Background for `SKILL.md`. Nothing here is a gate command, threshold or pass rule; those all stay in `SKILL.md`, which `/review` re-runs as written.
+Background for `SKILL.md`. `SKILL.md` holds every gate command, threshold and pass rule, and `/review` re-runs it as written. This file restates a few rules only to explain them (Gate 2's zero-test failure, Gate 12's `[i]` status, the `/loop` stop condition), so edit both files together.
 
 ## Gate 1 — why no pipeline; Xcode 27 advisory
 

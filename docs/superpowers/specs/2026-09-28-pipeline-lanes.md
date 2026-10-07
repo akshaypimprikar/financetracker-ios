@@ -125,7 +125,7 @@ Pipeline only. No app code changes.
 
 ## Pragma port
 A hand-authored pragma PR, not `/sync-workflow`, which stages only `.claude/skills/` and `scaffold/`
-(`.claude/skills/sync-workflow/SKILL.md:65`). It carries:
+(`.claude/skills/sync-workflow/SKILL.md:67`). It carries:
 - The same three scripts and their tests in pragma's `scripts/`, plus explicit `cp` lines for them in
   `setup.sh`'s script-copy step (`pragma/scripts/setup.sh:117-124`, which copies named files, not the
   directory).
