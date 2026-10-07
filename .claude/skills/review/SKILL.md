@@ -206,14 +206,15 @@ Merge its output into the verdict:
 - Every finding it reports — each checklist FAIL and each other defect — goes into the verdict, marked
   accepted or dismissed. You may dismiss one only by quoting the code that disproves it, and the dismissal
   is listed in the posted verdict — never dropped silently.
-- An accepted HIGH finding always blocks APPROVED, on any item. An accepted MEDIUM finding blocks only
-  when it is a defect in lines this PR adds or changes, and not on an item marked *(advisory)*. A MEDIUM
-  about code the PR did not change, or one that proposes solving the problem a different way (for
-  example a more general mechanism) without naming a defect in the diff, does not block: open an issue
-  for it. Two exceptions still block: a MEDIUM on unchanged code that the PR's change depends on to
-  work (the diff is unsafe or wrong without it), and any MEDIUM that names a concrete input or
-  sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or `scripts/check_*`, since a
-  hole in a guardrail is a defect in what the PR ships even when the line is old. An accepted LOW finding never blocks. A finding that does not block is still reported, with
+- Decide which accepted findings block with `scripts/review_verdict.py`, not by judgment. Pipe it a JSON list
+  of the accepted findings (dismissed ones may be left out): `{"id", "severity", "in_diff", "advisory",
+  "depends_on_unchanged", "guard_bypass"}`, flags default false. `in_diff` means a defect in lines this PR adds
+  or changes. `depends_on_unchanged` means unchanged code the PR's change needs to work. `guard_bypass` means
+  a concrete input or sequence that bypasses a guard in `.claude/hooks/`, `gates`, `review` or
+  `scripts/check_*`. It prints the verdict, the blocking ids and the ids that get an issue instead: HIGH always
+  blocks, MEDIUM blocks only when not advisory and one of the three flags is true, LOW never blocks. A MEDIUM
+  that only proposes a different design or concerns unchanged code sets no flag. Use its lists as printed; a
+  finding that does not block is still reported, with
   its issue link. Keep the severity the subagent assigned. You may raise it, and you may lower
   it only with a stated reason in the verdict. Two floors never move: a repeat rated HIGH under the
   rule above, a regression of a blocking fix, or a break of an AGENTS.md or `invariants.md` rule stays
