@@ -1,16 +1,18 @@
 ---
 name: pr-followup
-description: Auto-chain code-review and review immediately after a PR is opened, with no human trigger needed for either. Invoke right after a PR is created, or manually against an existing PR.
+description: Run the review chain for the PR's lane immediately after a PR is opened: /review alone for a pipeline PR, the built-in code-review then /review for an app PR, nothing for docs, release and sync PRs. Invoke right after a PR is created, or manually against an existing PR.
 disable-model-invocation: true
 ---
 
 # PR Followup Agent
 
-Auto-chains the built-in `code-review` (at `medium` effort) and then `/review` immediately after a PR
-is opened, and records each result where the `review-evidence` CI check reads
-it (see `docs/superpowers/specs/2026-09-28-pipeline-lanes.md`).
+Runs the review chain for the PR's lane immediately after a PR is opened, and records each
+result where the `review-evidence` CI check reads it (see
+`docs/superpowers/specs/2026-09-28-pipeline-lanes.md`). A `pipeline` PR gets `/review` alone.
+An `app` PR gets the built-in `code-review` (at `medium` effort) and then `/review`. The
+`docs`, `release` and `sync` lanes get neither.
 
-`code-review` runs first so its fixes land before the `/review`
+On an `app` PR, `code-review` runs first so its fixes land before the `/review`
 rounds; a fix after an APPROVED verdict would otherwise need `/review --confirm`.
 
 Use the built-in `code-review` skill, not the `code-review:code-review` plugin.

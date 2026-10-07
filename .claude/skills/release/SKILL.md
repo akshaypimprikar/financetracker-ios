@@ -69,7 +69,7 @@ Rename `## [Unreleased]` to the version heading, keeping its entries (add the se
 
 Only when there was no `[Unreleased]` section, use `git log <last-tag>..HEAD --oneline` to find what changed. Otherwise keep the renamed entries as they are, and do not add entries from `git log` on top of them.
 
-Then append the feature-log entry to `.claude/context/feature-log.md` in the same commit, so it reaches `develop` with the back-merge and needs no PR of its own (a separate feature-log PR made every release three PRs per repo):
+Then create `.claude/context/feature-log.md` if it is absent, and append the feature-log entry to it in the same commit, so it reaches `develop` with the back-merge and needs no PR of its own (a separate feature-log PR made every release three PRs per repo):
 
 ```
 ## v<X.Y.Z> — YYYY-MM-DD
