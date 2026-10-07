@@ -30,9 +30,9 @@ globs and each lane's evidence, so pragma ships them with its own config.
 | Where enforcement lives | A `review-evidence` check that runs on `pull_request_target`: GitHub runs the workflow file from the **default branch**, and its checkout reads the scripts and config from the **base branch**. It never checks out PR code. Branch protection requires it and `gates` | A PR can edit a `pull_request` workflow to pass itself; it cannot edit the default branch's workflow or the base branch's scripts. Reading PR data only through the API keeps `pull_request_target` safe. |
 | Branch protection | Required checks `gates` and `review-evidence` on `develop` and `main`, in FinanceTracker and pragma, turned on last (see "Rollout order") | Confirmed by the user 2026-09-28. `enforce_admins` is already on in both repos. |
 | Evidence at a moved head | Evidence recorded at SHA `X` counts for head `H` when `X` = `H`, or `X` is an ancestor of `H` and every file changed in `X..H` is on the config's `carryover_paths` list (FinanceTracker: `.claude/context/rejections.md`, `.claude/context/incidents.md`) | /review's own log commit, and the `code-review` line edit, must not invalidate the verdict they follow |
-| Review rounds | At most 2 full rounds. Round 2 reviews only `X..H` since round 1 plus whether round-1 findings were fixed. After that, remaining non-HIGH findings become GitHub issues and the verdict is APPROVED; a remaining HIGH goes to the user. | #130 and #131 show unbounded rounds keep finding new detail |
+| Review rounds | At most 2 full rounds. Round 2 reviews only `X..H` since round 1 plus whether round-1 findings were fixed. After that, remaining non-HIGH findings become GitHub issues and the verdict is APPROVED; a remaining HIGH goes to the user. Superseded 2026-10-05 (FT #163): one round by default; round 2 runs only to confirm blocking fixes | #130 and #131 show unbounded rounds keep finding new detail |
 | Code changes after APPROVED | A `/review --confirm` verdict covers only `X..H` since the last APPROVED SHA and blocks only on a HIGH introduced in that delta. It is not a round. | Without it, any fix after approval (for example a `code-review` finding) could never get evidence at the new head |
-| Order after a PR opens | `/pr-followup` runs `code-review:code-review` first and fixes its findings, then `/review` | Fixes land before the review rounds, so the head moves less after approval |
+| Order after a PR opens | `/pr-followup` runs `code-review:code-review` first and fixes its findings, then `/review`. Superseded 2026-10-05 (FT #163): the built-in `code-review` runs first on `app` PRs only; a `pipeline` PR gets `/review` alone | Fixes land before the review rounds, so the head moves less after approval |
 | Spec and plan PRs | `/review` runs in design mode: contradictions, false claims, feasibility. Implementation detail goes to the spec's "Requirements carried to /plan" section instead of blocking. | A spec reviewed like code never converges |
 | Cross-file claims in specs, plans and skills | Must cite `path:line` (or `path:start-end`); `scripts/check_citations.py` fails a citation whose file is missing or whose line is past the end | Catches the cheap half of the false-claim problem mechanically. Whether the cited line *says* what the text claims stays a review question. |
 | `/test` | Becomes a coverage-gap audit that runs after `/feature` and before `/gates` | Today it writes tests after `/review` APPROVED, so they are never reviewed and skip RED-before-GREEN |
@@ -53,7 +53,7 @@ Evaluated in this order; the first that applies wins.
 Evidence items (the first three are tied to a SHA and subject to the carryover rule):
 - `gate_summary`: `Gates run at <sha>` in the PR body.
 - `review_verdict`: the latest `## Review Agent verdict:` review posted by an owner, member or collaborator (other accounts' reviews are ignored) is APPROVED (a full round or `--confirm`) and contains `Reviewed at <sha>`.
-- `code_review`: a `code-review: <comment URL> at <sha>` or `code-review: no issues at <sha>` line in the PR body.
+- `code_review`: a `code-review: <comment URL> at <sha>` or `code-review: no issues at <sha>` line in the PR body. Since FT #163, the `pipeline` lane no longer requires it; the `app` lane still does.
 - `motivating_incident`, `synced_from`: a non-empty line with that label in the PR body.
 
 FinanceTracker's lane globs:
@@ -112,7 +112,7 @@ Pipeline only. No app code changes.
   It ends by writing the verdict link into the PR body. The gate re-runs and the current severity, logging
   and isolation rules are otherwise unchanged.
 - **`.claude/skills/pr-followup/SKILL.md`**: `code-review:code-review` first, fix its findings, then `/review`;
-  writes the `code-review:` line with the SHA it ran at.
+  writes the `code-review:` line with the SHA it ran at. (As of FT #163: built-in `code-review` on `app` PRs only.)
 - **`.claude/skills/spec/SKILL.md`** and **`plan/SKILL.md`**: require `path:line` citations for claims about
   another skill or file, and add a "Requirements carried to /plan" section to the spec template.
 - **`.claude/skills/test/SKILL.md`**: a coverage-gap audit between `/feature` and `/gates`.
