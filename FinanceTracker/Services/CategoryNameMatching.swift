@@ -12,9 +12,9 @@ import Foundation
 /// sharing a name (e.g. rental income vs. a rent expense, both named "Rent") are two
 /// legitimately different categories, not duplicates of each other — see issue #66.
 enum CategoryNameMatching {
-    private static let connectors: Set<String> = ["and", "the", "of", "for", "a", "an"]
+    nonisolated private static let connectors: Set<String> = ["and", "the", "of", "for", "a", "an"]
 
-    static func isNearDuplicate(_ lhs: String, _ lhsType: CategoryType, _ rhs: String, _ rhsType: CategoryType) -> Bool {
+    nonisolated static func isNearDuplicate(_ lhs: String, _ lhsType: CategoryType, _ rhs: String, _ rhsType: CategoryType) -> Bool {
         guard lhsType == rhsType else { return false }
         let lhsTokens = normalizedTokens(lhs)
         // A name made entirely of connector words (e.g. "The", "For") normalizes to an
@@ -24,7 +24,7 @@ enum CategoryNameMatching {
         return lhsTokens == normalizedTokens(rhs)
     }
 
-    private static func normalizedTokens(_ name: String) -> Set<String> {
+    nonisolated private static func normalizedTokens(_ name: String) -> Set<String> {
         Set(
             name.lowercased()
                 .components(separatedBy: CharacterSet.alphanumerics.inverted)
