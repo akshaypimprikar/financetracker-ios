@@ -296,7 +296,7 @@ This gate is advisory: list candidates in the gate summary but do not block the 
 python3 scripts/check_tdd_commit_order.py
 ```
 For every new file in a scoped layer on this branch that has a matching `*Tests.swift` file
-(mvvm: `ViewModels/`, `Services/`, `Repositories/`; mvc: `Controllers/`, `Services/`; viper:
+(mvvm: `ViewModels/`, `Services/`, `Repositories/SwiftData/`; mvc: `Controllers/`, `Services/`; viper:
 `Presenters/`, `Interactors/`, `Entities/` — set `project.architecture` in `scripts/pipeline_lanes.json`,
 or list your own folders in `project.scoped_layer_dirs`), the script checks that the test file was added in a strictly earlier commit than the
 implementation — never the same commit, never a later one (why: `reference.md` § Gate 11).

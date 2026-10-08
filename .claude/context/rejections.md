@@ -733,3 +733,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/review/SKILL.md:210
 **Caught by:** this review
+
+## 2026-10-07 — PR#181 — Round 1: gates SKILL.md contradicts check_tdd_commit_order.py
+**What was wrong:** `gates/SKILL.md:299` said the mvvm preset scopes `Repositories/`, but `ARCHITECTURE_PRESETS["mvvm"]` scopes only `/Repositories/SwiftData/`, so a reader would think protocol files are gated.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:299
+**Caught by:** this review
