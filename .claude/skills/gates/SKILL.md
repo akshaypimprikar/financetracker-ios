@@ -295,17 +295,18 @@ This gate is advisory: list candidates in the gate summary but do not block the 
 ```bash
 python3 scripts/check_tdd_commit_order.py
 ```
-For every new file under `FinanceTracker/ViewModels/`, `FinanceTracker/Services/`, or
-`FinanceTracker/Repositories/SwiftData/` on this branch that has a matching `*Tests.swift`
-file, the script checks that the test file was added in a strictly earlier commit than the
+For every new file in a scoped layer on this branch that has a matching `*Tests.swift` file
+(mvvm: `ViewModels/`, `Services/`, `Repositories/SwiftData/`; mvc: `Controllers/`, `Services/`; viper:
+`Presenters/`, `Interactors/`, `Entities/` — set `project.architecture` in `scripts/pipeline_lanes.json`,
+or list your own folders in `project.scoped_layer_dirs`), the script checks that the test file was added in a strictly earlier commit than the
 implementation — never the same commit, never a later one (why: `reference.md` § Gate 11).
 
 Pass: script exits 0 (no violations, or nothing in scope to check).
 Fail: script lists each violation (file, commit, reason) — fix by re-doing the task as two
 commits (test-only, confirm it fails, then implementation) per `/feature`'s per-task rules.
-Nothing checked (exit 2): the script warns that no file in the repo matches `SCOPED_LAYER_DIRS`,
-which happens if the layer folders were renamed or moved. Update `SCOPED_LAYER_DIRS` to the
-current folders and re-run. Do not treat exit 2 as a pass; it means the gate checked nothing. Report it as `[✗]`.
+Nothing checked (exit 2): the script warns that the configured layer names match no file in the repo,
+which happens if the layer folders were renamed or moved. Update `project.architecture` or
+`project.scoped_layer_dirs` in `scripts/pipeline_lanes.json` to the current folders and re-run. Do not treat exit 2 as a pass; it means the gate checked nothing. Report it as `[✗]`.
 Rewriting already-pushed history is not required or expected; this gate only evaluates the
 branch as it stands when `/gates` runs.
 Skip this gate if the branch adds no new files under the scoped directories, but only after

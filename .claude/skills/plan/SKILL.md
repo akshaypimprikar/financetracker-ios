@@ -46,12 +46,15 @@ The plan must be executable by a subagent with no prior context. Every task need
 **All commands run from:** `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/` (git root, contains FinanceTracker.xcodeproj)
 ```
 
+## Project settings
+Read `project` in `scripts/pipeline_lanes.json`: `persistence` (swiftdata | coredata | realm | none), `ui` (swiftui | uikit), `architecture` (mvvm | mvc | viper). If the key is absent, assume swiftdata, swiftui, mvvm. FinanceTracker sets swiftdata, swiftui, mvvm. Apply the persistence and UI rules below for the configured values. Read "ViewModel" as Controller (mvc) or Presenter (viper).
+
 ## Architecture Rules to enforce in every task
-- Domain Services: no SwiftData imports
+- Domain Services: no persistence-framework imports (SwiftData, CoreData, RealmSwift)
 - Repository Protocols: Foundation-only imports
 - Money values: `Decimal` never `Double`
 - Simulator: `iPhone 17`, `OS=26.4.1` — see AGENTS.md (a bare `name=iPhone 17` is ambiguous)
-- File inclusion: `PBXFileSystemSynchronizedRootGroup` — no `project.pbxproj` edits needed
+- File inclusion: `scripts/detect_file_registration.sh . FinanceTracker` says how — `synchronized` (`PBXFileSystemSynchronizedRootGroup`): no project.pbxproj edits; `classic`: register each new file with `ruby scripts/register_files.rb . FinanceTracker <files>`; `xcproj` or `stop`: ask the human
 - Test framework: `import Testing` with `@Suite`/`@Test`/`#expect()` — NOT XCTest for unit tests
 
 ## File locations

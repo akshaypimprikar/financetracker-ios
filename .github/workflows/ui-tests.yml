@@ -39,6 +39,10 @@ jobs:
           restore-keys: |
             deriveddata-ui-${{ runner.os }}-
 
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
+
       - name: Run UI tests
         run: |
           set -o pipefail
