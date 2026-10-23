@@ -82,7 +82,7 @@ struct ImportViewModelTests {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         let fake = FakeTransactionImportWriting()
-        await fake.setFailNextExistingHashes(TransactionImportError.accountNotFound)
+        fake.setFailNextExistingHashes(TransactionImportError.accountNotFound)
 
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
@@ -163,7 +163,7 @@ struct ImportViewModelTests {
         // that happens before the import task's `defer { importTask = nil }`, which
         // waitForImport() waits out. Chunk/record assertions below are the meaningful
         // completion checks.
-        let savedChunkCount = await fake.savedChunkCount
+        let savedChunkCount = fake.savedChunkCount
         #expect(savedChunkCount == 3)   // 5 items, chunkSize 2 → chunks of 2, 2, 1
         #expect(vm.step == .filePicker)
         #expect(vm.progress == 0)
@@ -182,7 +182,7 @@ struct ImportViewModelTests {
         try ctx.save()
 
         let fake = FakeTransactionImportWriting()
-        await fake.setDelayPerChunk(.milliseconds(200))
+        fake.setDelayPerChunk(.milliseconds(200))
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -216,7 +216,7 @@ struct ImportViewModelTests {
         try ctx.save()
 
         let fake = FakeTransactionImportWriting()
-        await fake.setDelayPerChunk(.milliseconds(200))
+        fake.setDelayPerChunk(.milliseconds(200))
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -238,7 +238,7 @@ struct ImportViewModelTests {
         await vm.waitForImport()
         #expect(!vm.isImporting)
 
-        let savedChunkCount = await fake.savedChunkCount
+        let savedChunkCount = fake.savedChunkCount
         #expect(savedChunkCount < 5)   // cancellation interrupted at least one in-flight chunk
 
         // Regression guard: a stale pendingTransactions list after cancellation would let
@@ -259,7 +259,7 @@ struct ImportViewModelTests {
         try ctx.save()
 
         let fake = FakeTransactionImportWriting()
-        await fake.setDelayPerChunk(.milliseconds(300))
+        fake.setDelayPerChunk(.milliseconds(300))
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -307,7 +307,7 @@ struct ImportViewModelTests {
         try ctx.save()
 
         let fake = FakeTransactionImportWriting()
-        await fake.setFailNextSave(with: TransactionImportError.accountNotFound)
+        fake.setFailNextSave(with: TransactionImportError.accountNotFound)
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -347,7 +347,7 @@ struct ImportViewModelTests {
         // Exactly one chunk succeeds regardless of TaskGroup scheduling order — see
         // setFailAfter's doc comment. Deterministic without depending on which
         // specific chunk wins the race to run first.
-        await fake.setFailAfter(successfulSaves: 1)
+        fake.setFailAfter(successfulSaves: 1)
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -423,7 +423,7 @@ struct ImportViewModelTests {
         try ctx.save()
 
         let fake = FakeTransactionImportWriting()
-        await fake.setFailNextSave(with: TransactionImportError.accountNotFound)
+        fake.setFailNextSave(with: TransactionImportError.accountNotFound)
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
@@ -483,7 +483,7 @@ struct ImportViewModelTests {
         #expect(vm.suggestions["Starbucks"]?.suggestion.categoryName == "Coffee")
         #expect(vm.suggestions["Starbucks"]?.matchedCategoryID == coffee.id)
         #expect(vm.suggestions["Amazon"]?.suggestion.categoryName == "Shopping")
-        let callCount = await fake.suggestCallCount
+        let callCount = fake.suggestCallCount
         #expect(callCount == 2)   // one call per unique payee, not per row
     }
 
@@ -514,7 +514,7 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
         await vm.loadSuggestions()
 
-        let received = await fake.lastReceivedCandidates
+        let received = fake.lastReceivedCandidates
         #expect(received.map(\.name) == ["Coffee"])
         #expect(received.allSatisfy { $0.type == .expense })
     }
@@ -540,7 +540,7 @@ struct ImportViewModelTests {
         await vm.loadSuggestions()
 
         #expect(vm.suggestions.isEmpty)
-        let callCount = await fake.suggestCallCount
+        let callCount = fake.suggestCallCount
         #expect(callCount == 0)   // silent skip — no calls made at all
     }
 
@@ -753,7 +753,7 @@ struct ImportViewModelTests {
         // made — computed by re-checking cached names, not a second model call.
         let created = vm.pendingNewCategories.first { $0.name == "Shopping" }
         #expect(vm.suggestions["Target"]?.matchedCategoryID == created?.id)
-        let callCount = await fake.suggestCallCount
+        let callCount = fake.suggestCallCount
         #expect(callCount == 2)   // still just the original per-payee calls
     }
 
@@ -863,7 +863,7 @@ struct ImportViewModelTests {
                 matchedCategoryID: nil
             )
         ])
-        await fake.setDelay(.milliseconds(200))
+        fake.setDelay(.milliseconds(200))
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
