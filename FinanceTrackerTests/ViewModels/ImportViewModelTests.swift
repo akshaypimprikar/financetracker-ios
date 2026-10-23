@@ -208,7 +208,10 @@ struct ImportViewModelTests {
         #expect(records[0].filename == "first.csv")
     }
 
-    @Test func cancelImportClearsPendingTransactionsToPreventStaleRetry() async throws {
+    // A regression that never calls save() would leave waitUntilChunksStarted(1) suspended
+    // forever; the time limit cancels it, which resumes the waiter, so the test fails.
+    @Test(.timeLimit(.minutes(1)))
+    func cancelImportClearsPendingTransactionsToPreventStaleRetry() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         let account = Account(name: "Checking", type: .checking)
