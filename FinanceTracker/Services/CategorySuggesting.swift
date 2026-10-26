@@ -1,9 +1,9 @@
 import Foundation
 import FoundationModels
 
-/// Sendable projection of `Category`. `CategorySuggesting` is `Sendable` and its async
-/// requirement runs off the caller's actor, so its arguments must be `Sendable` too;
-/// `Category` is a SwiftData `@Model` reference type with no Sendable conformance.
+/// Sendable projection of `Category`. `CategorySuggesting` is `Sendable`, and `Category`
+/// is a SwiftData `@Model` reference type with no Sendable conformance, so a suggester
+/// gets plain values instead of the live model object.
 /// Mirrors the existing `accountID: UUID` precedent on `TransactionImportWriting`:
 /// only the identity + display data needed for suggestion/matching crosses the
 /// boundary, never the live model object.
