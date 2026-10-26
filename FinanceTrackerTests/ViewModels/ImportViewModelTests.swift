@@ -6,7 +6,10 @@ import SwiftData
 // @MainActor: ImportViewModel is main-actor isolated (the app target's default isolation);
 // the test target has none, so without this the tests touch it from background threads,
 // racing the import task's main-actor `defer` (a ThreadSanitizer abort, issue #136).
-@Suite("ImportViewModel")
+// timeLimit: a regression that never reaches a fake's wait point (save() or the suggester)
+// leaves `waitUntilChunksStarted`/`waitUntilCalled` suspended; the limit cancels the test,
+// the cancelled wait throws, and the test fails instead of hanging.
+@Suite("ImportViewModel", .timeLimit(.minutes(1)))
 @MainActor
 struct ImportViewModelTests {
 
@@ -208,10 +211,7 @@ struct ImportViewModelTests {
         #expect(records[0].filename == "first.csv")
     }
 
-    // A regression that never calls save() would leave waitUntilChunksStarted(1) suspended
-    // forever; the time limit cancels it, which resumes the waiter, so the test fails.
-    @Test(.timeLimit(.minutes(1)))
-    func cancelImportClearsPendingTransactionsToPreventStaleRetry() async throws {
+    @Test func cancelImportClearsPendingTransactionsToPreventStaleRetry() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         let account = Account(name: "Checking", type: .checking)
@@ -236,7 +236,7 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         vm.startImport(filename: "test.csv")
-        await fake.waitUntilChunksStarted(1)   // deterministic: at least one chunk write is in flight
+        try await fake.waitUntilChunksStarted(1)   // deterministic: at least one chunk write is in flight
         vm.cancelImport()
         await vm.waitForImport()
         #expect(!vm.isImporting)
@@ -852,10 +852,7 @@ struct ImportViewModelTests {
         #expect(persisted.isEmpty)
     }
 
-    // A regression that skips the suggester would leave waitUntilCalled(1) suspended
-    // forever; the time limit turns that hang into a failure.
-    @Test(.timeLimit(.minutes(1)))
-    func loadSuggestionsStopsWritingAfterResetBumpsGeneration() async throws {
+    @Test func loadSuggestionsStopsWritingAfterResetBumpsGeneration() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
         try ctx.save()
@@ -880,7 +877,7 @@ struct ImportViewModelTests {
         try await vm.applyMapping(mapping)
 
         let loadTask = Task { await vm.loadSuggestions() }
-        await fake.waitUntilCalled(1)   // the call has captured its generation and is inside its 200ms delay
+        try await fake.waitUntilCalled(1)   // the call has captured its generation and is inside its 200ms delay
         vm.reset()   // bumps importGeneration — simulates the user dismissing the sheet
         await loadTask.value
 

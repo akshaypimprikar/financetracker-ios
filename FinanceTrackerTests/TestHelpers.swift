@@ -14,13 +14,15 @@ func makeContainer() throws -> ModelContainer {
 // to the `compiler(>=6.4)` `nonisolated` `TransactionImportWriting` fails with
 // "'nonisolated' modifier cannot be applied to this declaration". The app target's own
 // `TransactionImportActor` conforms to the same protocol and compiles, so the failure is
-// specific to the cross-module (`@testable`) conformer; batch mode compiles both, so it
-// depends on compile order. Every state read-modify-write happens inside one `withLock`.
+// specific to the cross-module (`@testable`) conformer, and the default batch mode compiles
+// both, so only whole-module mode fails (checked on Xcode 27.1, 2026-10-23). AGENTS.md's
+// test-fake rule points here. Every state read-modify-write happens inside one `withLock`;
+// state that never changes after `init` is a `let` outside the lock.
 
-/// A running count a test can wait on. `waitUntil(_:)` suspends until `increment()` has
-/// been called at least `threshold` times, or until the waiting task is cancelled (for
-/// example by a `.timeLimit` trait), so a test whose code under test stops short fails on
-/// its assertions instead of hanging. Continuations resume outside the lock.
+/// A running count a test can wait on. `waitUntil(_:)` returns once `increment()` has
+/// been called at least `threshold` times. If the waiting task is cancelled first (for
+/// example by a `.timeLimit` trait), it throws `CancellationError`, so a test whose code
+/// under test stops short fails instead of hanging. Continuations resume outside the lock.
 final class CallCounter: Sendable {
     private struct State {
         var count = 0
@@ -32,6 +34,10 @@ final class CallCounter: Sendable {
 
     var count: Int { state.withLock { $0.count } }
 
+    /// Waiters registered and not yet resumed; lets `CallCounterTests` act once a wait is
+    /// known to be suspended instead of guessing with a sleep.
+    var waiterCount: Int { state.withLock { $0.waiters.count } }
+
     func increment() {
         let due = state.withLock { state in
             state.count += 1
@@ -42,7 +48,7 @@ final class CallCounter: Sendable {
         for continuation in due { continuation.resume() }
     }
 
-    func waitUntil(_ threshold: Int) async {
+    func waitUntil(_ threshold: Int) async throws {
         let id = state.withLock { state in
             defer { state.nextWaiterID += 1 }
             return state.nextWaiterID
@@ -61,12 +67,14 @@ final class CallCounter: Sendable {
         } onCancel: {
             state.withLock { $0.waiters.removeValue(forKey: id) }?.continuation.resume()
         }
+        // A cancelled wait resumes without reaching the threshold; throwing here keeps
+        // the caller from carrying on as if it had.
+        try Task.checkCancellation()
     }
 }
 
 final class FakeTransactionImportWriting: TransactionImportWriting {
     private struct State {
-        var existingHashes: Set<String>
         var savedChunkCount = 0
         var delayPerChunk: Duration?
         var failNextSave: Error?
@@ -74,11 +82,12 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
         var failExistingHashes: Error?
     }
 
-    private let state: Mutex<State>
+    private let storedHashes: Set<String>
+    private let state = Mutex(State())
     private let chunkStarts = CallCounter()
 
     init(existingHashes: Set<String> = []) {
-        self.state = Mutex(State(existingHashes: existingHashes))
+        self.storedHashes = existingHashes
     }
 
     var savedChunkCount: Int { state.withLock { $0.savedChunkCount } }
@@ -91,8 +100,8 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
     /// until at least `count` calls to `save(chunk:accountID:)` have been entered
     /// (before any artificial delay), so a test can act (e.g. cancel) at a known
     /// point instead of hoping a wall-clock sleep lands inside the delay window.
-    func waitUntilChunksStarted(_ count: Int) async {
-        await chunkStarts.waitUntil(count)
+    func waitUntilChunksStarted(_ count: Int) async throws {
+        try await chunkStarts.waitUntil(count)
     }
 
     func setFailNextSave(with error: Error) {
@@ -119,8 +128,8 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
                 state.failExistingHashes = nil
                 throw error
             }
-            return state.existingHashes
         }
+        return storedHashes
     }
 
     func save(chunk: [ParsedTransaction], accountID: UUID) async throws {
@@ -145,17 +154,17 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
 final class FakeCategorySuggesting: CategorySuggesting {
     private struct State {
         var lastReceivedCandidates: [CategoryCandidate] = []
-        var resultsByPayee: [String: CategorySuggestionResult]
         var delay: Duration?
     }
 
     let isAvailable: Bool
-    private let state: Mutex<State>
+    private let resultsByPayee: [String: CategorySuggestionResult]
+    private let state = Mutex(State())
     private let calls = CallCounter()
 
     init(isAvailable: Bool = true, resultsByPayee: [String: CategorySuggestionResult] = [:]) {
         self.isAvailable = isAvailable
-        self.state = Mutex(State(resultsByPayee: resultsByPayee))
+        self.resultsByPayee = resultsByPayee
     }
 
     var suggestCallCount: Int { calls.count }
@@ -171,8 +180,8 @@ final class FakeCategorySuggesting: CategorySuggesting {
 
     /// Suspends until `suggestCategory` has been entered at least `count` times (before
     /// any artificial delay), so a test can act at a known point instead of sleeping.
-    func waitUntilCalled(_ count: Int) async {
-        await calls.waitUntil(count)
+    func waitUntilCalled(_ count: Int) async throws {
+        try await calls.waitUntil(count)
     }
 
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
@@ -186,7 +195,7 @@ final class FakeCategorySuggesting: CategorySuggesting {
         if let delay {
             try? await Task.sleep(for: delay)
         }
-        return state.withLock { $0.resultsByPayee[payee] }
+        return resultsByPayee[payee]
     }
 }
 
