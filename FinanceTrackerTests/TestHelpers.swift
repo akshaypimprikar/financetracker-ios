@@ -14,8 +14,10 @@ func makeContainer() throws -> ModelContainer {
 // to the `compiler(>=6.4)` `nonisolated` `TransactionImportWriting` fails with
 // "'nonisolated' modifier cannot be applied to this declaration". The app target's own
 // `TransactionImportActor` conforms to the same protocol and compiles, so the failure is
-// specific to the cross-module (`@testable`) conformer, and the default batch mode compiles
-// both, so only whole-module mode fails (checked on Xcode 27.1, 2026-10-23). AGENTS.md's
+// specific to the cross-module (`@testable`) conformer. Debug's default batch mode compiles
+// both; whole-module mode, which the project's Release configuration sets, fails (checked on
+// Xcode 27.1, 2026-10-23, with `xcodebuild build-for-testing ... SWIFT_COMPILATION_MODE=
+// wholemodule ARCHS=arm64`; a standalone SwiftPM package did not reproduce it). AGENTS.md's
 // test-fake rule points here. Every state read-modify-write happens inside one `withLock`;
 // state that never changes after `init` is a `let` outside the lock.
 
@@ -186,7 +188,9 @@ final class FakeCategorySuggesting: CategorySuggesting {
 
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
         // Record the candidates before counting the call, so a test resumed by
-        // `waitUntilCalled` always sees this call's candidates.
+        // `waitUntilCalled` sees this call's candidates. That holds while calls run one at
+        // a time, as `loadSuggestions` makes them; concurrent calls could interleave the
+        // two locks (`state` and `calls`).
         let delay = state.withLock { state in
             state.lastReceivedCandidates = candidates
             return state.delay

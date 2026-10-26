@@ -8,7 +8,9 @@ import SwiftData
 // racing the import task's main-actor `defer` (a ThreadSanitizer abort, issue #136).
 // timeLimit: a regression that never reaches a fake's wait point (save() or the suggester)
 // leaves `waitUntilChunksStarted`/`waitUntilCalled` suspended; the limit cancels the test,
-// the cancelled wait throws, and the test fails instead of hanging.
+// the cancelled wait throws, and the test fails instead of hanging. It covers only those
+// waits: `waitForImport()` and `loadTask.value` await unstructured tasks that ignore
+// cancellation, so a hang inside the import or suggestion task still hangs the run.
 @Suite("ImportViewModel", .timeLimit(.minutes(1)))
 @MainActor
 struct ImportViewModelTests {
