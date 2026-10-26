@@ -739,3 +739,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/gates/SKILL.md:299
 **Caught by:** this review
+
+## 2026-10-26 — PR#186 — Misleading isolation claim in doc comment
+**What was wrong:** The rewritten `CategoryCandidate` doc said `CategorySuggesting`'s async requirement "runs off the caller's actor". With `SWIFT_APPROACHABLE_CONCURRENCY = YES` (`NonisolatedNonsendingByDefault`) it runs on the caller's actor, so the stated reason for the projection was wrong.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CategorySuggesting.swift:4
+**Caught by:** this review
