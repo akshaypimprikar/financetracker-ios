@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Synchronization
 @testable import FinanceTracker
 
 func makeContainer() throws -> ModelContainer {
@@ -8,118 +9,193 @@ func makeContainer() throws -> ModelContainer {
     return try ModelContainer(for: schema, configurations: [config])
 }
 
-actor FakeTransactionImportWriting: TransactionImportWriting {
-    private var _existingHashes: Set<String>
-    private(set) var savedChunkCount = 0
-    private var delayPerChunk: Duration?
-    private var failNextSave: Error?
-    private var failAfterSuccesses: Int?
-    private var failExistingHashes: Error?
+// The two fakes below are Mutex-backed final classes, not actors: under whole-module
+// compilation on Swift 6.4 (Xcode 27), an actor declared in this test module that conforms
+// to the `compiler(>=6.4)` `nonisolated` `TransactionImportWriting` fails with
+// "'nonisolated' modifier cannot be applied to this declaration". The app target's own
+// `TransactionImportActor` conforms to the same protocol and compiles, so the failure is
+// specific to the cross-module (`@testable`) conformer. Debug's default batch mode compiles
+// both; whole-module mode, which the project's Release configuration sets, fails (checked on
+// Xcode 27.1, 2026-10-23, with `xcodebuild build-for-testing ... SWIFT_COMPILATION_MODE=
+// wholemodule ARCHS=arm64`; a standalone SwiftPM package did not reproduce it). AGENTS.md's
+// test-fake rule points here. Every state read-modify-write happens inside one `withLock`;
+// state that never changes after `init` is a `let` outside the lock.
 
-    private var chunkStartCount = 0
-    private var chunkStartWaiters: [(threshold: Int, continuation: CheckedContinuation<Void, Never>)] = []
-
-    init(existingHashes: Set<String> = []) {
-        self._existingHashes = existingHashes
+/// A running count a test can wait on. `waitUntil(_:)` returns once `increment()` has
+/// been called at least `threshold` times. If the waiting task is cancelled first (for
+/// example by a `.timeLimit` trait), it throws `CancellationError`, so a test whose code
+/// under test stops short fails instead of hanging. Continuations resume outside the lock.
+final class CallCounter: Sendable {
+    private struct State {
+        var count = 0
+        var nextWaiterID = 0
+        var waiters: [Int: (threshold: Int, continuation: CheckedContinuation<Void, Never>)] = [:]
     }
 
+    private let state = Mutex(State())
+
+    var count: Int { state.withLock { $0.count } }
+
+    /// Waiters registered and not yet resumed; lets `CallCounterTests` act once a wait is
+    /// known to be suspended instead of guessing with a sleep.
+    var waiterCount: Int { state.withLock { $0.waiters.count } }
+
+    func increment() {
+        let due = state.withLock { state in
+            state.count += 1
+            let count = state.count
+            let dueIDs = state.waiters.filter { count >= $0.value.threshold }.keys
+            return dueIDs.compactMap { state.waiters.removeValue(forKey: $0)?.continuation }
+        }
+        for continuation in due { continuation.resume() }
+    }
+
+    func waitUntil(_ threshold: Int) async throws {
+        let id = state.withLock { state in
+            defer { state.nextWaiterID += 1 }
+            return state.nextWaiterID
+        }
+        await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                // Checking cancellation under the same lock as `onCancel` resumes the
+                // continuation exactly once, whichever of the two runs first.
+                let resumeNow = state.withLock { state in
+                    if state.count >= threshold || Task.isCancelled { return true }
+                    state.waiters[id] = (threshold: threshold, continuation: continuation)
+                    return false
+                }
+                if resumeNow { continuation.resume() }
+            }
+        } onCancel: {
+            state.withLock { $0.waiters.removeValue(forKey: id) }?.continuation.resume()
+        }
+        // A cancelled wait resumes without reaching the threshold; throwing here keeps
+        // the caller from carrying on as if it had.
+        try Task.checkCancellation()
+    }
+}
+
+final class FakeTransactionImportWriting: TransactionImportWriting {
+    private struct State {
+        var savedChunkCount = 0
+        var delayPerChunk: Duration?
+        var failNextSave: Error?
+        var failAfterSuccesses: Int?
+        var failExistingHashes: Error?
+    }
+
+    private let storedHashes: Set<String>
+    private let state = Mutex(State())
+    private let chunkStarts = CallCounter()
+
+    init(existingHashes: Set<String> = []) {
+        self.storedHashes = existingHashes
+    }
+
+    var savedChunkCount: Int { state.withLock { $0.savedChunkCount } }
+
     func setDelayPerChunk(_ delay: Duration) {
-        delayPerChunk = delay
+        state.withLock { $0.delayPerChunk = delay }
     }
 
     /// Deterministic replacement for a guessed `Task.sleep` race window: suspends
     /// until at least `count` calls to `save(chunk:accountID:)` have been entered
     /// (before any artificial delay), so a test can act (e.g. cancel) at a known
     /// point instead of hoping a wall-clock sleep lands inside the delay window.
-    func waitUntilChunksStarted(_ count: Int) async {
-        if chunkStartCount >= count { return }
-        await withCheckedContinuation { continuation in
-            chunkStartWaiters.append((threshold: count, continuation: continuation))
-        }
+    func waitUntilChunksStarted(_ count: Int) async throws {
+        try await chunkStarts.waitUntil(count)
     }
 
     func setFailNextSave(with error: Error) {
-        failNextSave = error
+        state.withLock { $0.failNextSave = error }
     }
 
     /// Deterministic partial-failure mode: the first `count` calls (across however
-    /// many concurrent chunk tasks race into this actor — only one call body runs at
-    /// a time since this is an actor) succeed; every call after that throws. Robust
-    /// to TaskGroup scheduling order since the threshold is a running total, not
+    /// many concurrent chunk tasks race into this fake — the check and the increment
+    /// happen inside one lock) succeed; every call after that throws. Robust to
+    /// TaskGroup scheduling order since the threshold is a running total, not
     /// "the Nth specific call."
     func setFailAfter(successfulSaves count: Int) {
-        failAfterSuccesses = count
+        state.withLock { $0.failAfterSuccesses = count }
     }
 
     /// One-shot failure for the next `existingHashes()` call — mirrors `setFailNextSave`.
     func setFailNextExistingHashes(_ error: Error) {
-        failExistingHashes = error
+        state.withLock { $0.failExistingHashes = error }
     }
 
     func existingHashes() async throws -> Set<String> {
-        if let error = failExistingHashes {
-            failExistingHashes = nil
-            throw error
+        try state.withLock { state in
+            if let error = state.failExistingHashes {
+                state.failExistingHashes = nil
+                throw error
+            }
         }
-        return _existingHashes
+        return storedHashes
     }
 
     func save(chunk: [ParsedTransaction], accountID: UUID) async throws {
-        chunkStartCount += 1
-        let ready = chunkStartWaiters.filter { chunkStartCount >= $0.threshold }
-        chunkStartWaiters.removeAll { chunkStartCount >= $0.threshold }
-        for waiter in ready { waiter.continuation.resume() }
-
-        if let delayPerChunk {
-            try await Task.sleep(for: delayPerChunk)
+        chunkStarts.increment()
+        if let delay = state.withLock({ $0.delayPerChunk }) {
+            try await Task.sleep(for: delay)
         }
         try Task.checkCancellation()
-        if let failAfterSuccesses, savedChunkCount >= failAfterSuccesses {
-            throw TransactionImportError.accountNotFound
+        try state.withLock { state in
+            if let failAfterSuccesses = state.failAfterSuccesses, state.savedChunkCount >= failAfterSuccesses {
+                throw TransactionImportError.accountNotFound
+            }
+            if let error = state.failNextSave {
+                state.failNextSave = nil
+                throw error
+            }
+            state.savedChunkCount += 1
         }
-        if let error = failNextSave {
-            failNextSave = nil
-            throw error
-        }
-        savedChunkCount += 1
     }
 }
 
-actor FakeCategorySuggesting: CategorySuggesting {
-    nonisolated let isAvailable: Bool
-    private(set) var suggestCallCount = 0
-    /// The candidates the caller passed on the most recent call — lets a test assert
-    /// on what ImportViewModel actually sent (e.g. that Income categories are excluded)
-    /// even though this fake ignores `candidates` when deciding what to return.
-    private(set) var lastReceivedCandidates: [CategoryCandidate] = []
-    private var resultsByPayee: [String: CategorySuggestionResult]
-    private var delay: Duration?
-    private var callWaiters: [(threshold: Int, continuation: CheckedContinuation<Void, Never>)] = []
+final class FakeCategorySuggesting: CategorySuggesting {
+    private struct State {
+        var lastReceivedCandidates: [CategoryCandidate] = []
+        var delay: Duration?
+    }
+
+    let isAvailable: Bool
+    private let resultsByPayee: [String: CategorySuggestionResult]
+    private let state = Mutex(State())
+    private let calls = CallCounter()
 
     init(isAvailable: Bool = true, resultsByPayee: [String: CategorySuggestionResult] = [:]) {
         self.isAvailable = isAvailable
         self.resultsByPayee = resultsByPayee
     }
 
+    var suggestCallCount: Int { calls.count }
+
+    /// The candidates the caller passed on the most recent call — lets a test assert
+    /// on what ImportViewModel actually sent (e.g. that Income categories are excluded)
+    /// even though this fake ignores `candidates` when deciding what to return.
+    var lastReceivedCandidates: [CategoryCandidate] { state.withLock { $0.lastReceivedCandidates } }
+
     func setDelay(_ delay: Duration) {
-        self.delay = delay
+        state.withLock { $0.delay = delay }
     }
 
     /// Suspends until `suggestCategory` has been entered at least `count` times (before
     /// any artificial delay), so a test can act at a known point instead of sleeping.
-    func waitUntilCalled(_ count: Int) async {
-        if suggestCallCount >= count { return }
-        await withCheckedContinuation { continuation in
-            callWaiters.append((threshold: count, continuation: continuation))
-        }
+    func waitUntilCalled(_ count: Int) async throws {
+        try await calls.waitUntil(count)
     }
 
     func suggestCategory(payee: String, candidates: [CategoryCandidate]) async -> CategorySuggestionResult? {
-        suggestCallCount += 1
-        lastReceivedCandidates = candidates
-        let ready = callWaiters.filter { suggestCallCount >= $0.threshold }
-        callWaiters.removeAll { suggestCallCount >= $0.threshold }
-        for waiter in ready { waiter.continuation.resume() }
+        // Record the candidates before counting the call, so a test resumed by
+        // `waitUntilCalled` sees this call's candidates. That holds while calls run one at
+        // a time, as `loadSuggestions` makes them; concurrent calls could interleave the
+        // two locks (`state` and `calls`).
+        let delay = state.withLock { state in
+            state.lastReceivedCandidates = candidates
+            return state.delay
+        }
+        calls.increment()
         if let delay {
             try? await Task.sleep(for: delay)
         }
