@@ -1,10 +1,12 @@
 import Foundation
 
 // Swift 6.4 (Xcode 27) infers @MainActor onto this protocol via the project's
-// SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor default. FakeTransactionImportWriting
-// (an actor, in a different module) can no longer conform — "actor cannot conform
-// to global-actor-isolated protocol" is a categorical restriction with no
-// per-conformance workaround. `nonisolated` on the protocol itself fixes it, but
+// SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor default. TransactionImportActor's
+// conformance then makes its `init(modelContainer:)` main-actor isolated, so the
+// nonisolated callers in TransactionImportActorTests get "main actor-isolated
+// initializer 'init(modelContainer:)' cannot be called from outside of the actor"
+// (a warning in this project's Swift 5 mode, an error in Swift 6 mode; checked on
+// Xcode 27.1, 2026-10-23). `nonisolated` on the protocol itself fixes it, but
 // that spelling isn't recognized by CI's older (Swift 6.2, Xcode 26.4.1) compiler,
 // which never had this issue in the first place — gated to only apply on 6.4+.
 #if compiler(>=6.4)

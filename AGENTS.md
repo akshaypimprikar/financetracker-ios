@@ -33,7 +33,7 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker -destin
 
 - `AccountType.creditCard` is a liability — negative balance reduces net worth (this is intentional)
 - `Transaction.importHash` = SHA256(date+amount+payee) — used for CSV dedup, must be preserved
-- Tests use `import Testing` with `@Suite` / `@Test` / `#expect()` — **not** XCTest for unit/integration tests
+- Tests use `import Testing` with `@Suite` / `@Test` / `#expect()` — **not** XCTest for unit/integration tests; test fakes for the `#if compiler(>=6.4)` `nonisolated` protocols are `Mutex`-backed `final class`es, never actors (WMO fails on Swift 6.4, see `TestHelpers.swift`); drop the rule once an actor fake passes that note's WMO repro
 
 ## Agent commands
 

@@ -1,9 +1,9 @@
 import Foundation
 import FoundationModels
 
-/// Sendable projection of `Category` — `Category` itself is a SwiftData `@Model`
-/// reference type with no Sendable conformance, so it can't safely cross into an
-/// actor-isolated conformer of `CategorySuggesting` (e.g. FakeCategorySuggesting).
+/// Sendable projection of `Category`. `CategorySuggesting` is `Sendable`, and `Category`
+/// is a SwiftData `@Model` reference type with no Sendable conformance, so a suggester
+/// gets plain values instead of the live model object.
 /// Mirrors the existing `accountID: UUID` precedent on `TransactionImportWriting`:
 /// only the identity + display data needed for suggestion/matching crosses the
 /// boundary, never the live model object.
@@ -14,8 +14,11 @@ struct CategoryCandidate: Sendable {
 }
 
 /// Domain Service protocol — zero SwiftData imports.
-// See the compiler(>=6.4) note on `TransactionImportWriting` — same Swift 6.4/Xcode 27
-// actor-isolation-inference issue, same fix.
+// Same Swift 6.4/Xcode 27 @MainActor inference as `TransactionImportWriting` (see its
+// compiler(>=6.4) note). No actor conforms here, but without the gate the protocol's
+// requirements become main-actor isolated on 6.4 only, and FakeCategorySuggesting turns
+// @MainActor through its conformance (checked on Xcode 27.1, 2026-10-23). The gate keeps
+// the protocol nonisolated on both toolchains, so keep both copies in sync.
 #if compiler(>=6.4)
 nonisolated protocol CategorySuggesting: Sendable {
     /// Backed by SystemLanguageModel.default.availability == .available.
