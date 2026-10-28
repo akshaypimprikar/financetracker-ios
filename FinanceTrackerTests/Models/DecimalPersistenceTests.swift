@@ -25,9 +25,9 @@ struct DecimalPersistenceTests {
     ]
 
     /// Values with 16 significant digits, beyond what any real account holds.
-    /// The first entry is the exact repro from the report. Measured on
-    /// Xcode 27.2 / iOS 26.4.1: SwiftData keeps 15 significant digits and rounds
-    /// the rest, so each of these is expected to fail until Apple fixes FB23627448.
+    /// The first entry is the exact repro from the report. Measured with Xcode 27.1
+    /// on iOS 26.4.1 and 27.0: the on-disk store keeps 15 significant digits and
+    /// rounds the rest, so each of these is expected to fail until Apple fixes FB23627448.
     static let highMagnitudeValues: [String] = [
         "123456789012345.6",   // the FB23627448 repro
         "12345678901234.56",
@@ -39,7 +39,7 @@ struct DecimalPersistenceTests {
         case onDiskWithMigrationPlan
     }
 
-    private static func makeAppContainer(_ kind: StoreKind, storeURL: URL) throws -> ModelContainer {
+    private static func makeAppContainer(_ kind: StoreKind, storeURL: URL?) throws -> ModelContainer {
         let schema = Schema(versionedSchema: SchemaV1.self)
         switch kind {
         case .inMemory:
@@ -48,7 +48,7 @@ struct DecimalPersistenceTests {
             return try ModelContainer(for: schema, configurations: [config])
         case .onDiskWithMigrationPlan:
             // Production path in FinanceTrackerApp.sharedModelContainer.
-            let config = ModelConfiguration(schema: schema, url: storeURL)
+            let config = ModelConfiguration(schema: schema, url: try #require(storeURL))
             return try ModelContainer(
                 for: schema,
                 migrationPlan: FinanceTrackerMigrationPlan.self,
@@ -63,12 +63,23 @@ struct DecimalPersistenceTests {
         _ value: Decimal,
         kind: StoreKind
     ) throws -> (amount: Decimal, openingBalance: Decimal, monthlyLimit: Decimal) {
+        guard kind == .onDiskWithMigrationPlan else {
+            return try writeThenRead(value, kind: kind, storeURL: nil)
+        }
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("DecimalPersistenceTests-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
-        let storeURL = dir.appendingPathComponent("store.sqlite")
+        // Both containers live only inside `writeThenRead`, so they are released
+        // (and the SQLite files closed) before the directory is removed.
+        return try writeThenRead(value, kind: kind, storeURL: dir.appendingPathComponent("store.sqlite"))
+    }
 
+    private static func writeThenRead(
+        _ value: Decimal,
+        kind: StoreKind,
+        storeURL: URL?
+    ) throws -> (amount: Decimal, openingBalance: Decimal, monthlyLimit: Decimal) {
         // Write, with the first container kept alive so the in-memory store
         // survives long enough to be read through a second context.
         let writer = try makeAppContainer(kind, storeURL: storeURL)
@@ -105,14 +116,16 @@ struct DecimalPersistenceTests {
         #expect(result.monthlyLimit == value, "Budget.monthlyLimit \(text) came back as \(result.monthlyLimit)")
     }
 
-    @Test(arguments: highMagnitudeValues, StoreKind.allCases)
-    private func highMagnitudesRoundTripExactly(_ text: String, kind: StoreKind) throws {
+    /// On-disk only: the in-memory store reads back through the writer's own
+    /// container, so it may serve the saved value from cache and never hit the
+    /// lossy conversion. Without `isIntermittent`, a future OS that fixes
+    /// FB23627448 fails this test with "Known issue was not recorded", which is
+    /// the signal to drop the wrapper and merge these values into `realisticValues`.
+    @Test(arguments: highMagnitudeValues)
+    private func highMagnitudesRoundTripExactly(_ text: String) throws {
         let value = try #require(Decimal(string: text, locale: Locale(identifier: "en_US_POSIX")))
-        let result = try Self.roundTrip(value, kind: kind)
-        // Known failing (FB23627448). `isIntermittent` keeps CI green if a future OS
-        // fixes the bug; when that happens, drop the wrapper and merge these values
-        // into `realisticValues`.
-        withKnownIssue("FB23627448: SwiftData rounds Decimal to 15 significant digits", isIntermittent: true) {
+        let result = try Self.roundTrip(value, kind: .onDiskWithMigrationPlan)
+        withKnownIssue("FB23627448: SwiftData rounds Decimal to 15 significant digits") {
             #expect(result.amount == value, "Transaction.amount \(text) came back as \(result.amount)")
             #expect(result.openingBalance == value, "Account.openingBalance \(text) came back as \(result.openingBalance)")
             #expect(result.monthlyLimit == value, "Budget.monthlyLimit \(text) came back as \(result.monthlyLimit)")
