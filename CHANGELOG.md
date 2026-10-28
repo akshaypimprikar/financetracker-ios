@@ -31,7 +31,7 @@ All notable changes to FinanceTracker are documented here.
 - **Import tests raced `ImportViewModel` from background threads (#136).** The app target defaults to `MainActor` isolation but the test target does not, so async `ImportViewModelTests` read `isImporting` off the main actor while the import task cleared it on main. Under ThreadSanitizer this aborted the test process, and every remaining test reported a failure at 0.000s. The suite and the async `ImportHashGoldenTests` test are now `@MainActor`, and tests await the import task (`ImportViewModel.waitForImport()`) and the suggester call instead of polling or sleeping.
 
 ### Known issues
-- **SwiftData rounds `Decimal` money values to 15 significant digits on disk (Apple FB23627448).** Values of 16 or more significant digits (100 trillion or more with cents) lose their last digits on save, and nothing in the app rejects them yet (#193).
+- **SwiftData rounds `Decimal` money values to 15 significant digits on disk (Apple FB23627448).** Values with 16 or more significant digits (10 trillion or more with cents, or longer fractions such as `1234567890123.456`) lose their last digits on save, and nothing in the app rejects them yet (#193).
 
 ## [1.5.1] — 2026-09-30
 
