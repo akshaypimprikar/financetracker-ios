@@ -745,3 +745,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** FinanceTracker/Services/CategorySuggesting.swift:4
 **Caught by:** this review
+
+## 2026-10-28 — PR#191 — Wrong magnitude in a CHANGELOG known-issue entry
+**What was wrong:** The Known issues entry for FB23627448 said precision loss starts at "100 trillion or more with cents". 16 significant digits with cents is a 14-digit integer part, so it starts at 10 trillion, and the PR's own test value `12345678901234.56` (about 12.3 trillion) rounds. Readers would have taken 10 to 100 trillion as safe.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:34
+**Caught by:** this review

@@ -6,6 +6,9 @@ All notable changes to FinanceTracker are documented here.
 
 ## [Unreleased]
 
+### Added
+- **Decimal persistence regression test (Apple FB23627448).** `DecimalPersistenceTests` round-trips `Transaction.amount`, `Account.openingBalance` and `Budget.monthlyLimit` through `SchemaV1` plus `FinanceTrackerMigrationPlan` on an on-disk store, read back through a fresh container. The in-memory cases are only a smoke check, because they read back through the writer's container and may be served from cache. Measured with Xcode 27.1 on iOS 26.4.1 and 27.0: values up to 15 significant digits are exact, and all three 16-digit values round on disk (`123456789012345.6` becomes `123456789012346`). These are marked as a known issue without `isIntermittent`, so an OS fix makes the test fail. Test-only, no app change.
+
 ### Changed
 - **Advisory Xcode 27 CI job (`xcode27-advisory.yml`).** Builds and unit-tests on GitHub's `xcode-27` runner image (Xcode 27.0, iOS 27.0 simulators), `continue-on-error`, not a required check. Until now every workflow pinned `macos-26` + Xcode 26.4, so the `#if compiler(>=6.4)` branches from #112 compiled only on a developer's local Xcode 27.
 - **Pragma plan C ported (pragma #110, #112, #114, #116, #118).** `project` block (persistence, ui, architecture) in `scripts/pipeline_lanes.json`, validated by `check_pr_lane.py`; `check_tdd_commit_order.py` reads its layer folders from it (mvvm keeps `Repositories/SwiftData/`); `/spec`, `/plan`, `/feature`, `/test` and `/design` read the settings (`test/uikit.md`, UIKit mode in `/design`). New file-registration tooling (`detect_file_registration.sh`, `register_files.rb`, `check_file_registration.py`, a `pr-checks` step), `detect_build_target.sh`, `detect_project_settings.sh`, `pod install` steps in CI when a `Podfile` exists, the `fixtures/FakeApp-Legacy` fixture and `legacy-canary.yml`. FinanceTracker keeps swiftdata, swiftui, mvvm and `-project`; behavior for this repo is unchanged.
@@ -26,6 +29,9 @@ All notable changes to FinanceTracker are documented here.
 - **Concurrency Advisory always reported "0 report(s)".** ThreadSanitizer writes to the test process's stderr, which `xcodebuild` does not copy into `tsan.log`, so the summary step's grep never matched. The job now writes a result bundle and counts reports in its `StandardOutputAndStandardError.txt` files; on the #136 race it reports 1, where the old grep reported 0.
 - **Gate 5's feature-log N/A no longer rests on a false premise (#143).** `/release` cuts the feature-log branch before the back-merge lands, so `develop` usually still has `[Unreleased]` and Gate 5 passes; the N/A now applies only when the gate actually fails on a feature-log-only PR. `/release` step 3 says to rename `[Unreleased]` to the version heading instead of adding a new section. `/gates`' `/loop` stop condition names the N/A (#144), and the pipeline-lanes spec cites the current `gates.yml` lines (#138).
 - **Import tests raced `ImportViewModel` from background threads (#136).** The app target defaults to `MainActor` isolation but the test target does not, so async `ImportViewModelTests` read `isImporting` off the main actor while the import task cleared it on main. Under ThreadSanitizer this aborted the test process, and every remaining test reported a failure at 0.000s. The suite and the async `ImportHashGoldenTests` test are now `@MainActor`, and tests await the import task (`ImportViewModel.waitForImport()`) and the suggester call instead of polling or sleeping.
+
+### Known issues
+- **SwiftData rounds `Decimal` money values to 15 significant digits on disk (Apple FB23627448).** Values with 16 or more significant digits (10 trillion or more with cents, or longer fractions such as `1234567890123.456`) lose their last digits on save, and nothing in the app rejects them yet (#193).
 
 ## [1.5.1] — 2026-09-30
 
