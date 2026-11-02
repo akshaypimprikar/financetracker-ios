@@ -751,3 +751,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** CHANGELOG.md:34
 **Caught by:** this review
+
+## 2026-11-02 — PR#197 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** Inserting 7 lines into `.claude/skills/sync-workflow/SKILL.md` moved the `git add .claude/skills/ scaffold/` line from 67 to 74, but `docs/superpowers/specs/2026-09-28-pipeline-lanes.md:130` still cited `:67`. `check_citations.py` only checks the line exists.
+**Rule violated:** no formal rule, caught in review (repeats PR#163 and PR#152 entries of the same name)
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:130
+**Caught by:** this review
