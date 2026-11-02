@@ -47,6 +47,13 @@ Check for drift in these areas (keep `<AppName>` placeholders — pragma is a te
 | Architecture rules checklist in `/review` | FinanceTracker `/review` skill |
 | New gates in `/gates` — **only if generalizable** | FinanceTracker `/gates` skill |
 | CI workflow flags (simulator selection, coverage, parallelism) | FinanceTracker's `.github/workflows/*.yml` vs. pragma's `scaffold/.github/workflows/*.yml` |
+| Guard hook (`PreToolUse`, blocks gate-file edits on `feature/*`) | FinanceTracker's `.claude/hooks/guard_protected_paths.py` vs. pragma's `scaffold/.claude/hooks/guard_protected_paths.py` — **diff both ways** (see below) |
+
+**Guard hook rules.** pragma changes this file on its own too (pragma #136 added Codex support there first), so FinanceTracker is not always the source:
+- A change only in pragma's copy means FinanceTracker is behind. Do not sync over it: port it to FinanceTracker first in its own `chore/*` PR, then sync.
+- Leave FinanceTracker-only protected paths out of pragma (today `FinanceTrackerTests/ImportHashGoldenTests.swift`, its `_PROTECTED_FRAGMENTS` entry and its self-test case).
+- A synced change to `PROTECTED_GLOBS` needs the same change in pragma's `scripts/check_gate_integrity.py` `GUARDED_PATH_GLOBS` (the hook self-test compares them). That file is outside the `sync` lane, so open that sync as a `chore/*` pipeline PR, not `sync/*`.
+- After applying, run `python3 scaffold/.claude/hooks/guard_protected_paths.py --self-test` in pragma: 0 failures.
 
 ### 4. Apply updates
 Edit only the lines that differ. Do not copy FinanceTracker-specific paths (e.g. `/Users/akshaypimprikar/...`) into the template.
