@@ -757,3 +757,9 @@
 **Rule violated:** no formal rule, caught in review (repeats PR#163 and PR#152 entries of the same name)
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:130
 **Caught by:** this review
+
+## 2026-11-02 — PR#198 — Round 1: shell-run apply_patch with no inline heredoc headers bypasses the guard hook
+**What was wrong:** `PATCH_TARGET` only matches `*** Update File:` headers at real line starts in the command text. On a `feature/*` branch, `printf '*** Begin Patch\n*** Update File: CLAUDE.md\n...' | apply_patch` (literal `\n`) and `apply_patch "$(cat p.patch)"` both exit 0, while the CHANGELOG and the `evaluate` comment read as if shell-run patches are covered. Ported unchanged from pragma #136, which has the same gap.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/hooks/guard_protected_paths.py:80
+**Caught by:** this review
