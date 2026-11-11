@@ -81,6 +81,16 @@ class Gate0PathspecTests(unittest.TestCase):
             self.assertIn("grep -q '" + grep + "' \"$OUT\"", skill)
             self.assertTrue(re.match(grep.replace("(", "\\(").replace(")", "\\)"), row), grep)
 
+    def test_golden_step_finds_the_saved_output_or_fails(self):
+        # PR#201 F2: $OUT from an earlier shell call is unset, which silently skipped Gate 14.
+        with open(SKILL) as f:
+            skill = f.read()
+        out = 'OUT="$(git rev-parse --git-dir)/check_gates-$(git rev-parse HEAD).out"'
+        self.assertEqual(skill.count(out), 2)
+        self.assertIn('scripts/check_gates.sh > "$OUT" 2>&1', skill)
+        golden = skill[skill.index("### Gate 14"):]
+        self.assertLess(golden.index('if [ ! -s "$OUT" ]; then\n  echo "GOLDEN FAIL'), golden.index("grep -q"))
+
     def test_project_and_build_inputs_listed(self):
         spec = pathspecs()[0]
         for path in BUILD_RELEVANT:

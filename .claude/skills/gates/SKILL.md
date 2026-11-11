@@ -20,7 +20,8 @@ Read `.claude/context/invariants.md` if it exists — skip silently if absent. A
 
 Gates 0–11 are one script, so no model transcribes a result:
 ```bash
-OUT=$(mktemp -t check-gates)
+OUT="$(git rev-parse --git-dir)/check_gates-$(git rev-parse HEAD).out"   # untracked, named after the commit
+find "$(git rev-parse --git-dir)" -maxdepth 1 -name 'check_gates-*.out' ! -name "check_gates-$(git rev-parse HEAD).out" -delete   # output for other commits
 scripts/check_gates.sh > "$OUT" 2>&1; RC=$?   # --base main on release/* and hotfix/* (the default there); --branch <name> on a detached HEAD
 cat "$OUT"; echo "check_gates.sh exit $RC"
 ```
@@ -28,7 +29,8 @@ It runs the pre-step and Gates 0–11 in order, prints each gate's details, and 
 (`Gates run at <sha>`, `Lane:`, one line per gate). Paste that block into the PR body as printed; never retype or
 edit it. Exit 0: every blocking gate in it passed. Exit 1: a blocking gate failed — fix it, commit, and re-run.
 Exit 2: a usage or config error. Exit 3: the tree is dirty. If `scripts/check_gates.sh` is missing, `/gates` FAILS;
-do not fall back to running the checks by hand. Keep `$OUT`: Gate 14 reads it.
+do not fall back to running the checks by hand. Gate 14 reads the saved output from that file, which is named
+after the commit, so a later shell call (where `$OUT` is unset) still finds it and output from another commit is never read.
 
 Then run the three FinanceTracker-only gates by hand, in order: Gate 12 (CSV import concurrency shape), Gate 13
 (visual verification) and Gate 14 (`importHash` golden test). Their result lines go directly under the pasted block
@@ -190,9 +192,12 @@ If any `Views/` files changed, capture the screen with the XcodeBuildMCP steps i
 Gate 10's `importHash` rule only proves the name still appears; it cannot notice the hash *value* changing, which
 silently breaks CSV dedup on re-import. The behavioral check is the Swift Testing suite `ImportHashGoldenTests`
 (`FinanceTrackerTests/ImportHashGoldenTests.swift`). It runs `xcodebuild`, so it is `/gates`-only — `/review` does
-not re-run it. It reads the script's saved output (`$OUT`) for Gate 1's row instead of repeating Gate 0's list:
+not re-run it. It reads the script's saved output for Gate 1's row instead of repeating Gate 0's list:
 ```bash
-if grep -q '^\[–\] Build — skipped (no build-relevant changes)$' "$OUT"; then
+OUT="$(git rev-parse --git-dir)/check_gates-$(git rev-parse HEAD).out"
+if [ ! -s "$OUT" ]; then
+  echo "GOLDEN FAIL: no check_gates.sh output for this commit; run the script first"
+elif grep -q '^\[–\] Build — skipped (no build-relevant changes)$' "$OUT"; then
   echo "GOLDEN SKIP: no build-relevant changes (Gate 0 empty)"
 elif ! grep -q '^\[✓\] Build$' "$OUT"; then
   echo "GOLDEN SKIP: Gate 1 did not pass"
