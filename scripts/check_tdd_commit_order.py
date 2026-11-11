@@ -141,7 +141,7 @@ for i, files in enumerate(added_per_commit):
         test_basename = base[: -len(".swift")] + "Tests.swift"
         test_path = test_files_by_basename.get(test_basename)
         if test_path is None:
-            continue  # no matching test file at all — Gate 6 (coverage) catches this, not Gate 11
+            continue  # no matching test file at all — Gate 6 (coverage) catches this, not Gate 9
         test_index = first_added_index.get(test_path)
         if test_index is None:
             continue  # test file predates this branch — not a new-file case

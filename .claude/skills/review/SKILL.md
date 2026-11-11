@@ -57,7 +57,7 @@ to /plan" section, not into the verdict as a blocker.
 
 `/gates` runs before every PR is opened and is the single authoritative check for
 layer separation, type safety, patterns, build success, full test suite, coverage,
-and UI-selector matching (its Gate 9 and Gate 10 cover what this section used to duplicate).
+and UI-selector matching (its Gate 10 and Gate 8 cover what this section used to duplicate).
 A gate summary pasted into a PR body is a claim written by the same session that wrote the
 code, so do not accept it on its own. Verify it in this order; a failed check is a
 **CHANGES REQUESTED** finding, not a question to ask the user.
@@ -91,24 +91,27 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
      if git show "${BASE}:scripts/${name}.py" > "$T/${name}.py" 2>/dev/null; then python3 "$T/${name}.py" "$@"
      else echo "NOT VERIFIED: scripts/${name}.py not on ${BASE}"; fi
    }
-   run_gate check_gate_integrity "$BASE" "$BR"    # Gate 13
-   run_gate check_tdd_commit_order "$BASE"        # Gate 11
+   run_gate check_gate_integrity "$BASE" "$BR"    # Gate 11
+   run_gate check_tdd_commit_order "$BASE"        # Gate 9
    ```
    A script that is not on the base branch yet (the PR introducing it, or before it merges) is reported
    as `NOT VERIFIED: <script> not on <base>` and, for a PR that adds it, run from the PR copy
    with that caveat stated — never counted as a clean pass. Exit 2 from the TDD script means the configured layer names
-   (`project.architecture` / `project.scoped_layer_dirs`) match no file in the repo (the layer folders were renamed or moved): report that, not a pass. Also re-run the grep-only gates exactly
-   as written in `gates/SKILL.md`, substituting `$BASE` (the fetched `origin/<base>`) for `develop` in every command (local
-   `develop` may be stale after `git fetch`): Gate 3 (TODO/FIXME/HACK), Gate 4 (branch name — check `$BR`, since `git branch --show-current` is empty on a detached checkout), Gate 5
-   (CHANGELOG), Gate 8 (only if `TransactionImportActor.swift` changed), and Gate 9's grep commands
-   (not its `ImportHashGoldenTests` step, which runs `xcodebuild`). Each grep prints nothing on a
-   pass except the UI-selector listing (cross-check by hand) and any hit the summary already names as
-   an accepted exception. Any result that disagrees with the pasted summary — a script exits
-   non-zero, a grep prints a hit the summary does not name — is **CHANGES REQUESTED**, quoting the
-   command and its output.
-   Gates 1, 2, 6, 7, 10, 12, and Gate 9's golden-test step (build, tests, coverage, security skill,
-   advisory heuristics, screenshots, `xcodebuild`) are **not** re-run here; state that they rest on the
-   summary and CI.
+   (`project.architecture` / `project.scoped_layer_dirs`) match no file in the repo (the layer folders were renamed or moved): report that, not a pass. Also re-run
+   Gate 3 (TODO/FIXME/HACK), Gate 4 (branch name), Gate 5 (CHANGELOG) and Gate 10 (architecture rules) with the
+   **base** branch's gate script and config, against `$BASE` (local `develop` may be stale after `git fetch`) and
+   `$BR` (a detached checkout has no current branch):
+   ```bash
+   if git show "${BASE}:scripts/check_gates.sh" > "$T/check_gates.sh" 2>/dev/null && git show "${BASE}:scripts/pipeline_lanes.json" > "$T/lanes.json" 2>/dev/null; then
+     bash "$T/check_gates.sh" --only 3,4,5,10 --base "$BASE" --branch "$BR" --config "$T/lanes.json"
+   else echo "NOT VERIFIED: scripts/check_gates.sh or scripts/pipeline_lanes.json not on ${BASE}"; fi
+   ```
+   Each of its four summary lines must match the same gate's line in the pasted summary. Re-run Gate 12 (only if
+   `TransactionImportActor.swift` changed) as written in `gates/SKILL.md`, substituting `$BASE` for `develop`; it
+   prints nothing on a pass. Any result that disagrees — a script exits non-zero, a gate line differs, a grep prints
+   a hit — is **CHANGES REQUESTED**, quoting the command and its output.
+   Gates 1, 2, 6, 7, 8, 13 and 14 (build, tests, coverage, security skill, advisory heuristics, screenshots, the
+   `xcodebuild` golden test) are **not** re-run here; state that they rest on the summary and CI.
 3. **Check CI.** If a PR exists:
    ```bash
    gh pr checks <PR> --json name,bucket

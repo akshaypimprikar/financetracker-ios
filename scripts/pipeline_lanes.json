@@ -4,6 +4,34 @@
     "ui": "swiftui",
     "architecture": "mvvm"
   },
+  "gates": {
+    "scheme": "FinanceTracker",
+    "build_target": "",
+    "destination": "platform=iOS Simulator,name=iPhone 17,OS=26.4.1",
+    "sensitive_paths": "CSVImport|Repository|SwiftData|UserNotification",
+    "app_dir": "FinanceTracker",
+    "ui_tests_dir": "FinanceTrackerUITests",
+    "ui_selector_allow": [],
+    "rules": [
+      {"name": "Domain Service imports SwiftData", "paths": "^FinanceTracker/Services/", "pattern": "^import SwiftData"},
+      {"name": "Repository protocol imports SwiftData/SwiftUI", "paths": "^FinanceTracker/Repositories/Protocols/", "pattern": "^import (SwiftData|SwiftUI)"},
+      {"name": "ViewModel uses a concrete repository", "paths": "^FinanceTracker/ViewModels/", "pattern": "SwiftData\\w*Repository"},
+      {"name": "View imports SwiftData", "paths": "^FinanceTracker/Views/", "pattern": "^import SwiftData"},
+      {"name": "Money typed as Double", "ignore_case": true, "pattern": [
+        "\\b\\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\\w*\\s*:\\s*(\\[\\s*(\\w+\\s*:\\s*)?)?Double\\b",
+        "func\\s+\\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\\w*\\s*\\(.*\\)\\s*(async\\s+)?(throws\\s+)?->\\s*(\\[\\s*(\\w+\\s*:\\s*)?)?Double\\b",
+        "\\b\\w*(amount|balance|total|price|cost|budget|limit|spent|income|expense)\\w*\\s*=\\s*-?[0-9]+\\.[0-9]+\\b"]},
+      {"name": "Money converted to Double", "ignore_case": true, "pattern": ["\\.doubleValue", "(amount|balance|total|price|cost|budget|limit|spent|income|expense).*\\bDouble\\(", "\\bDouble\\(.*(amount|balance|total|price|cost|budget|limit|spent|income|expense)"],
+        "drop": "\\.value\\(",
+        "allow": "^FinanceTracker/Services/BudgetCalculationService\\.swift:\\d+:\\s*var percentUsed: Double "},
+      {"name": "Unit tests use XCTest", "paths": "^FinanceTrackerTests/", "pattern": "XCTestCase|import XCTest"},
+      {"name": "New model is not a final class", "paths": "^FinanceTracker/Models/", "added_only": true, "mode": "missing", "pattern": "final class"},
+      {"name": "New model has no UUID id", "paths": "^FinanceTracker/Models/", "added_only": true, "mode": "missing", "pattern": "(var|let) id: UUID"},
+      {"name": "Relationship without a delete rule", "paths": "^FinanceTracker/Models/", "pattern": "@Relationship", "drop": "deleteRule"},
+      {"name": "Stored var in a new Domain Service", "paths": "^FinanceTracker/Services/", "added_only": true, "pattern": "^\\s*(private\\s+)?var\\s+\\w+\\s*[:=]", "drop": ["\\{\\s*$", "\\{ get"]},
+      {"name": "Transaction lost importHash (invariants.md #2)", "paths": "^FinanceTracker/Models/Transaction\\.swift$", "mode": "missing", "pattern": "importHash"}
+    ]
+  },
   "release": {
     "paths": [
       "FinanceTracker.xcodeproj/project.pbxproj",
@@ -44,7 +72,7 @@
       "evidence": ["gate_summary", "review_verdict", "motivating_incident"],
       "small_pr": {
         "max_changed_lines": 30,
-        "exclude_paths": [".claude/hooks/**", ".claude/skills/gates/**", ".claude/skills/review/**", "scripts/check_*", "scripts/review_verdict.py", "scripts/install_*", "scripts/pipeline_lanes.json", ".githooks/**", ".github/**"],
+        "exclude_paths": [".claude/hooks/**", ".claude/skills/gates/**", ".claude/skills/review/**", "scripts/check_*", "scripts/detect_build_target.sh", "scripts/select_simulator.py", "scripts/review_verdict.py", "scripts/install_*", "scripts/pipeline_lanes.json", ".githooks/**", ".github/**"],
         "evidence": ["gate_summary", "motivating_incident"]
       }
     }
