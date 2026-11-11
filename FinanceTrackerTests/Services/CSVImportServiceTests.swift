@@ -278,7 +278,7 @@ struct CSVImportServiceTests {
         #expect(results.map(\.payee) == ["A;B", "C;D"])
     }
 
-    @Test func fourDigitAmountDoesNotOutvoteADecimalCommaAmount() throws {
+    @Test func tiedVotesFromAFourDigitAmountKeepTheDecimalComma() throws {
         // '.' and ',' get one vote each, so a ';' file keeps its decimal comma.
         let csv = "date;amount;payee\n2026-05-01;1234.567;A\n2026-05-02;12,50;B"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
