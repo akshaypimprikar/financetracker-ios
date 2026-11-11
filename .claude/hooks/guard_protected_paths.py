@@ -641,6 +641,10 @@ BRACE_SEPARATORS = "{},"  # an unquoted one of these sits next to every piece of
 SUBSTITUTION_SEPARATORS = BRACE_SEPARATORS + "$()`"  # a `$( )`/backtick span starts with `$`/`` ` `` and ends with `)`/`` ` ``
 # Allowlisted tools whose options can run code or write files, so their arguments must be literal.
 FLAG_SENSITIVE = ("sed", "git", "rg", "find", "command", "printf")
+# rg options that run another program (rg 15 `--help`): a preprocessor, a hostname command, decompressors.
+# Any short-option word containing `z` (`-nz`, `-zA3`) counts as -z/--search-zip: a cluster can end in an attached
+# value, so this fails closed (`-ez` is blocked too). rg takes no abbreviated long options.
+RG_RUNS_PROGRAM = ("--pre", "--hostname-bin", "--search-zip")
 SHELL_WORDS = ("if", "then", "elif", "else", "fi", "while", "until", "do", "done", "!", "{", "}", "for", "case", "esac",
                "select", "in", "time")
 
@@ -660,17 +664,14 @@ def names_patch(command):
         bodies = re.findall(r"\$'((?:[^'\\]|\\.)*)'", command)
         if any(ansi_c_decode(b) is None for b in bodies):
             return True  # an escape bash reads differently (`\\u61`, `\\x6`): fail closed
-        decoded = re.sub(r"\$'((?:[^'\\]|\\.)*)'", lambda m: ansi_c_decode(m.group(1)), command).replace('$"', '"')
+        decoded = re.sub(r"\$'((?:[^'\\]|\\.)*)'", lambda m: "'" + ansi_c_decode(m.group(1)).replace("'", "'\\''") + "'", command).replace('$"', '"')
         if decoded != command and names_patch(decoded):
             return True
     flat = re.sub(r"[\\'\"]", "", command)
     values = {name: unquote(value) for name, value in ASSIGNMENT.findall(command)}
-    expanded = flat
-    for _ in range(3):  # a value may itself name another variable
-        expanded = re.sub(r"\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)",
-                          lambda m: values.get(m.group(1) or m.group(2), m.group(0)), expanded)
-    defaulted = re.sub(r"\$\{[A-Za-z_]\w*:?[-=+?]([^}]*)\}", r"\1", expanded)  # `apply_pat${x:-ch}`
-    dropped = re.sub(r"\$\{[^}]*\}|\$[A-Za-z_]\w*|\$\[[^\]]*\]|\$[@*#?$!0-9-]", "", drop_substitutions(defaulted))
+    expanded, defaulted, dropped = expand_words(flat, values)
+    # #145: the same text with quoted glob characters kept as placeholders, so a quoted `]` stays a bracket member
+    q_dropped = expand_words(mark_quoted(command), values)[2].replace(QUOTE_BOUNDARY, "")
     commands = set()
     for item in split_segments(tokenize(command) or []):
         idx = real_command_index(item[1]) if item[0] == "cmd" else None
@@ -678,6 +679,22 @@ def names_patch(command):
             commands.add(unquote(item[1][idx]).rsplit("/", 1)[-1].lower())
     globs = [re.sub(r"\*+", "*", posix_glob(w.rsplit("/", 1)[-1].lower())) for w in dropped.split() if re.search(r"[*?\[]", w)]
     globs += [posix_glob(c) for c in commands if re.search(r"[*?\[]", c)]
+    q_words = [w for w in q_dropped.split() if re.search(r"[*?\[]", w)]
+    q_tokens = tokenize(q_dropped)
+    q_commands = q_words if q_tokens is None else [  # unparsable: treat every glob word as a command (fail closed)
+        item[1][real_command_index(item[1])] for item in split_segments(q_tokens)
+        if item[0] == "cmd" and real_command_index(item[1]) is not None]
+
+    def q_globs(words, command=False):  # `{...}` groups dropped or opened, or read as `*`
+        words = [re.sub(r"\{,+\}", "", w) for w in words]  # `{,}` expands to nothing
+        words = words + [v for w in words if "{" in w for v in [re.sub(r"\{[^{}]*\}", "", w), re.sub(r"[{},]", "", w)]
+                         + [brace_star(w)] * (not command or "[" in w)]  # any alternative: `apply_p{a,b}[x']'t]ch`
+    # (a bare `{a,b}` command word would read as `*`, which matches any name, so a command needs a bracket too)
+        return [unmark(re.sub(r"\*+", "*", posix_glob(w.rsplit("/", 1)[-1].lower()))) for w in words]
+
+    globs += q_globs(q_words) + q_globs(q_commands, command=True)
+    commands.update(q_globs(q_commands, command=True))
+    commands |= {posix_glob(c) for c in commands}  # compare a command glob in the same form as `globs` (`./a[p]*h`)
     globs = [w for w in globs if glob_min_length(w) <= len("apply_patch")]  # fnmatch is slow on long bracket words
     if any((w in commands or len(re.findall(r"[a-z]", re.sub(r"\[[^\]]*\]", "", w))) >= GLOB_MIN_LETTERS)
            and fnmatch.fnmatchcase(n, w) for w in globs for n in ("apply_patch", "applypatch")):
@@ -721,6 +738,65 @@ def posix_glob(word):
         out.append("?")
         i = j + 1
     return "".join(out)
+
+
+# A quoted or escaped glob character is literal, so it stands in as one of these while posix_glob() runs, then
+# goes back as text fnmatch reads literally.
+# Quoted whitespace, quotes and operators are held too, so the marked text splits into the same words (`[x' ]t]`).
+QUOTED_GLOB_CHARS = {c: chr(0xE000 + n) for n, c in enumerate("[]!^:.=*? \t\n'\"\\;&|<>")}
+QUOTE_BOUNDARY = "\ue0ff"  # where a quote opened or closed: it ends a variable name (`"$u"x` is `$u` then `x`)
+QUOTED_GLOB_LITERAL = {v: {"[": "[[]", "*": "[*]", "?": "[?]"}.get(c, c) for c, v in QUOTED_GLOB_CHARS.items()}
+
+
+def mark_quoted(text):
+    """`text` with its quotes and backslashes removed, and each quoted or escaped glob character replaced by a
+    placeholder posix_glob() does not read, so a quoted `]` inside a bracket is a member, not the closer
+    (`apply_pa[x\\]t]ch`, `apply_pa[x']'t]ch`, #145). A QUOTE_BOUNDARY marks each quote and escape, so a variable
+    name ends there as it does in the shell; names_patch() removes it after expanding. Linear."""
+    out, quote, i = [], None, 0
+    while i < len(text):
+        c = text[i]
+        if quote and c == quote:
+            quote = None
+            out.append(QUOTE_BOUNDARY)
+        elif not quote and c in "'\"":
+            quote = c
+            out.append(QUOTE_BOUNDARY)
+        elif c == "\\" and quote != "'" and i + 1 < len(text) and (not quote or text[i + 1] in '\\"$`'):
+            i += 1
+            out += [QUOTE_BOUNDARY, QUOTED_GLOB_CHARS.get(text[i], text[i])]
+        else:
+            out.append(QUOTED_GLOB_CHARS.get(c, c) if quote else c)
+        i += 1
+    return "".join(out)
+
+
+def brace_star(word):
+    """`word` with every `{...}` group, innermost first, replaced by `*`: an over-approximation of all its brace
+    alternatives (fail closed, PR #148 round 2), so a glob beside a brace group is still matched against the name."""
+    for _ in range(word.count("{")):
+        starred = re.sub(r"\{[^{}]*\}", "*", word)
+        if starred == word:
+            break
+        word = starred
+    return word
+
+
+def unmark(word):
+    """A posix_glob() result with mark_quoted() placeholders turned back into text fnmatch reads literally."""
+    return "".join(QUOTED_GLOB_LITERAL.get(c, c) for c in word)
+
+
+def expand_words(text, values):
+    """(expanded, defaulted, dropped) forms of `text` for names_patch(): variables the command sets expanded,
+    `${x:-...}` defaults kept, then `$( )`, backticks, unset variables and special parameters dropped."""
+    expanded = text
+    for _ in range(3):  # a value may itself name another variable
+        expanded = re.sub(r"\$\{([A-Za-z_]\w*)\}|\$([A-Za-z_]\w*)",
+                          lambda m: values.get(m.group(1) or m.group(2), m.group(0)), expanded)
+    defaulted = re.sub(r"\$\{[A-Za-z_]\w*:?[-=+?]([^}]*)\}", r"\1", expanded)  # `apply_pat${x:-ch}`
+    dropped = re.sub(r"\$\{[^}]*\}|\$[A-Za-z_]\w*|\$\[[^\]]*\]|\$[@*#?$!0-9-]", "", drop_substitutions(defaulted))
+    return expanded, defaulted, dropped
 
 
 def glob_min_length(word):
@@ -857,10 +933,29 @@ def builds_command_name(command):
     return False
 
 
+def redirects_read_only(words):
+    """True if every redirection in one command only reads or duplicates a descriptor: input (`<`, `<<`, `<<<`,
+    `<&`), `>&N`/`>&-`, or output to /dev/null. Any other output target (`>`, `>>`, `>|`, `&>`, `&>>`, `<>`,
+    `>& file`) writes a file, and a file written here can be run by the same command (pragma #146)."""
+    for i, w in enumerate(words):
+        if w not in REDIRECT_OPS or w in ("<", "<<", "<<<", "<&"):
+            continue
+        target = unquote(words[i + 1]) if i + 1 < len(words) else ""
+        if w == ">&" and re.fullmatch(r"\d+-?|-", target):
+            continue  # `2>&1`, `>&2`, `>&-`: a descriptor, not a file
+        if target != "/dev/null":
+            return False
+    return True
+
+
 def read_only_segment(words):
     """True if one `;`/`|`-separated command only reads: no command at all (assignments, keywords), or an
     allowlisted tool used read-only (`sed` only to print, `find` with no action, `git commit`/`git log` with no
-    global options, `command -v`, `rg` without `--pre`). Leading assignments and redirections are skipped."""
+    global options, `command -v`, `rg` without an option that runs a program). Leading assignments are skipped.
+    An output redirection to anything but /dev/null is a write, so the command is not read-only (pragma #146:
+    `echo apply_patch > tool.sh; rg --hostname-bin=./tool.sh ...` and `... >> .git/hooks/pre-commit; git commit`)."""
+    if not redirects_read_only(words):
+        return False
     i, assigned = 0, False
     while i < len(words):
         w = words[i]
@@ -900,7 +995,7 @@ def read_only_segment(words):
     if cmd == "printf":
         return not any(a.startswith("-v") for a in args)  # `printf -v 'a[$(...)]'` evaluates the subscript
     if cmd == "rg":
-        return not any(a.startswith("--pre") for a in args)
+        return not any(a.startswith(RG_RUNS_PROGRAM) or re.match(r"-[^-]*z", a) for a in args)
     return True
 
 
@@ -1521,6 +1616,42 @@ def self_test():
             ("feature: Bash quoted $( ) naming the tool", bash("feat", "grep -c apply_patch \"$(echo f)\""), True),
             ("feature: Bash integer brace range not naming the tool is readable", bash("feat", "for i in {1..99999}; do make t$i; done"), False),
             ("feature: Bash allowlist: grep with quoted braces", bash("feat", "grep -E 'apply_patch{1,2}' f"), False),
+            # pragma #146: output redirects and rg options that run a program
+            ("feature: Bash redirect writes a script rg --hostname-bin runs", bash("feat", "echo apply_patch > tool.sh; rg --hostname-bin=./tool.sh --hyperlink-format=default apply_patch f"), True),
+            ("feature: Bash append to a git hook then commit", bash("feat", "printf 'apply_patch < p\\n' >> .git/hooks/pre-commit; git commit -m x"), True),
+            ("feature: Bash output redirect forms", bash("feat", "echo apply_patch >| t; echo apply_patch &> t; echo apply_patch &>> t"), True),
+            ("feature: Bash read-write and >& file redirects", bash("feat", "cat <> t apply_patch.md; echo apply_patch >& t"), True),
+            ("feature: Bash fd-numbered output redirect", bash("feat", "grep apply_patch f 2> err.log"), True),
+            ("feature: Bash leading output redirect", bash("feat", "> t echo apply_patch"), True),
+            ("feature: Bash quoted redirect target", bash("feat", "echo apply_patch > 'tool.sh'"), True),
+            ("feature: Bash output process substitution", bash("feat", "echo apply_patch > >(sh)"), True),
+            ("feature: Bash rg --hostname-bin alone", bash("feat", "rg --hostname-bin ./t --hyperlink-format=default apply_patch f"), True),
+            ("feature: Bash rg -z", bash("feat", "rg -z apply_patch f.gz"), True),
+            ("feature: Bash rg --search-zip", bash("feat", "rg --search-zip apply_patch f.gz"), True),
+            ("feature: Bash rg -z in a short-option cluster", bash("feat", "rg -nz apply_patch f.gz"), True),
+            ("feature: Bash rg -z in a cluster with an attached value", bash("feat", "rg -zA3 apply_patch f.gz"), True),
+            ("feature: Bash allowlist: redirects to /dev/null and fd dups", bash("feat", "rg apply_patch f 2>/dev/null >/dev/null; grep -c apply_patch f 2>&1 >&2 &>/dev/null"), False),
+            ("feature: Bash allowlist: input redirect and here-string", bash("feat", "grep -c apply_patch < f; grep apply_patch <<< 'x'"), False),
+            ("feature: Bash allowlist: rg --no-search-zip and -n", bash("feat", "rg -n --no-search-zip apply_patch f"), False),
+            # pragma #145: a quoted or escaped `]` inside a glob bracket is a member, not the closer
+            ("feature: Bash escaped ] in a glob bracket", bash("feat", "./apply_pa[x\\]t]ch"), True),
+            ("feature: Bash single-quoted ] in a glob bracket", bash("feat", "./apply_pa[x']'t]ch"), True),
+            ("feature: Bash double-quoted ] in a glob bracket", bash("feat", "./apply_pa[x\"]\"t]ch"), True),
+            ("feature: Bash quoted member run ending in ]", bash("feat", "./apply_pa['t]']ch"), True),
+            ("feature: Bash quoted ] glob as an argument", bash("feat", "bash apply_pa[x']'t]ch"), True),
+            # PR #148 round 1: quoted brackets mixed with expansions, and an unquoted bracket glob as the command
+            ("feature: Bash quoted ] glob with an unset variable", bash("feat", "./apply_p${u}a[x']'t]ch"), True),
+            ("feature: Bash quoted ] glob with $'...' members", bash("feat", "./apply$'_'pa[x$']'t]ch"), True),
+            ("feature: Bash quoted ] glob with an empty $( )", bash("feat", "./apply_p$(:)a[x']'t]ch"), True),
+            ("feature: Bash quoted ] glob after a quoted variable", bash("feat", "./apply_pa\"$u\"[x']'t]ch"), True),
+            ("feature: Bash quoted variable ends before the next letter", bash("feat", "./app\"$u\"\\ly_pa\\tc[\"$u\"]'h'x-]"), True),
+            ("feature: Bash quoted ] glob after an empty brace expansion", bash("feat", "./apply_pa{,}[x']'t]ch"), True),
+            ("feature: Bash quoted space inside a glob bracket", bash("feat", "./apply_pa[x' ]'t]ch"), True),
+            ("feature: Bash brace alternatives beside a quoted ] glob", bash("feat", "./apply_p{a,b}[x']'t]ch; ./apply_pa[x']'t]c{h,i}"), True),
+            ("feature: Bash brace range beside a quoted ] glob", bash("feat", "./apply_p{a..a}[x']'t]ch"), True),
+            ("feature: Bash short bracket glob as the command", bash("feat", "./a[p]*h; ./?p[[p]*y_???ch"), True),
+            ("feature: Bash 24k quoted brackets stay fast", bash("feat", "echo " + "['['" * 6000 + "; ./apply_pa[x']'t]ch"), True),
+            ("feature: Bash allowlist: grep for a quoted bracket pattern", bash("feat", "grep -c 'apply_pa[x]t]ch' f; echo apply_pa'[t]'ch"), False),
         ]
         for label, payload, expect_block in cases:
             proc = subprocess.run(
