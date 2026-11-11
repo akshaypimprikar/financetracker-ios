@@ -246,6 +246,34 @@ struct CSVImportServiceTests {
         #expect(rows == [["a", "b", "c"], ["5\" pipe", "\"open", "x"], ["d", "e", "f"]])
     }
 
+    @Test func laterQuoteDoesNotCloseAStrayOpeningQuote() throws {
+        let csv = "date,amount,payee\n2026-05-01,1.00,\"Joe\n2026-05-02,2.00,\"Tea\""
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["\"Joe", "Tea"])
+    }
+
+    @Test func footerRowWithoutADateDoesNotVoteOnTheSeparator() throws {
+        let csv = "date;amount;payee\n2026-05-01;1.234;A\nSumme;12.50;x"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == [Decimal(1234)])
+    }
+
+    @Test func unicodeLineSeparatorDoesNotEndARecord() throws {
+        let csv = "date,amount,payee\n2026-05-01,1.00,A\u{2028}B"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["A\u{2028}B"])
+    }
+
+    @Test func onlyCurrencyCodesAreStrippedFromAmounts() throws {
+        let csv = "date,amount,payee\n2026-05-01,REF 12.50,A\n2026-05-02,EUR 3.00,B"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["B"])
+    }
+
     @Test func titleLineBeforeSemicolonHeaderKeepsSemicolon() throws {
         let csv = "Kontoauszug\nDatum;Betrag;Empfänger\n2026-05-01;12,50;Bakery"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)

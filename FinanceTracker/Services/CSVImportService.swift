@@ -32,7 +32,7 @@ struct CSVImportService {
         if mapping.hasHeader && !rows.isEmpty { rows.removeFirst() }
         rows = rows.filter { $0.count > max(mapping.dateIndex, mapping.amountIndex, mapping.payeeIndex) }
         let decimalSeparator = Self.decimalSeparator(
-            amounts: rows.map { $0[mapping.amountIndex] },
+            amounts: rows.filter { Self.parseDate($0[mapping.dateIndex]) != nil }.map { $0[mapping.amountIndex] },
             fallback: delimiter == ";" ? "," : "."
         )
 
@@ -62,8 +62,9 @@ struct CSVImportService {
         var field = ""
         var inQuotes = false
         var fieldStarted = false
-        // The open quote of the current quoted field. If it is never closed, the field is re-read
-        // from there with that quote as a literal, so one malformed field can't swallow the rest of the file.
+        // The open quote of the current quoted field. If it is never closed, or text follows its closing
+        // quote (the "closing" quote was really the next field's opener), the field is re-read from there
+        // with that quote as a literal, so one stray quote can't swallow the rows after it.
         var quoteStart: String.Index? = nil
         var literalQuote: String.Index? = nil
         var i = csv.startIndex
@@ -98,9 +99,17 @@ struct CSVImportService {
                     if next < csv.endIndex && csv[next] == "\"" {
                         field.append("\"")
                         next = csv.index(after: next)
-                    } else {
+                    } else if next == csv.endIndex || csv[next] == delimiter || csv[next].isWhitespace {
                         inQuotes = false
                         quoteStart = nil
+                    } else if let start = quoteStart {
+                        field = ""
+                        inQuotes = false
+                        fieldStarted = false
+                        literalQuote = start
+                        quoteStart = nil
+                        i = start
+                        continue
                     }
                 } else {
                     field.append(char)
@@ -112,7 +121,7 @@ struct CSVImportService {
                 quoteStart = i
             } else if char == delimiter {
                 endField()
-            } else if char.isNewline {
+            } else if char == "\n" || char == "\r\n" || char == "\r" {
                 endRecord()
             } else {
                 field.append(char)
@@ -169,10 +178,10 @@ struct CSVImportService {
         }
     }
 
-    /// Splits off what bank exports put around the number: a currency symbol or 3-letter code
+    /// Splits off what bank exports put around the number: a currency symbol or common ISO currency code
     /// ("$4.25", "12,50 €", "USD 3.00") and a leading or trailing sign ("12.50-"). Nil if anything else is left.
     private static func amountParts(_ raw: String) -> (sign: String, number: String)? {
-        let pattern = /^\s*(?:[A-Z]{3}|\p{Sc})?\s*([+-]?)\s*(?:[A-Z]{3}|\p{Sc})?\s*([0-9.,][0-9., \u{00A0}\u{202F}]*?)\s*([+-]?)\s*(?:[A-Z]{3}|\p{Sc})?\s*$/
+        let pattern = /^\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*([+-]?)\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*([0-9.,][0-9., \u{00A0}\u{202F}]*?)\s*([+-]?)\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*$/
         guard let match = raw.wholeMatch(of: pattern) else { return nil }
         let (_, leading, number, trailing) = match.output
         guard leading.isEmpty || trailing.isEmpty else { return nil }
