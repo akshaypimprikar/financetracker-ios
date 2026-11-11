@@ -126,21 +126,20 @@ struct CSVImportService {
 
     /// Picks `,` or `;` by which one splits more of the first 10 records into the same field count,
     /// so a stray delimiter inside one field doesn't switch the whole file. One-field records (a title
-    /// line such as "Kontoauszug") are ignored. A tie goes to `;`: a `;` file often has commas in its
-    /// fields (decimal comma, "Doe, John"), while a `,` file rarely has the same number of `;` on every line.
+    /// line such as "Kontoauszug") are ignored. When both agree on as many records, `;` wins, as it did
+    /// before: a `;` file often has commas in its fields (decimal comma, "Doe, John, Jr"), and the field
+    /// count can't tell them apart.
     private static func detectDelimiter(in csv: String) -> Character {
-        func score(_ delimiter: Character) -> (agreeing: Int, fields: Int) {
+        func agreeing(_ delimiter: Character) -> Int {
             let counts = rows(from: csv, delimiter: delimiter, limit: 10).map(\.count).filter { $0 > 1 }
-            let tally = Dictionary(counts.map { ($0, 1) }, uniquingKeysWith: +)
-            guard let mode = tally.max(by: { ($0.value, $0.key) < ($1.value, $1.key) }) else { return (0, 0) }
-            return (mode.value, mode.key)
+            return Dictionary(counts.map { ($0, 1) }, uniquingKeysWith: +).values.max() ?? 0
         }
-        let comma = score(","), semicolon = score(";")
-        return (comma.agreeing, comma.fields) > (semicolon.agreeing, semicolon.fields) ? "," : ";"
+        return agreeing(",") > agreeing(";") ? "," : ";"
     }
 
-    /// The decimal separator for the whole file: the one most amounts point to on their own,
-    /// else `fallback`. Only amounts that parse under the separator they point to get a vote.
+    /// The decimal separator for the whole file: the one more amounts point to on their own, or
+    /// `fallback` when no amount points either way or the votes tie. Only amounts that parse under
+    /// the separator they point to get a vote.
     private static func decimalSeparator(amounts: [String], fallback: Character) -> Character {
         var dots = 0, commas = 0
         for amount in amounts {
@@ -151,7 +150,7 @@ struct CSVImportService {
     }
 
     /// The decimal separator one amount implies by itself, or nil when it can't tell:
-    /// "1,234" or "1.234" (one separator, 3 digits after, integer part not 0) could be either.
+    /// "1,234" or "1.234" (one separator, 3 digits after, a 1-3 digit integer part other than 0) could be either.
     private static func separatorHint(_ raw: String) -> Character? {
         guard let number = amountParts(raw)?.number.filter({ $0 == "." || $0 == "," || $0.isNumber }) else { return nil }
         switch (number.lastIndex(of: "."), number.lastIndex(of: ",")) {
@@ -161,7 +160,7 @@ struct CSVImportService {
             let separator = number[index]
             if number.filter({ $0 == separator }).count > 1 { return separator == "." ? "," : "." }
             let integer = number[..<index]
-            if number[number.index(after: index)...].count == 3 && !(integer.isEmpty || integer == "0") { return nil }
+            if number[number.index(after: index)...].count == 3 && (1...3).contains(integer.count) && integer != "0" { return nil }
             return separator
         case (nil, nil):
             return nil

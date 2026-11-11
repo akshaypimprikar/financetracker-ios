@@ -775,3 +775,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/gates/SKILL.md:194
 **Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: CHANGELOG states the delimiter and decimal-fallback rules without their exceptions
+**What was wrong:** `CHANGELOG.md:27-28` (and the comment at `CSVImportService.swift:127`) said a delimiter tie goes to `;` and the decimal fallback applies when no amount is unambiguous; the code broke equal agreement by field count and also fell back on tied votes, dropping amounts written the other way. Repeats 2026-10-07 PR#163.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:27
+**Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: delimiter field-count tie-break regressed headerless `;` files
+**What was wrong:** `detectDelimiter` compared `(agreeing, fields)`, so a headerless `;` file whose payees hold two commas (`2026-05-01;12,50;Doe, John, Jr`) split into more fields on `,` and was read as comma-delimited; every row failed to parse. The old `contains(";")` rule imported it.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:139
+**Caught by:** this review

@@ -234,7 +234,7 @@ struct CSVImportServiceTests {
         #expect(results.map(\.amount) == [Decimal(string: "12.50")!])
     }
 
-    @Test func raggedFileUsesTheDelimiterWithMoreFieldsInTheFirstRecord() throws {
+    @Test func raggedSemicolonFileKeepsSemicolon() throws {
         let csv = "date;amount;payee\n2026-05-01;12,50;Bakery\n2026-05-02;3,00"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
 
@@ -260,6 +260,22 @@ struct CSVImportServiceTests {
 
         #expect(results.map(\.payee) == ["Doe, John", "Roe, Jane"])
         #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3)])
+    }
+
+    @Test func headerlessSemicolonFileWithSeveralCommasPerPayeeKeepsSemicolon() throws {
+        let csv = "2026-05-01;12,50;Doe, John, Jr\n2026-05-02;3,00;Roe, Jane, Sr"
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: false)
+        let results = try CSVImportService().parse(csv: csv, mapping: mapping)
+
+        #expect(results.map(\.payee) == ["Doe, John, Jr", "Roe, Jane, Sr"])
+    }
+
+    @Test func fourDigitIntegerPartIsNotAThousandsGroup() throws {
+        // "1234.567" can't be grouped, so it votes '.' even in a ';' file.
+        let csv = "date;amount;payee\n2026-05-01;1234.567;A"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == [Decimal(string: "1234.567")!])
     }
 
     @Test func currencyAffixesTrailingSignAndSpaceGroupingParse() throws {
