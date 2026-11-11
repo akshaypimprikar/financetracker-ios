@@ -270,6 +270,23 @@ struct CSVImportServiceTests {
         #expect(results.map(\.payee) == ["Doe, John, Jr", "Roe, Jane, Sr"])
     }
 
+    @Test func headerlessCommaFileWithASemicolonInEveryRowKeepsComma() throws {
+        let csv = "2026-05-01,12.50,A;B\n2026-05-02,3.00,C;D"
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: false)
+        let results = try CSVImportService().parse(csv: csv, mapping: mapping)
+
+        #expect(results.map(\.payee) == ["A;B", "C;D"])
+    }
+
+    @Test func fourDigitAmountDoesNotOutvoteADecimalCommaAmount() throws {
+        // '.' and ',' get one vote each, so a ';' file keeps its decimal comma.
+        let csv = "date;amount;payee\n2026-05-01;1234.567;A\n2026-05-02;12,50;B"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["B"])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!])
+    }
+
     @Test func fourDigitIntegerPartIsNotAThousandsGroup() throws {
         // "1234.567" can't be grouped, so it votes '.' even in a ';' file.
         let csv = "date;amount;payee\n2026-05-01;1234.567;A"

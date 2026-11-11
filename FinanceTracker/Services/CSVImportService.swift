@@ -126,15 +126,17 @@ struct CSVImportService {
 
     /// Picks `,` or `;` by which one splits more of the first 10 records into the same field count,
     /// so a stray delimiter inside one field doesn't switch the whole file. One-field records (a title
-    /// line such as "Kontoauszug") are ignored. When both agree on as many records, `;` wins, as it did
-    /// before: a `;` file often has commas in its fields (decimal comma, "Doe, John, Jr"), and the field
-    /// count can't tell them apart.
+    /// line such as "Kontoauszug") are ignored. When both agree on as many records, the one that leaves
+    /// more records with a field that parses as a date wins (a `;` file with "Doe, John, Jr" in a field,
+    /// or a `,` file with "A;B" in a field, both tie on agreement), and `;` wins a full tie.
     private static func detectDelimiter(in csv: String) -> Character {
-        func agreeing(_ delimiter: Character) -> Int {
-            let counts = rows(from: csv, delimiter: delimiter, limit: 10).map(\.count).filter { $0 > 1 }
-            return Dictionary(counts.map { ($0, 1) }, uniquingKeysWith: +).values.max() ?? 0
+        func score(_ delimiter: Character) -> (agreeing: Int, withDate: Int) {
+            let sample = rows(from: csv, delimiter: delimiter, limit: 10).filter { $0.count > 1 }
+            let agreeing = Dictionary(sample.map { ($0.count, 1) }, uniquingKeysWith: +).values.max() ?? 0
+            return (agreeing, sample.filter { $0.contains { parseDate($0) != nil } }.count)
         }
-        return agreeing(",") > agreeing(";") ? "," : ";"
+        let comma = score(","), semicolon = score(";")
+        return (comma.agreeing, comma.withDate) > (semicolon.agreeing, semicolon.withDate) ? "," : ";"
     }
 
     /// The decimal separator for the whole file: the one more amounts point to on their own, or
