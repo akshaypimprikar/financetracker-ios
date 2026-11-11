@@ -763,3 +763,15 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/hooks/guard_protected_paths.py:80
 **Caught by:** this review
+
+## 2026-11-11 — PR#201 — Round 1: Gate 5 passes on an empty [Unreleased] section
+**What was wrong:** `scripts/check_gates.sh` Gate 5 runs `grep -A 10 "## \[Unreleased\]" CHANGELOG.md | grep -v "^##" | grep -v "^$"`. The 10-line window runs past an empty `[Unreleased]` section into the previous release's bullets, so `## [Unreleased]`, blank, `## [1.5.1]`, `### Fixed`, `- old thing` prints `- old thing` and the gate reports `[✓] CHANGELOG`. Ported unchanged from the old hand-run grep and from pragma #155, which has the same line.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_gates.sh:183
+**Caught by:** this review
+
+## 2026-11-11 — PR#201 — Round 1: Gate 14 golden test silently skips when $OUT does not survive
+**What was wrong:** `.claude/skills/gates/SKILL.md` sets `OUT=$(mktemp -t check-gates)` in the check_gates.sh block, and Gate 14 later reads `"$OUT"` for the Build row. Shell variables do not carry across Bash tool calls, so with an empty `$OUT` both greps fail and the block prints `GOLDEN SKIP: Gate 1 did not pass`, reported as `[–]`: the `importHash` golden test is skipped after a passing build instead of failing closed.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:194
+**Caught by:** this review
