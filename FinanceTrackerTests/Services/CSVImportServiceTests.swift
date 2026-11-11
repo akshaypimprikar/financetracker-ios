@@ -157,7 +157,7 @@ struct CSVImportServiceTests {
     }
 
     @Test func amountThatDoesNotFullyParseIsRejected() throws {
-        let csv = "date,amount,payee\n2026-05-01,12.50 USD,Coffee\n2026-05-02,1.2.3,Tea\n2026-05-03,10.00,Juice"
+        let csv = "date,amount,payee\n2026-05-01,12.50abc,Coffee\n2026-05-02,1.2.3,Tea\n2026-05-03,10.00,Juice"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
 
         #expect(results.map(\.payee) == ["Juice"])
@@ -241,9 +241,54 @@ struct CSVImportServiceTests {
         #expect(results.map(\.payee) == ["Bakery"])
     }
 
-    @Test func midFieldQuoteIsLiteralAndUnclosedQuoteRunsToEnd() {
-        let rows = CSVImportService.rows(from: "a,b\n5\" pipe,\"open, still")
-        #expect(rows == [["a", "b"], ["5\" pipe", "open, still"]])
+    @Test func midFieldQuoteIsLiteralAndUnclosedQuoteDoesNotSwallowLaterRows() {
+        let rows = CSVImportService.rows(from: "a,b,c\n5\" pipe,\"open,x\nd,e,f")
+        #expect(rows == [["a", "b", "c"], ["5\" pipe", "\"open", "x"], ["d", "e", "f"]])
+    }
+
+    @Test func titleLineBeforeSemicolonHeaderKeepsSemicolon() throws {
+        let csv = "Kontoauszug\nDatum;Betrag;Empfänger\n2026-05-01;12,50;Bakery"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!])
+    }
+
+    @Test func headerlessSemicolonFileWithCommasInFieldsKeepsSemicolon() throws {
+        let csv = "2026-05-01;12,50;Doe, John\n2026-05-02;3,00;Roe, Jane"
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: false)
+        let results = try CSVImportService().parse(csv: csv, mapping: mapping)
+
+        #expect(results.map(\.payee) == ["Doe, John", "Roe, Jane"])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3)])
+    }
+
+    @Test func currencyAffixesTrailingSignAndSpaceGroupingParse() throws {
+        let us = "date,amount,payee\n2026-05-01,12.50-,A\n2026-05-02,USD 3.00,B\n2026-05-03,$4.25,C"
+        let eu = "date;amount;payee\n2026-05-01;12,50 €;A\n2026-05-02;1 234,56;B"
+
+        let usResults = try CSVImportService().parse(csv: us, mapping: dateAmountPayee)
+        let euResults = try CSVImportService().parse(csv: eu, mapping: dateAmountPayee)
+
+        #expect(usResults.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3), Decimal(string: "4.25")!])
+        #expect(euResults.map(\.amount) == [Decimal(string: "12.50")!, Decimal(string: "1234.56")!])
+    }
+
+    @Test func leadingZeroIsNotAThousandsGroup() throws {
+        let commaFile = "date,amount,payee\n2026-05-01,\"0,123\",A\n2026-05-02,12.50,B"
+        let semicolonFile = "date;amount;payee\n2026-05-01;0.500;A\n2026-05-02;12,50;B"
+
+        let us = try CSVImportService().parse(csv: commaFile, mapping: dateAmountPayee)
+        let eu = try CSVImportService().parse(csv: semicolonFile, mapping: dateAmountPayee)
+
+        #expect(us.map(\.payee) == ["B"])
+        #expect(eu.map(\.payee) == ["B"])
+    }
+
+    @Test func malformedAmountsDoNotVoteOnTheSeparator() throws {
+        let csv = "date,amount,payee\n2026-05-01,1.2.3,A\n2026-05-02,4.5.6,B\n2026-05-03,12.50,C"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!])
     }
 
     @Test func rowsSplitsQuoteAwareAndDropsBlankLines() {

@@ -51,8 +51,9 @@ struct CSVImportService {
     }
 
     /// Splits CSV text into trimmed fields per record (RFC 4180 quoting), dropping blank records.
-    static func rows(from csv: String) -> [[String]] {
-        rows(from: csv, delimiter: detectDelimiter(in: csv))
+    /// `limit` stops after that many records (the column-mapping preview needs only the first few).
+    static func rows(from csv: String, limit: Int = .max) -> [[String]] {
+        rows(from: csv, delimiter: detectDelimiter(in: csv), limit: limit)
     }
 
     private static func rows(from csv: String, delimiter: Character, limit: Int = .max) -> [[String]] {
@@ -61,8 +62,11 @@ struct CSVImportService {
         var field = ""
         var inQuotes = false
         var fieldStarted = false
-        var iterator = csv.makeIterator()
-        var pending: Character? = nil
+        // The open quote of the current quoted field. If it is never closed, the field is re-read
+        // from there with that quote as a literal, so one malformed field can't swallow the rest of the file.
+        var quoteStart: String.Index? = nil
+        var literalQuote: String.Index? = nil
+        var i = csv.startIndex
 
         func endField() {
             record.append(field.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -75,19 +79,37 @@ struct CSVImportService {
             record = []
         }
 
-        while records.count < limit, let char = pending ?? iterator.next() {
-            pending = nil
+        while records.count < limit {
+            guard i < csv.endIndex else {
+                // `records` and `record` can't change inside quotes, so only the field is rewound.
+                guard inQuotes, let start = quoteStart else { break }
+                field = ""
+                inQuotes = false
+                fieldStarted = false
+                literalQuote = start
+                quoteStart = nil
+                i = start
+                continue
+            }
+            let char = csv[i]
+            var next = csv.index(after: i)
             if inQuotes {
                 if char == "\"" {
-                    let next = iterator.next()
-                    if next == "\"" { field.append("\"") } else { inQuotes = false; pending = next }
+                    if next < csv.endIndex && csv[next] == "\"" {
+                        field.append("\"")
+                        next = csv.index(after: next)
+                    } else {
+                        inQuotes = false
+                        quoteStart = nil
+                    }
                 } else {
                     field.append(char)
                 }
-            } else if char == "\"" && !fieldStarted && field.allSatisfy(\.isWhitespace) {
+            } else if char == "\"" && !fieldStarted && i != literalQuote {
                 field = ""
                 inQuotes = true
                 fieldStarted = true
+                quoteStart = i
             } else if char == delimiter {
                 endField()
             } else if char.isNewline {
@@ -96,55 +118,72 @@ struct CSVImportService {
                 field.append(char)
                 if !char.isWhitespace { fieldStarted = true }
             }
+            i = next
         }
         if records.count < limit && (!field.isEmpty || !record.isEmpty) { endRecord() }
         return records
     }
 
-    /// Picks `,` or `;` by which one splits the first records into a consistent field count,
-    /// so a stray delimiter inside one field doesn't switch the whole file.
+    /// Picks `,` or `;` by which one splits more of the first 10 records into the same field count,
+    /// so a stray delimiter inside one field doesn't switch the whole file. One-field records (a title
+    /// line such as "Kontoauszug") are ignored. A tie goes to `;`: a `;` file often has commas in its
+    /// fields (decimal comma, "Doe, John"), while a `,` file rarely has the same number of `;` on every line.
     private static func detectDelimiter(in csv: String) -> Character {
-        func score(_ delimiter: Character) -> (consistent: Bool, fields: Int) {
-            let counts = rows(from: csv, delimiter: delimiter, limit: 10).map(\.count)
-            guard let first = counts.first, first > 1 else { return (false, 0) }
-            return (counts.allSatisfy { $0 == first }, first)
+        func score(_ delimiter: Character) -> (agreeing: Int, fields: Int) {
+            let counts = rows(from: csv, delimiter: delimiter, limit: 10).map(\.count).filter { $0 > 1 }
+            let tally = Dictionary(counts.map { ($0, 1) }, uniquingKeysWith: +)
+            guard let mode = tally.max(by: { ($0.value, $0.key) < ($1.value, $1.key) }) else { return (0, 0) }
+            return (mode.value, mode.key)
         }
         let comma = score(","), semicolon = score(";")
-        if semicolon.consistent != comma.consistent { return semicolon.consistent ? ";" : "," }
-        return semicolon.fields > comma.fields ? ";" : ","
+        return (comma.agreeing, comma.fields) > (semicolon.agreeing, semicolon.fields) ? "," : ";"
     }
 
-    /// The decimal separator for the whole file: the one most unambiguous amounts point to,
-    /// else `fallback`. An amount like "1,234" or "1.234" (one separator, 3 digits after) is ambiguous.
+    /// The decimal separator for the whole file: the one most amounts point to on their own,
+    /// else `fallback`. Only amounts that parse under the separator they point to get a vote.
     private static func decimalSeparator(amounts: [String], fallback: Character) -> Character {
-        var votes: [Character: Int] = [:]
-        for amount in amounts where amount.allSatisfy({ "0123456789.,+-".contains($0) }) {
-            let lastDot = amount.lastIndex(of: "."), lastComma = amount.lastIndex(of: ",")
-            let hint: Character?
-            switch (lastDot, lastComma) {
-            case let (dot?, comma?): hint = dot > comma ? "." : ","
-            case let (index?, nil), let (nil, index?):
-                let separator = amount[index], other: Character = separator == "." ? "," : "."
-                if amount.filter({ $0 == separator }).count > 1 { hint = other }
-                else if amount[amount.index(after: index)...].count == 3 { hint = nil }
-                else { hint = separator }
-            case (nil, nil): hint = nil
-            }
-            if let hint { votes[hint, default: 0] += 1 }
+        var dots = 0, commas = 0
+        for amount in amounts {
+            guard let hint = separatorHint(amount), parseAmount(amount, decimalSeparator: hint) != nil else { continue }
+            if hint == "." { dots += 1 } else { commas += 1 }
         }
-        let dots = votes["."] ?? 0, commas = votes[","] ?? 0
         return dots == commas ? fallback : (dots > commas ? "." : ",")
     }
 
-    /// Parses the whole string or returns nil — never a valid prefix (`Decimal(string:)` would turn "12,50" into 12).
-    private static func parseAmount(_ raw: String, decimalSeparator: Character) -> Decimal? {
-        let grouping: Character = decimalSeparator == "," ? "." : ","
-        var text = Substring(raw)
-        var sign = ""
-        if let first = text.first, first == "-" || first == "+" {
-            sign = first == "-" ? "-" : ""
-            text = text.dropFirst()
+    /// The decimal separator one amount implies by itself, or nil when it can't tell:
+    /// "1,234" or "1.234" (one separator, 3 digits after, integer part not 0) could be either.
+    private static func separatorHint(_ raw: String) -> Character? {
+        guard let number = amountParts(raw)?.number.filter({ $0 == "." || $0 == "," || $0.isNumber }) else { return nil }
+        switch (number.lastIndex(of: "."), number.lastIndex(of: ",")) {
+        case let (dot?, comma?):
+            return dot > comma ? "." : ","
+        case let (index?, nil), let (nil, index?):
+            let separator = number[index]
+            if number.filter({ $0 == separator }).count > 1 { return separator == "." ? "," : "." }
+            let integer = number[..<index]
+            if number[number.index(after: index)...].count == 3 && !(integer.isEmpty || integer == "0") { return nil }
+            return separator
+        case (nil, nil):
+            return nil
         }
+    }
+
+    /// Splits off what bank exports put around the number: a currency symbol or 3-letter code
+    /// ("$4.25", "12,50 €", "USD 3.00") and a leading or trailing sign ("12.50-"). Nil if anything else is left.
+    private static func amountParts(_ raw: String) -> (sign: String, number: String)? {
+        let pattern = /^\s*(?:[A-Z]{3}|\p{Sc})?\s*([+-]?)\s*(?:[A-Z]{3}|\p{Sc})?\s*([0-9.,][0-9., \u{00A0}\u{202F}]*?)\s*([+-]?)\s*(?:[A-Z]{3}|\p{Sc})?\s*$/
+        guard let match = raw.wholeMatch(of: pattern) else { return nil }
+        let (_, leading, number, trailing) = match.output
+        guard leading.isEmpty || trailing.isEmpty else { return nil }
+        return (leading + trailing == "-" ? "-" : "", String(number))
+    }
+
+    /// Parses the whole amount or returns nil, never a valid prefix (`Decimal(string:)` turned "12,50" into 12).
+    /// Spaces between digits count as grouping ("1 234,56").
+    private static func parseAmount(_ raw: String, decimalSeparator: Character) -> Decimal? {
+        guard let amount = amountParts(raw) else { return nil }
+        let grouping: Character = decimalSeparator == "," ? "." : ","
+        let text = String(amount.number.map { " \u{00A0}\u{202F}".contains($0) ? grouping : $0 })
         let parts = text.split(separator: decimalSeparator, omittingEmptySubsequences: false)
         guard parts.count <= 2 else { return nil }
         let isDigits: (Substring) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.isASCII && $0.isNumber } }
@@ -154,9 +193,9 @@ struct CSVImportService {
         let groups = integer.isEmpty ? ["0"] : integer.split(separator: grouping, omittingEmptySubsequences: false)
         guard groups.allSatisfy(isDigits) else { return nil }
         if groups.count > 1 {
-            guard groups[0].count <= 3, groups.dropFirst().allSatisfy({ $0.count == 3 }) else { return nil }
+            guard groups[0].count <= 3, groups[0].first != "0", groups.dropFirst().allSatisfy({ $0.count == 3 }) else { return nil }
         }
-        var normalized = sign + groups.joined()
+        var normalized = amount.sign + groups.joined()
         if !fraction.isEmpty {
             guard isDigits(fraction) else { return nil }
             normalized += "." + fraction

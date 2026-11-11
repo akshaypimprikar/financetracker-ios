@@ -95,7 +95,7 @@ final class ImportViewModel {
 
     func loadCSV(_ text: String) {
         rawCSVText = text
-        csvSampleRows = Array(CSVImportService.rows(from: text).prefix(5))
+        csvSampleRows = CSVImportService.rows(from: text, limit: 5)
         step = .columnMapping
     }
 
