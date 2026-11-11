@@ -33,6 +33,22 @@ struct ImportViewModelTests {
         #expect(!vm.csvSampleRows.isEmpty)
     }
 
+    @Test func loadCSVPreviewSplitsQuoteAware() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        vm.loadCSV("date,amount,payee\n2026-05-01,12.50,\"Smith; Co\"")
+
+        #expect(vm.csvSampleRows == [["date", "amount", "payee"], ["2026-05-01", "12.50", "Smith; Co"]])
+    }
+
     @Test func applyMappingParsesTransactions() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)

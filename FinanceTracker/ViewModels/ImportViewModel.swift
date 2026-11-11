@@ -95,13 +95,7 @@ final class ImportViewModel {
 
     func loadCSV(_ text: String) {
         rawCSVText = text
-        let delimiter: Character = text.contains(";") ? ";" : ","
-        let lines = text.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        csvSampleRows = lines.prefix(5).map {
-            $0.components(separatedBy: String(delimiter))
-              .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        }
+        csvSampleRows = Array(CSVImportService.rows(from: text).prefix(5))
         step = .columnMapping
     }
 
