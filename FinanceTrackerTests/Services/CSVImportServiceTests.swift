@@ -218,6 +218,34 @@ struct CSVImportServiceTests {
         #expect(quoted.first?.importHash == plain.first?.importHash)
     }
 
+    @Test func badDigitGroupingIsRejectedAndPlusSignIsAccepted() throws {
+        let csv = "date,amount,payee\n2026-05-01,\"12,34.56\",A\n2026-05-02,\"1234,567.89\",B\n2026-05-03,+5.00,C"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["C"])
+        #expect(results.first?.amount == Decimal(5))
+    }
+
+    @Test func tiedSeparatorVotesFallBackToTheDelimiterConvention() throws {
+        // "12,50" votes comma, "3.75" votes dot; a tie in a ';' file means decimal comma, so "3.75" is rejected.
+        let csv = "date;amount;payee\n2026-05-01;12,50;Bakery\n2026-05-02;3.75;Tea"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!])
+    }
+
+    @Test func raggedFileUsesTheDelimiterWithMoreFieldsInTheFirstRecord() throws {
+        let csv = "date;amount;payee\n2026-05-01;12,50;Bakery\n2026-05-02;3,00"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["Bakery"])
+    }
+
+    @Test func midFieldQuoteIsLiteralAndUnclosedQuoteRunsToEnd() {
+        let rows = CSVImportService.rows(from: "a,b\n5\" pipe,\"open, still")
+        #expect(rows == [["a", "b"], ["5\" pipe", "open, still"]])
+    }
+
     @Test func rowsSplitsQuoteAwareAndDropsBlankLines() {
         let rows = CSVImportService.rows(from: "a,b,c\n\n1,\"x; y\",3\n")
         #expect(rows == [["a", "b", "c"], ["1", "x; y", "3"]])
