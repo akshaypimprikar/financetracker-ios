@@ -1,7 +1,8 @@
 """Gate 0's build-relevance pathspec must keep matching project-file changes.
 
-Gate 0 in .claude/skills/gates/SKILL.md holds the only copy of the pathspec;
-the importHash golden-test skip under Gate 9 reads Gate 0's result file. The
+Gate 0 in scripts/check_gates.sh holds the only copy of the pathspec (the
+gates SKILL.md describes it in prose and must not carry a second copy; its
+Gate 14 golden test reads the script's Build row instead). The
 pathspec is run against a scratch git repo, so dropping a pattern, or a second
 copy appearing, fails here instead of silently skipping build and test (#158).
 """
@@ -14,9 +15,10 @@ import unittest
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "..")
 SKILL = os.path.join(ROOT, ".claude", "skills", "gates", "SKILL.md")
+SCRIPT = os.path.join(ROOT, "scripts", "check_gates.sh")
 WORKFLOWS = os.path.join(ROOT, ".github", "workflows")
 # Any `git diff` line naming a project-bundle pattern, however its flags are written.
-PATHSPEC = re.compile(r"^.*\bgit diff\b.*?\s--\s+(.*?\*\.xcodeproj.*?)\s*(?:\||>|$)", re.M)
+PATHSPEC = re.compile(r"^.*\bgit(?:\s+-c\s+\S+)*\s+diff\b.*?\s--\s+(.*?\*\.xcodeproj.*?)\s*(?:\||>|$)", re.M)
 
 BUILD_RELEVANT = [
     "App.xcodeproj/project.pbxproj",
@@ -36,8 +38,11 @@ NOT_BUILD_RELEVANT = ["docs/notes.md", "README.md"]
 
 
 def pathspecs():
-    with open(SKILL) as f:
-        return [m.group(1).strip() for m in PATHSPEC.finditer(f.read())]
+    found = []
+    for path in (SKILL, SCRIPT):
+        with open(path) as f:
+            found += [m.group(1).strip() for m in PATHSPEC.finditer(f.read())]
+    return found
 
 
 def git(cwd, *args):
@@ -64,17 +69,17 @@ class Gate0PathspecTests(unittest.TestCase):
         specs = pathspecs()
         self.assertEqual(len(specs), 1, specs)
 
-    def test_golden_skip_reads_gate0_result(self):
+    def test_golden_step_matches_the_script_build_rows(self):
+        # Gate 14 decides from the script's Build row; a reworded row would silently skip it.
         with open(SKILL) as f:
-            text = f.read()
-        self.assertIn('[ ! -s "$GATE0" ]', text)
-        self.assertEqual(text.count('GATE0="$(git rev-parse --git-dir)/gate0-$(git rev-parse HEAD)"'), 2)
-
-    def test_gate0_tees_its_result(self):
-        with open(SKILL) as f:
-            lines = [l for l in f if PATHSPEC.match(l)]
-        self.assertEqual(len(lines), 1, lines)
-        self.assertTrue(lines[0].rstrip().endswith('| tee "$GATE0"'), lines[0])
+            skill = f.read()
+        with open(SCRIPT) as f:
+            script = f.read()
+        for row, grep in (("[–] Build — skipped (no build-relevant changes)", "^\\[–\\] Build — skipped (no build-relevant changes)$"),
+                          ("[✓] Build", "^\\[✓\\] Build$")):
+            self.assertIn('row "' + row + '"', script)
+            self.assertIn("grep -q '" + grep + "' \"$OUT\"", skill)
+            self.assertTrue(re.match(grep.replace("(", "\\(").replace(")", "\\)"), row), grep)
 
     def test_project_and_build_inputs_listed(self):
         spec = pathspecs()[0]

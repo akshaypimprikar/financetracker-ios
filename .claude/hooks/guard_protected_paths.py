@@ -68,6 +68,8 @@ PROTECTED_GLOBS = (
     "CONSTRAINTS.md",
     "FinanceTrackerTests/ImportHashGoldenTests.swift",
     "scripts/pipeline_lanes.json",
+    "scripts/detect_build_target.sh",
+    "scripts/select_simulator.py",
     ".github/workflows/*",
     ".codex/hooks.json",
     ".codex/config.toml",
@@ -180,7 +182,7 @@ _PROTECTED_FRAGMENTS = tuple(
         "skill.md", "/reference.md", "scripts/check_", "agents.md", "claude.md",
         "invariants.md", "settings.json", ".claude/hooks/", "constraints.md",
         "importhashgoldentests.swift",
-        "pipeline_lanes.json", ".github/workflows/", ".codex/hooks.json", ".codex/config.toml",
+        "pipeline_lanes.json", "detect_build_target.sh", "select_simulator.py", ".github/workflows/", ".codex/hooks.json", ".codex/config.toml",
     )
 )
 

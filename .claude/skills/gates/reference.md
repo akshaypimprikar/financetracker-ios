@@ -1,6 +1,6 @@
 # Gates — reference
 
-Background for `SKILL.md`. `SKILL.md` holds every gate command, threshold and pass rule, and `/review` re-runs it as written. This file restates a few rules only to explain them (Gate 2's zero-test failure, Gate 12's `[i]` status, the `/loop` stop condition), so edit both files together.
+Background for `SKILL.md`. `scripts/check_gates.sh` (Gates 0–11) and `SKILL.md` (Gates 12–14) hold every gate command, threshold and pass rule, and `/review` re-runs the deterministic ones. This file restates a few rules only to explain them (Gate 2's zero-test failure, Gate 13's `[i]` status, the `/loop` stop condition), so edit both files together.
 
 ## Gate 1 — why no pipeline; Xcode 27 advisory
 
@@ -22,7 +22,7 @@ matches nothing (verified 2026-09-20: `-only-testing:FinanceTrackerTests/<nonexi
 tests and still printed `TEST SUCCEEDED`). Fail: empty log, non-zero exit, any failed test case, or zero
 executed tests (a test that fails once and passes on `-retry-tests-on-failure` still counts as failed here — fail-closed on purpose).
 
-## Gate 11 — why commit order is checked
+## Gate 9 — why commit order is checked
 
 This exists because `/feature`'s
 "write failing test first" instruction is unverifiable on its own: nothing distinguishes an
@@ -32,14 +32,14 @@ history is the only outside evidence, and only a RED-then-GREEN commit split pre
 the test and implementation together — this gate exists to close that gap going forward, not
 to relitigate history.
 
-## Gate 12 — screenshot procedure
+## Gate 13 — screenshot procedure
 
 If any `Views/` files changed, capture what the change actually looks like before the PR opens.
 By this point Gate 1 already built FinanceTracker successfully — reuse that build instead of
 repeating it. Gate 2's simulator is **not** reusable: verified 2026-09-20 (Xcode 27 / Device
 Hub) that `xcodebuild test` always tears down its ephemeral simulator clone the moment the test
 run completes, on both a single-suite run and the full suite — no simulator is left booted by
-the time Gate 12 runs. Expect to `boot_sim` every time; it is the normal path here, not a
+the time Gate 13 runs. Expect to `boot_sim` every time; it is the normal path here, not a
 fallback.
 1. Call `session_show_defaults` — confirm project, scheme (`FinanceTracker`), and simulator
    (`iPhone 17`, `OS=26.4.1`) are set; call `session_set_defaults` if not.
@@ -56,8 +56,8 @@ fallback.
 
 This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made against
 the plan's UI intent — scoring that automatically would make this an LLM-as-judge check, which
-every other gate here avoids (see Gate 10 in `SKILL.md`, the existing precedent for "advisory, reports
-candidates/evidence, never blocks"). Report status as `[i]`, the same symbol Gate 10 in `SKILL.md` uses for
+every other gate here avoids (see Gate 8 in `SKILL.md`, the existing precedent for "advisory, reports
+candidates/evidence, never blocks"). Report status as `[i]`, the same symbol Gate 8 in `SKILL.md` uses for
 the same "advisory" contract — never `[✓]`/`[✗]`, since this gate cannot fail. The "does this
 look right" call is Akshay's, made by looking at the screenshot before merging.
 
@@ -67,11 +67,11 @@ capture screenshot, see Gate 1" and move on.
 
 ## Autonomous gate-fixing loop
 
-The stop condition below must match the gate list in `SKILL.md` (13 gates, 2 advisory). Change both in the same commit.
+The stop condition below must match the gate list in `SKILL.md` (14 gates, 2 advisory). Change both in the same commit.
 
 If any gate fails and needs iterative fixes, run this as a separate top-level command (not from within this agent):
 ```
-/loop Fix failing gates and re-check. Stop when all blocking gates pass (13 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): tree clean and SHA recorded, build succeeds, all tests pass with a non-zero executed count, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated (or Gate 5 N/A on a feature-log-only PR), coverage ≥80% on new files, security review clean, CSV import concurrency shape correct, architecture & layer-rule compliance clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file, gate integrity clean.
+/loop Fix failing gates and re-check. Stop when all blocking gates pass (14 total, 2 advisory — Abstraction bloat and Visual verification, both `[i]`/`[–]` only, never block): tree clean and SHA recorded, build succeeds, all tests pass with a non-zero executed count, no TODO/FIXME/HACK in changed files, branch name valid, CHANGELOG Unreleased section populated (or Gate 5 N/A on a feature-log-only PR), coverage ≥80% on new files, security review clean, RED commit precedes GREEN commit for every new ViewModel/Service/Repository file, architecture & layer-rule compliance clean, gate integrity clean, CSV import concurrency shape correct, importHash golden test passes (or skipped with a reason).
 ```
 Claude iterates on fixes and re-checks until all conditions hold. Keep the condition deterministic and verifiable — exit-code or grep-checkable facts only. "implement the feature correctly" is not verifiable and risks the loop satisfying the literal wording without a real fix.
 
@@ -82,10 +82,10 @@ To drive the full feature-to-PR cycle autonomously (no interval = Claude self-pa
 
 ## Guard — what each layer covers
 
-Gates 0–13 are agent-instruction-driven checks, so an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit a gate definition instead of fixing the underlying violation, then report a clean gate summary. Two layers cut against that:
+Gates 0–14 are agent-run checks (0–11 through `scripts/check_gates.sh`), so an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit a gate definition instead of fixing the underlying violation, then report a clean gate summary. Two layers cut against that:
 
 - **Live:** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` and, best effort, Bash writes to `.claude/skills/*/SKILL.md`, `.claude/skills/*/reference.md`, `scripts/check_*`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*` and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the branch matches `feature/*` (exit 2, with the remedy printed). Each is matched at the repo root or under any subdirectory. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix and checks that its glob list matches the CI script's.
-- **CI backstop:** Gate 13 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job (`.github/workflows/gates.yml`) repeats it outside the session using the base branch's copy of the script and runs on every PR, a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
+- **CI backstop:** Gate 11 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job (`.github/workflows/gates.yml`) repeats it outside the session using the base branch's copy of the script and runs on every PR, a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
 
 What is not covered:
 - The hook's Bash detection is a best-effort parse. `python -c`, interpreter heredocs, variable or glob expansion (including `cd $VAR`), `find -exec`/`-delete`, `xargs rm` fed from stdin, `git checkout <ref> -- file`, `git restore` and `rm -rf <dir that only contains a nested project>` are not detected, and a symlink created and written through in one command is not followed.

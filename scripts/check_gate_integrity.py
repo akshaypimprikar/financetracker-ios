@@ -89,6 +89,8 @@ GUARDED_PATH_GLOBS = (
     ".claude/hooks/*",
     "FinanceTrackerTests/ImportHashGoldenTests.swift",
     "scripts/pipeline_lanes.json",
+    "scripts/detect_build_target.sh",
+    "scripts/select_simulator.py",
     ".github/workflows/*",
     ".codex/hooks.json",
     ".codex/config.toml",
