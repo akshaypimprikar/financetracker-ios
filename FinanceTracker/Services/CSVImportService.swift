@@ -71,7 +71,7 @@ nonisolated struct CSVImportService {
         var fieldStarted = false
         // The open quote of the current quoted field. If it is never closed, text follows its closing
         // quote (the "closing" quote was really the next field's opener), or the field would hold a later
-        // dated row (closed by an inch mark such as `27"`), the field is re-read from there with that
+        // row (closed by an inch mark such as `27"`), the field is re-read from there with that
         // quote as a literal, so one stray quote can't swallow the rows after it.
         var quoteStart: String.Index? = nil
         var literalQuote: String.Index? = nil
@@ -87,17 +87,20 @@ nonisolated struct CSVImportService {
             if record.contains(where: { !$0.isEmpty }) { records.append(record) }
             record = []
         }
+        // `records` and `record` can't change inside quotes, so only the field is rewound.
+        func rewind(to start: String.Index) {
+            field = ""
+            inQuotes = false
+            fieldStarted = false
+            literalQuote = start
+            quoteStart = nil
+            i = start
+        }
 
         while records.count < limit {
             guard i < csv.endIndex else {
-                // `records` and `record` can't change inside quotes, so only the field is rewound.
                 guard inQuotes, let start = quoteStart else { break }
-                field = ""
-                inQuotes = false
-                fieldStarted = false
-                literalQuote = start
-                quoteStart = nil
-                i = start
+                rewind(to: start)
                 continue
             }
             let char = csv[i]
@@ -108,16 +111,11 @@ nonisolated struct CSVImportService {
                         field.append("\"")
                         next = csv.index(after: next)
                     } else if (next == csv.endIndex || csv[next] == delimiter || csv[next].isWhitespace)
-                                && !holdsADatedRow(field, delimiter: delimiter) {
+                                && !holdsARow(field, delimiter: delimiter, rowFieldCount: max(records.last?.count ?? 0, record.count + 1)) {
                         inQuotes = false
                         quoteStart = nil
                     } else if let start = quoteStart {
-                        field = ""
-                        inQuotes = false
-                        fieldStarted = false
-                        literalQuote = start
-                        quoteStart = nil
-                        i = start
+                        rewind(to: start)
                         continue
                     }
                 } else {
@@ -142,11 +140,16 @@ nonisolated struct CSVImportService {
         return records
     }
 
-    /// Whether a line after the first in a quoted field has a field that parses as a date: the quote
-    /// was a stray one, and the "field" is really the rows after it.
-    private static func holdsADatedRow(_ field: String, delimiter: Character) -> Bool {
+    /// Whether a line after the first in a quoted field looks like a row: it has at least `rowFieldCount`
+    /// fields (the previous record's count, or more than the current record has so far) and one of
+    /// them parses as a date. The quote was then a stray
+    /// one, and the "field" is really the rows after it. A memo line with a date but fewer fields
+    /// ("Card purchase\n11/10/2026, Store") stays in the field.
+    private static func holdsARow(_ field: String, delimiter: Character, rowFieldCount: Int) -> Bool {
         field.split(whereSeparator: { $0 == "\n" || $0 == "\r\n" || $0 == "\r" }).dropFirst().contains { line in
-            line.split(separator: delimiter).contains { parseDate($0.trimmingCharacters(in: .whitespaces)) != nil }
+            let fields = line.split(separator: delimiter, omittingEmptySubsequences: false)
+            return fields.count >= rowFieldCount
+                && fields.contains { parseDate($0.trimmingCharacters(in: .whitespaces)) != nil }
         }
     }
 
@@ -216,17 +219,20 @@ nonisolated struct CSVImportService {
         /\s*/
         Optionally { currencyMarker }
         /\s*/
-        Capture { /[0-9.,][0-9., \u{00A0}\u{202F}]*?/ }
+        Capture { /[0-9.,][0-9., '\u{2019}\u{00A0}\u{2009}\u{202F}]*?/ }
         /\s*/
         Capture { /[+-]?/ }
         /\s*/
         Optionally { currencyMarker }
         /\s*/
+        Optionally { /CR|DR/.ignoresCase() }
+        /\s*/
     }
 
     /// The number left after removing what bank exports put around it: a currency marker
-    /// ("$4.25", "12,50 €", "USD 3.00") and a leading or trailing sign ("12.50-"), but not both signs.
-    /// Nil if anything else is left.
+    /// ("$4.25", "12,50 €", "USD 3.00"), a leading or trailing sign ("12.50-"), but not both signs,
+    /// and a credit/debit suffix ("12.50 CR", "12.50 DR"; amounts are stored unsigned, so it is dropped
+    /// like the sign). Nil if anything else is left.
     private static func amountNumber(_ raw: String) -> String? {
         guard let match = raw.wholeMatch(of: amountPattern) else { return nil }
         let (_, leading, number, trailing) = match.output
@@ -235,11 +241,11 @@ nonisolated struct CSVImportService {
     }
 
     /// Parses the whole amount or returns nil, never a valid prefix (`Decimal(string:)` turned "12,50" into 12).
-    /// Spaces between digits count as grouping ("1 234,56"). The result is unsigned.
+    /// Spaces and apostrophes between digits count as grouping ("1 234,56", "1'234.50"). The result is unsigned.
     private static func parseAmount(_ raw: String, decimalSeparator: Character) -> Decimal? {
         guard let number = amountNumber(raw) else { return nil }
         let grouping: Character = decimalSeparator == "," ? "." : ","
-        let text = String(number.map { " \u{00A0}\u{202F}".contains($0) ? grouping : $0 })
+        let text = String(number.map { " '\u{2019}\u{00A0}\u{2009}\u{202F}".contains($0) ? grouping : $0 })
         let parts = text.split(separator: decimalSeparator, omittingEmptySubsequences: false)
         guard parts.count <= 2 else { return nil }
         let isDigits: (Substring) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.isASCII && $0.isNumber } }

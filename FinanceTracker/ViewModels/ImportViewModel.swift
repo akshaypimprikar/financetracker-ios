@@ -69,7 +69,8 @@ final class ImportViewModel {
     /// which session is currently on screen.
     private var importGeneration = 0
     /// Bumped by every `loadCSV()`, `applyMapping()` and `reset()`, so a background parse whose
-    /// file, mapping or session has since changed (cancel, a new file, a second tap) writes nothing.
+    /// file, mapping or session has since changed (cancel, a new file, a second tap) writes nothing
+    /// and throws `CancellationError`, which tells the caller not to run its success path.
     private var mappingGeneration = 0
     private static let previewCharacterLimit = 64 * 1024
 
@@ -115,10 +116,10 @@ final class ImportViewModel {
             parsed = try await importService.parseInBackground(csv: rawCSVText, mapping: mapping)
             existingHashes = try await importWriter.existingHashes()
         } catch {
-            if generation == mappingGeneration { throw error }
-            return
+            guard generation == mappingGeneration else { throw CancellationError() }
+            throw error
         }
-        guard generation == mappingGeneration else { return }
+        guard generation == mappingGeneration else { throw CancellationError() }
         let deduped = importService.deduplicated(parsed: parsed, existingHashes: existingHashes)
         pendingTransactions = deduped
         skippedCount = parsed.count - deduped.count

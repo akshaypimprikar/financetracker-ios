@@ -205,6 +205,15 @@ struct CSVImportServiceTests {
         #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(30)])
     }
 
+    @Test func multiLineMemoWithADateOnItsSecondLineStaysOneField() throws {
+        // The memo's second line has a date but fewer fields than a row, so the closing quote is real.
+        let csv = "date,amount,payee\n2026-05-01,12.50,\"Card purchase\n11/10/2026, Store\"\n2026-05-02,3.00,Tea"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["Card purchase\n11/10/2026, Store", "Tea"])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3)])
+    }
+
     @Test func crlfLineEndingsParse() throws {
         let csv = "date,amount,payee\r\n2026-05-01,25.50,Coffee\r\n2026-05-02,3.00,Tea\r\n"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
@@ -365,6 +374,22 @@ struct CSVImportServiceTests {
 
         #expect(usResults.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3), Decimal(string: "4.25")!])
         #expect(euResults.map(\.amount) == [Decimal(string: "12.50")!, Decimal(string: "1234.56")!])
+    }
+
+    @Test func creditAndDebitSuffixesAreDroppedLikeASign() throws {
+        let csv = "date,amount,payee\n2026-05-01,12.50 CR,A\n2026-05-02,12.50 DR,B\n2026-05-03,$4.25 cr,C\n2026-05-04,12.50 XY,D"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["A", "B", "C"])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(string: "12.50")!, Decimal(string: "4.25")!])
+    }
+
+    @Test func apostropheAndThinSpaceGroupingParse() throws {
+        let csv = "date,amount,payee\n2026-05-01,CHF 1'234.50,A\n2026-05-02,1\u{2019}234.50,B\n2026-05-03,1\u{2009}234.50,C\n2026-05-04,12'34.50,D"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["A", "B", "C"])
+        #expect(results.allSatisfy { $0.amount == Decimal(string: "1234.50")! })
     }
 
     @Test func leadingZeroIsNotAThousandsGroup() throws {
