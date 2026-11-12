@@ -33,6 +33,22 @@ struct ImportViewModelTests {
         #expect(!vm.csvSampleRows.isEmpty)
     }
 
+    @Test func loadCSVPreviewSplitsQuoteAware() throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+
+        vm.loadCSV("date,amount,payee\n2026-05-01,12.50,\"Smith; Co\"")
+
+        #expect(vm.csvSampleRows == [["date", "amount", "payee"], ["2026-05-01", "12.50", "Smith; Co"]])
+    }
+
     @Test func applyMappingParsesTransactions() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
@@ -78,6 +94,83 @@ struct ImportViewModelTests {
         #expect(vm.pendingTransactions.count == 1)
         #expect(vm.skippedCount == 1)
         #expect(vm.pendingTransactions[0].payee == "Grocery")
+    }
+
+    @Test func applyMappingFromAResetSessionDoesNotWrite() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        fake.holdExistingHashes()
+        let parse = Task { try await vm.applyMapping(mapping) }
+        try await fake.waitUntilExistingHashesStarted(1)   // applyMapping is now mid-flight
+        vm.reset()
+        fake.releaseExistingHashes()
+        // Throws, so ImportSheet's Task skips its success path (loadSuggestions) for the stale parse.
+        await #expect(throws: CancellationError.self) { try await parse.value }
+
+        #expect(vm.step == .filePicker)
+        #expect(vm.pendingTransactions.isEmpty)
+    }
+
+    @Test func supersededApplyMappingThrowsCancellationAndTheNewerOneWins() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        // A double tap of Parse & Preview: the second tap lands while the first is mid-flight.
+        fake.holdExistingHashes()
+        let first = Task { try await vm.applyMapping(mapping) }
+        try await fake.waitUntilExistingHashesStarted(1)
+        let second = Task { try await vm.applyMapping(mapping) }
+        try await fake.waitUntilExistingHashesStarted(2)
+        fake.releaseExistingHashes()
+
+        await #expect(throws: CancellationError.self) { try await first.value }
+        try await second.value
+        #expect(vm.step == .preview)
+        #expect(vm.pendingTransactions.map(\.payee) == ["Coffee Shop"])
+    }
+
+    @Test func supersededApplyMappingFailureThrowsCancellationNotTheError() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
+        fake.setFailNextExistingHashes(TransactionImportError.accountNotFound)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: fake,
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        fake.holdExistingHashes()
+        let parse = Task { try await vm.applyMapping(mapping) }
+        try await fake.waitUntilExistingHashesStarted(1)
+        vm.reset()
+        fake.releaseExistingHashes()
+
+        // The failure belongs to a session the user left, so it must not raise the mapping-failed alert.
+        await #expect(throws: CancellationError.self) { try await parse.value }
+        #expect(vm.importFailure == nil)
     }
 
     @Test func applyMappingStillThrowsOnExistingHashesFailure() async throws {

@@ -775,3 +775,117 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/skills/gates/SKILL.md:194
 **Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: CHANGELOG states the delimiter and decimal-fallback rules without their exceptions
+**What was wrong:** `CHANGELOG.md:27-28` (and the comment at `CSVImportService.swift:127`) said a delimiter tie goes to `;` and the decimal fallback applies when no amount is unambiguous; the code broke equal agreement by field count and also fell back on tied votes, dropping amounts written the other way. Repeats 2026-10-07 PR#163.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:27
+**Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: delimiter field-count tie-break regressed headerless `;` files
+**What was wrong:** `detectDelimiter` compared `(agreeing, fields)`, so a headerless `;` file whose payees hold two commas (`2026-05-01;12,50;Doe, John, Jr`) split into more fields on `,` and was read as comma-delimited; every row failed to parse. The old `contains(";")` rule imported it.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:139
+**Caught by:** this review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: delimiter detection failed on a one-field preamble line
+**What was wrong:** `score` returned `(false, 0)` for both delimiters whenever the first record had one field, so a `;` bank export with a title line fell back to the tie rule. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:109
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: headerless `;` file read as comma-delimited on a tie
+**What was wrong:** When both delimiters gave the same consistent field count, `,` won, so a headerless `2026-05-01;12,50;Bakery` file split on the decimal comma. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:114
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: an unclosed opening quote swallowed the rest of the file
+**What was wrong:** A payee starting with `"` and never closed (`"Weird Al Tribute,12.50`) left `inQuotes` set to EOF, so every later row became one field and was dropped without warning. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:87
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: trailing-sign and currency-suffix amounts dropped
+**What was wrong:** `12.50-` and `12.50 USD` parsed before the fix (as a prefix, then `abs`); the new full-match parser rejected them, so those rows were skipped silently. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:144
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: a leading `0` group was read as a thousands group
+**What was wrong:** With `.` as the decimal separator, `"0,123"` was grouped as `0|123` and imported as 123. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:154
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: malformed amounts voted on the decimal separator
+**What was wrong:** `1.2.3` passed the character filter and voted `,`, so a few malformed values could flip the separator for the whole file. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:128
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: a later quote closed a stray opening quote and swallowed rows
+**What was wrong:** Unclosed-quote recovery only ran at EOF, so any later `"` closed the runaway field and every row in between was merged into one field and dropped. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:102
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: footer and summary rows voted on the decimal separator
+**What was wrong:** Rows whose date did not parse (`Summe;1.234,56`, a second header) still voted, so a non-transaction line could flip the separator for the whole file. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:148
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: VT, FF, U+0085, U+2028 and U+2029 ended records
+**What was wrong:** `char.isNewline` split unquoted fields on those characters, where the old code split only on `\n`, so a payee with a U+2028 broke its row. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:115
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: letter currency markers dropped the row
+**What was wrong:** The amount regex allowed only `\p{Sc}` or uppercase listed codes, so `R$ 10,00`, `10,00 kr` and `12.50 usd` were skipped silently. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:184
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: Indian lakh grouping rejected
+**What was wrong:** Grouping required every group after the first to have 3 digits, so `INR 1,23,456.78` was skipped although INR was a listed code. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:206
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: a stale applyMapping wrote after reset or a second tap
+**What was wrong:** The off-main parse let an earlier `applyMapping` finish after `reset()`, `loadCSV()` or a second tap and overwrite `pendingTransactions` and `step`. Fixed in 69eee13 (`mappingGeneration`).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:105
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: an inch-mark quote closed a stray quote and swallowed rows
+**What was wrong:** A stray `"` closed by `27"` at a line end made one field of the dated rows between them. Fixed in 69eee13 (a field that would hold a later row reads its quote as a literal).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a superseded applyMapping returned normally and ran loadSuggestions on stale data
+**What was wrong:** The 69eee13 stale guard returned instead of throwing, so ImportSheet's Task ran `loadSuggestions()` on the previous attempt's rows. Fixed in 98146c4 (throws `CancellationError`, which the sheet ignores).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:121
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a multi-line memo with a dated line was split into a phantom row
+**What was wrong:** The 69eee13 stray-quote check fired on any later line with a date, so `"Card purchase\n11/10/2026, Store"` was split. Fixed in 98146c4 (the line also needs a row's field count) and, for the first record of a headerless file, in 59f3678 (width from the fields around the quoted one).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: CR/DR suffixes and apostrophe/thin-space grouping dropped rows
+**What was wrong:** `12.50 CR`, `12.50 DR`, `1'234.50`, `1’234.50` and thin-space grouping, which the old prefix parse read, were skipped by the strict parser. Fixed in 98146c4.
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:201
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — CI at 59f3678: applyMapping tests raced on Task.yield()
+**What was wrong:** Tests that reset or re-tapped mid-parse relied on one `Task.yield()` to put `applyMapping` mid-flight; under load the Task had not started, so CI Unit Tests failed. Fixed in 07c1386 and 6f950a1 (the fake holds `existingHashes()` until released).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:112
+**Caught by:** CI and code-review

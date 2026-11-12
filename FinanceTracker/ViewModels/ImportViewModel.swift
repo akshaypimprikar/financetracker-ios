@@ -68,6 +68,11 @@ final class ImportViewModel {
     /// an accurate record of what actually landed in the store matters regardless of
     /// which session is currently on screen.
     private var importGeneration = 0
+    /// Bumped by every `loadCSV()`, `applyMapping()` and `reset()`, so a background parse whose
+    /// file, mapping or session has since changed (cancel, a new file, a second tap) writes nothing
+    /// and throws `CancellationError`, which tells the caller not to run its success path.
+    private var mappingGeneration = 0
+    private static let previewCharacterLimit = 64 * 1024
 
     init(
         accountRepo: any AccountRepositoryProtocol,
@@ -94,20 +99,27 @@ final class ImportViewModel {
     }
 
     func loadCSV(_ text: String) {
+        mappingGeneration += 1
         rawCSVText = text
-        let delimiter: Character = text.contains(";") ? ";" : ","
-        let lines = text.components(separatedBy: "\n")
-            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        csvSampleRows = lines.prefix(5).map {
-            $0.components(separatedBy: String(delimiter))
-              .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        }
+        // The preview reads only the start of the file, so an unclosed quote can't make it scan
+        // the whole file on the main actor.
+        csvSampleRows = CSVImportService.rows(from: String(text.prefix(Self.previewCharacterLimit)), limit: 5)
         step = .columnMapping
     }
 
     func applyMapping(_ mapping: ColumnMapping) async throws {
-        let parsed = try importService.parse(csv: rawCSVText, mapping: mapping)
-        let existingHashes = try await importWriter.existingHashes()
+        mappingGeneration += 1
+        let generation = mappingGeneration
+        let parsed: [ParsedTransaction]
+        let existingHashes: Set<String>
+        do {
+            parsed = try await importService.parseInBackground(csv: rawCSVText, mapping: mapping)
+            existingHashes = try await importWriter.existingHashes()
+        } catch {
+            guard generation == mappingGeneration else { throw CancellationError() }
+            throw error
+        }
+        guard generation == mappingGeneration else { throw CancellationError() }
         let deduped = importService.deduplicated(parsed: parsed, existingHashes: existingHashes)
         pendingTransactions = deduped
         skippedCount = parsed.count - deduped.count
@@ -314,6 +326,7 @@ final class ImportViewModel {
 
     func reset() {
         importGeneration += 1
+        mappingGeneration += 1
         step = .filePicker
         rawCSVText = ""
         csvSampleRows = []

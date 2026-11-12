@@ -82,11 +82,14 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
         var failNextSave: Error?
         var failAfterSuccesses: Int?
         var failExistingHashes: Error?
+        var holdExistingHashes = false
     }
 
     private let storedHashes: Set<String>
     private let state = Mutex(State())
     private let chunkStarts = CallCounter()
+    private let existingHashesStarts = CallCounter()
+    private let existingHashesRelease = CallCounter()
 
     init(existingHashes: Set<String> = []) {
         self.storedHashes = existingHashes
@@ -124,7 +127,24 @@ final class FakeTransactionImportWriting: TransactionImportWriting {
         state.withLock { $0.failExistingHashes = error }
     }
 
+    /// Makes every `existingHashes()` call suspend after it is entered until
+    /// `releaseExistingHashes()`, so a test can act (reset, a second tap) while
+    /// `applyMapping()` is known to be mid-flight instead of guessing with `Task.yield()`.
+    func holdExistingHashes() {
+        state.withLock { $0.holdExistingHashes = true }
+    }
+
+    func waitUntilExistingHashesStarted(_ count: Int) async throws {
+        try await existingHashesStarts.waitUntil(count)
+    }
+
+    func releaseExistingHashes() {
+        existingHashesRelease.increment()
+    }
+
     func existingHashes() async throws -> Set<String> {
+        existingHashesStarts.increment()
+        if state.withLock({ $0.holdExistingHashes }) { try await existingHashesRelease.waitUntil(1) }
         try state.withLock { state in
             if let error = state.failExistingHashes {
                 state.failExistingHashes = nil
