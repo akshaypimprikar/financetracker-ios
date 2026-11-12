@@ -853,3 +853,39 @@
 **Rule violated:** no formal rule, caught in review
 **File:** FinanceTracker/Services/CSVImportService.swift:206
 **Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: a stale applyMapping wrote after reset or a second tap
+**What was wrong:** The off-main parse let an earlier `applyMapping` finish after `reset()`, `loadCSV()` or a second tap and overwrite `pendingTransactions` and `step`. Fixed in 69eee13 (`mappingGeneration`).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:105
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: an inch-mark quote closed a stray quote and swallowed rows
+**What was wrong:** A stray `"` closed by `27"` at a line end made one field of the dated rows between them. Fixed in 69eee13 (a field that would hold a later row reads its quote as a literal).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a superseded applyMapping returned normally and ran loadSuggestions on stale data
+**What was wrong:** The 69eee13 stale guard returned instead of throwing, so ImportSheet's Task ran `loadSuggestions()` on the previous attempt's rows. Fixed in 98146c4 (throws `CancellationError`, which the sheet ignores).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:121
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a multi-line memo with a dated line was split into a phantom row
+**What was wrong:** The 69eee13 stray-quote check fired on any later line with a date, so `"Card purchase\n11/10/2026, Store"` was split. Fixed in 98146c4 (the line also needs a row's field count) and, for the first record of a headerless file, in 59f3678 (width from the fields around the quoted one).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: CR/DR suffixes and apostrophe/thin-space grouping dropped rows
+**What was wrong:** `12.50 CR`, `12.50 DR`, `1'234.50`, `1’234.50` and thin-space grouping, which the old prefix parse read, were skipped by the strict parser. Fixed in 98146c4.
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:201
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — CI at 59f3678: applyMapping tests raced on Task.yield()
+**What was wrong:** Tests that reset or re-tapped mid-parse relied on one `Task.yield()` to put `applyMapping` mid-flight; under load the Task had not started, so CI Unit Tests failed. Fixed in 07c1386 and 6f950a1 (the fake holds `existingHashes()` until released).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:112
+**Caught by:** CI and code-review
