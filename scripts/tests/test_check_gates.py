@@ -232,6 +232,38 @@ class CheckGatesTests(unittest.TestCase):
         self.assertEqual(rc, 1, out)
         self.assertEqual(self.row(summary, "CHANGELOG"), "[✗] CHANGELOG — Unreleased section missing or empty")
 
+    def test_empty_unreleased_with_crlf_blank_lines_fails_changelog(self):
+        # pragma #164: a CRLF blank line is "\r", which awk counted as a non-empty line.
+        self.commit({"CHANGELOG.md": "# Changelog\r\n\r\n## [Unreleased]\r\n\r\n## [1.0.0]\r\n- Old entry\r\n"})
+        rc, summary, out = self.run_gates("--only", "5")
+        self.assertEqual(rc, 1, out)
+        self.assertEqual(self.row(summary, "CHANGELOG"), "[✗] CHANGELOG — Unreleased section missing or empty")
+
+    def test_empty_last_unreleased_with_link_definitions_fails_changelog(self):
+        # pragma #165: Keep-a-Changelog link definitions at the end of the file are not entries.
+        self.commit({"CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n"
+                                     "[Unreleased]: https://example.com/compare/v1.0.0...HEAD\n"
+                                     "[1.0.0]: https://example.com/releases/v1.0.0\n"})
+        rc, summary, out = self.run_gates("--only", "5")
+        self.assertEqual(rc, 1, out)
+        self.assertEqual(self.row(summary, "CHANGELOG"), "[✗] CHANGELOG — Unreleased section missing or empty")
+
+    def test_unreleased_entry_under_subheading_passes_changelog(self):
+        # pragma #166: a real entry under "### Added" above a release still counts.
+        self.commit({"CHANGELOG.md": "# Changelog\r\n\r\n## [Unreleased]\r\n\r\n### Added\r\n- New thing\r\n\r\n"
+                                     "## [1.0.0]\r\n- Old entry\r\n"})
+        rc, summary, out = self.run_gates("--only", "5")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.row(summary, "CHANGELOG"), "[✓] CHANGELOG")
+
+    def test_last_unreleased_with_entry_and_link_definitions_passes_changelog(self):
+        # pragma #166: an [Unreleased] section that is last in the file still counts its entries.
+        self.commit({"CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n### Fixed\n- A fix\n\n"
+                                     "[Unreleased]: https://example.com/compare/v1.0.0...HEAD\n"})
+        rc, summary, out = self.run_gates("--only", "5")
+        self.assertEqual(rc, 0, out)
+        self.assertEqual(self.row(summary, "CHANGELOG"), "[✓] CHANGELOG")
+
     def test_project_rules_hits_allow_and_missing_mode(self):
         self.config["gates"]["rules"] = [
             {"name": "View imports SwiftData", "paths": "/Views/", "pattern": "^import SwiftData"},
@@ -271,17 +303,61 @@ class CheckGatesTests(unittest.TestCase):
         self.assertNotIn('"saveButton" is not', out)
         self.assertNotIn('"Coffee Shop" is not', out)
 
-    def test_sensitive_file_asks_for_security_review_without_failing(self):
+    def test_bad_rule_says_the_check_could_not_run(self):
+        self.config["gates"]["rules"] = [{"name": "No pattern", "paths": "App/"}]
+        self.write_config()
+        git(self.repo, "commit", "-qam", "config")
+        git(self.repo, "checkout", "-q", "develop")
+        git(self.repo, "merge", "-q", "chore/x")
+        git(self.repo, "checkout", "-q", "chore/x")
+        self.commit({"App/Services/Existing.swift": "struct Existing { let a = 2 }\n"})
+        rc, summary, out = self.run_gates("--only", "10")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("KeyError", out)
+        self.assertEqual(self.row(summary, "Architecture"), "[✗] Architecture & layer-rule compliance — check did not run (see report)")
+
+    def sensitive_services(self):
         self.config["gates"]["sensitive_paths"] = "Services/"
         self.write_config()
         git(self.repo, "commit", "-qam", "config")
         git(self.repo, "checkout", "-q", "develop")
         git(self.repo, "merge", "-q", "chore/x")
         git(self.repo, "checkout", "-q", "chore/x")
+
+    def test_quoted_name_is_still_checked(self):
+        # git quotes a name with `"`, `\` or a tab even with core.quotepath=false (#175 F1).
+        self.sensitive_services()
+        self.commit({'App/Services/a"b.swift': "struct Q { let a = 1 }\n"})
+        rc, summary, out = self.run_gates("--only", "7")
+        self.assertEqual(rc, 4, out)
+        self.assertEqual(self.row(summary, "Security"), '[!] Security — security-review required: App/Services/a"b.swift')
+
+    def test_quoted_name_is_checked_by_gate_10(self):
+        self.commit({'App/Services/a"b.swift': "let x = try! load()\n"})
+        rc, _, out = self.run_gates("--only", "10")
+        self.assertEqual(rc, 1, out)
+        self.assertIn('App/Services/a"b.swift:1:', out)
+
+    def test_newline_in_a_changed_name_fails(self):
+        self.commit({"App/Services/a\nb.swift": "struct Q {}\n"})
+        rc, summary, out = self.run_gates("--only", "3")
+        self.assertEqual(rc, 1, out)
+        self.assertEqual(self.row(summary, "File names"),
+                         "[✗] File names — 1 changed path(s) have a newline in the name; rename them")
+
+    def test_sensitive_file_asks_for_security_review_with_exit_4(self):
+        self.sensitive_services()
         self.commit({"App/Services/Existing.swift": "struct Existing { let a = 1 }\n"})
         rc, summary, out = self.run_gates("--only", "7")
-        self.assertEqual(rc, 0, out)
+        self.assertEqual(rc, 4, out)
         self.assertEqual(self.row(summary, "Security"), "[!] Security — security-review required: App/Services/Existing.swift")
+
+    def test_blocking_failure_outranks_pending_security_review(self):
+        self.sensitive_services()
+        self.commit({"App/Services/Existing.swift": "let x = try! load()\n"})
+        rc, summary, out = self.run_gates("--only", "7,10")
+        self.assertEqual(rc, 1, out)
+        self.assertTrue(self.row(summary, "Security").startswith("[!] Security"), summary)
 
     def test_duplicated_block_is_an_advisory_candidate(self):
         block = "let a = 1\nlet b = 2\nlet c = 3\n"
