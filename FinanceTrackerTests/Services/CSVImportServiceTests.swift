@@ -214,6 +214,16 @@ struct CSVImportServiceTests {
         #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3)])
     }
 
+    @Test func multiLineMemoInTheFirstRecordOfAHeaderlessFileStaysOneField() throws {
+        // No earlier row gives the row width, so it comes from the fields around the quoted one.
+        let csv = "2026-05-01,\"Card purchase\n11/10/2026, Store\",12.50\n2026-05-02,Tea,3.00"
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 2, payeeIndex: 1, hasHeader: false)
+        let results = try CSVImportService().parse(csv: csv, mapping: mapping)
+
+        #expect(results.map(\.payee) == ["Card purchase\n11/10/2026, Store", "Tea"])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(3)])
+    }
+
     @Test func crlfLineEndingsParse() throws {
         let csv = "date,amount,payee\r\n2026-05-01,25.50,Coffee\r\n2026-05-02,3.00,Tea\r\n"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)

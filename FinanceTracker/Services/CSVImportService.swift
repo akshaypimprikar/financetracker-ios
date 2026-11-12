@@ -87,6 +87,12 @@ nonisolated struct CSVImportService {
             if record.contains(where: { !$0.isEmpty }) { records.append(record) }
             record = []
         }
+        // The fields a row has: the previous record's count, or (in the first record) the fields before
+        // this one, this one, and one per delimiter left on the line after `index` (its closing quote).
+        func rowFieldCount(after index: String.Index) -> Int {
+            let rest = csv[index...].prefix { $0 != "\n" && $0 != "\r\n" && $0 != "\r" }
+            return max(records.last?.count ?? 0, record.count + 1 + rest.filter { $0 == delimiter }.count)
+        }
         // `records` and `record` can't change inside quotes, so only the field is rewound.
         func rewind(to start: String.Index) {
             field = ""
@@ -111,7 +117,7 @@ nonisolated struct CSVImportService {
                         field.append("\"")
                         next = csv.index(after: next)
                     } else if (next == csv.endIndex || csv[next] == delimiter || csv[next].isWhitespace)
-                                && !holdsARow(field, delimiter: delimiter, rowFieldCount: max(records.last?.count ?? 0, record.count + 1)) {
+                                && !holdsARow(field, delimiter: delimiter, rowFieldCount: rowFieldCount(after: next)) {
                         inQuotes = false
                         quoteStart = nil
                     } else if let start = quoteStart {
@@ -141,8 +147,7 @@ nonisolated struct CSVImportService {
     }
 
     /// Whether a line after the first in a quoted field looks like a row: it has at least `rowFieldCount`
-    /// fields (the previous record's count, or more than the current record has so far) and one of
-    /// them parses as a date. The quote was then a stray
+    /// fields and one of them parses as a date. The quote was then a stray
     /// one, and the "field" is really the rows after it. A memo line with a date but fewer fields
     /// ("Card purchase\n11/10/2026, Store") stays in the field.
     private static func holdsARow(_ field: String, delimiter: Character, rowFieldCount: Int) -> Bool {
