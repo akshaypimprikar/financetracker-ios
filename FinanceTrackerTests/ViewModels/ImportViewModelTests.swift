@@ -99,18 +99,21 @@ struct ImportViewModelTests {
     @Test func applyMappingFromAResetSessionDoesNotWrite() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: FakeTransactionImportWriting(),
+            importWriter: fake,
             categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
         vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
 
+        fake.holdExistingHashes()
         let parse = Task { try await vm.applyMapping(mapping) }
-        await Task.yield()   // applyMapping is now suspended on the background parse
+        try await fake.waitUntilExistingHashesStarted(1)   // applyMapping is now mid-flight
         vm.reset()
+        fake.releaseExistingHashes()
         // Throws, so ImportSheet's Task skips its success path (loadSuggestions) for the stale parse.
         await #expect(throws: CancellationError.self) { try await parse.value }
 
