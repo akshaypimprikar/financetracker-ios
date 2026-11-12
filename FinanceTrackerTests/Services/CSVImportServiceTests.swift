@@ -196,6 +196,15 @@ struct CSVImportServiceTests {
         #expect(results.map(\.payee) == ["Joe \"The\nPlumber\"", "Tea"])
     }
 
+    @Test func inchMarkDoesNotCloseAStrayQuoteAcrossRows() throws {
+        // `27"` ends a line, so it looks like a closing quote; the field it would close holds a dated row.
+        let csv = "date,amount,payee\n2026-05-01,12.50,\"Weird Al\n2026-05-02,30.00,Monitor 27\""
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["\"Weird Al", "Monitor 27\""])
+        #expect(results.map(\.amount) == [Decimal(string: "12.50")!, Decimal(30)])
+    }
+
     @Test func crlfLineEndingsParse() throws {
         let csv = "date,amount,payee\r\n2026-05-01,25.50,Coffee\r\n2026-05-02,3.00,Tea\r\n"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)

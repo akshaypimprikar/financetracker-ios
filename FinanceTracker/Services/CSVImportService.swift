@@ -69,9 +69,10 @@ nonisolated struct CSVImportService {
         var field = ""
         var inQuotes = false
         var fieldStarted = false
-        // The open quote of the current quoted field. If it is never closed, or text follows its closing
-        // quote (the "closing" quote was really the next field's opener), the field is re-read from there
-        // with that quote as a literal, so one stray quote can't swallow the rows after it.
+        // The open quote of the current quoted field. If it is never closed, text follows its closing
+        // quote (the "closing" quote was really the next field's opener), or the field would hold a later
+        // dated row (closed by an inch mark such as `27"`), the field is re-read from there with that
+        // quote as a literal, so one stray quote can't swallow the rows after it.
         var quoteStart: String.Index? = nil
         var literalQuote: String.Index? = nil
         var i = csv.startIndex
@@ -106,7 +107,8 @@ nonisolated struct CSVImportService {
                     if next < csv.endIndex && csv[next] == "\"" {
                         field.append("\"")
                         next = csv.index(after: next)
-                    } else if next == csv.endIndex || csv[next] == delimiter || csv[next].isWhitespace {
+                    } else if (next == csv.endIndex || csv[next] == delimiter || csv[next].isWhitespace)
+                                && !holdsADatedRow(field, delimiter: delimiter) {
                         inQuotes = false
                         quoteStart = nil
                     } else if let start = quoteStart {
@@ -138,6 +140,14 @@ nonisolated struct CSVImportService {
         }
         if records.count < limit && (!field.isEmpty || !record.isEmpty) { endRecord() }
         return records
+    }
+
+    /// Whether a line after the first in a quoted field has a field that parses as a date: the quote
+    /// was a stray one, and the "field" is really the rows after it.
+    private static func holdsADatedRow(_ field: String, delimiter: Character) -> Bool {
+        field.split(whereSeparator: { $0 == "\n" || $0 == "\r\n" || $0 == "\r" }).dropFirst().contains { line in
+            line.split(separator: delimiter).contains { parseDate($0.trimmingCharacters(in: .whitespaces)) != nil }
+        }
     }
 
     /// Picks `,` or `;` by which one splits more of the first 10 records into the same field count,

@@ -96,6 +96,27 @@ struct ImportViewModelTests {
         #expect(vm.pendingTransactions[0].payee == "Grocery")
     }
 
+    @Test func applyMappingFromAResetSessionDoesNotWrite() async throws {
+        let container = try makeContainer()
+        let ctx = ModelContext(container)
+        let vm = ImportViewModel(
+            accountRepo: SwiftDataAccountRepository(context: ctx),
+            importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
+            importWriter: FakeTransactionImportWriting(),
+            categoryRepo: SwiftDataCategoryRepository(context: ctx)
+        )
+        vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
+        let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
+
+        let parse = Task { try await vm.applyMapping(mapping) }
+        await Task.yield()   // applyMapping is now suspended on the background parse
+        vm.reset()
+        try await parse.value
+
+        #expect(vm.step == .filePicker)
+        #expect(vm.pendingTransactions.isEmpty)
+    }
+
     @Test func applyMappingStillThrowsOnExistingHashesFailure() async throws {
         // Mirrors ImportSheet's own do/catch around `applyMapping()`: the ViewModel
         // keeps throwing (unchanged contract for existing callers), and the caller is

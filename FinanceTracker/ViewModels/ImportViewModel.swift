@@ -68,6 +68,9 @@ final class ImportViewModel {
     /// an accurate record of what actually landed in the store matters regardless of
     /// which session is currently on screen.
     private var importGeneration = 0
+    /// Bumped by every `loadCSV()`, `applyMapping()` and `reset()`, so a background parse whose
+    /// file, mapping or session has since changed (cancel, a new file, a second tap) writes nothing.
+    private var mappingGeneration = 0
     private static let previewCharacterLimit = 64 * 1024
 
     init(
@@ -95,6 +98,7 @@ final class ImportViewModel {
     }
 
     func loadCSV(_ text: String) {
+        mappingGeneration += 1
         rawCSVText = text
         // The preview reads only the start of the file, so an unclosed quote can't make it scan
         // the whole file on the main actor.
@@ -103,8 +107,18 @@ final class ImportViewModel {
     }
 
     func applyMapping(_ mapping: ColumnMapping) async throws {
-        let parsed = try await importService.parseInBackground(csv: rawCSVText, mapping: mapping)
-        let existingHashes = try await importWriter.existingHashes()
+        mappingGeneration += 1
+        let generation = mappingGeneration
+        let parsed: [ParsedTransaction]
+        let existingHashes: Set<String>
+        do {
+            parsed = try await importService.parseInBackground(csv: rawCSVText, mapping: mapping)
+            existingHashes = try await importWriter.existingHashes()
+        } catch {
+            if generation == mappingGeneration { throw error }
+            return
+        }
+        guard generation == mappingGeneration else { return }
         let deduped = importService.deduplicated(parsed: parsed, existingHashes: existingHashes)
         pendingTransactions = deduped
         skippedCount = parsed.count - deduped.count
@@ -311,6 +325,7 @@ final class ImportViewModel {
 
     func reset() {
         importGeneration += 1
+        mappingGeneration += 1
         step = .filePicker
         rawCSVText = ""
         csvSampleRows = []
