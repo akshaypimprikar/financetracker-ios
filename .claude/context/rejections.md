@@ -787,3 +787,69 @@
 **Rule violated:** no formal rule, caught in review
 **File:** FinanceTracker/Services/CSVImportService.swift:139
 **Caught by:** this review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: delimiter detection failed on a one-field preamble line
+**What was wrong:** `score` returned `(false, 0)` for both delimiters whenever the first record had one field, so a `;` bank export with a title line fell back to the tie rule. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:109
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: headerless `;` file read as comma-delimited on a tie
+**What was wrong:** When both delimiters gave the same consistent field count, `,` won, so a headerless `2026-05-01;12,50;Bakery` file split on the decimal comma. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:114
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: an unclosed opening quote swallowed the rest of the file
+**What was wrong:** A payee starting with `"` and never closed (`"Weird Al Tribute,12.50`) left `inQuotes` set to EOF, so every later row became one field and was dropped without warning. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:87
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: trailing-sign and currency-suffix amounts dropped
+**What was wrong:** `12.50-` and `12.50 USD` parsed before the fix (as a prefix, then `abs`); the new full-match parser rejected them, so those rows were skipped silently. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:144
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: a leading `0` group was read as a thousands group
+**What was wrong:** With `.` as the decimal separator, `"0,123"` was grouped as `0|123` and imported as 123. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:154
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: malformed amounts voted on the decimal separator
+**What was wrong:** `1.2.3` passed the character filter and voted `,`, so a few malformed values could flip the separator for the whole file. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:128
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: a later quote closed a stray opening quote and swallowed rows
+**What was wrong:** Unclosed-quote recovery only ran at EOF, so any later `"` closed the runaway field and every row in between was merged into one field and dropped. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:102
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: footer and summary rows voted on the decimal separator
+**What was wrong:** Rows whose date did not parse (`Summe;1.234,56`, a second header) still voted, so a non-transaction line could flip the separator for the whole file. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:148
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: VT, FF, U+0085, U+2028 and U+2029 ended records
+**What was wrong:** `char.isNewline` split unquoted fields on those characters, where the old code split only on `\n`, so a payee with a U+2028 broke its row. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:115
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: letter currency markers dropped the row
+**What was wrong:** The amount regex allowed only `\p{Sc}` or uppercase listed codes, so `R$ 10,00`, `10,00 kr` and `12.50 usd` were skipped silently. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:184
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: Indian lakh grouping rejected
+**What was wrong:** Grouping required every group after the first to have 3 digits, so `INR 1,23,456.78` was skipped although INR was a listed code. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:206
+**Caught by:** code-review
