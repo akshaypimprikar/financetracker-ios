@@ -6,6 +6,7 @@ on:
     branches: [develop, main]
     paths:
       - 'FinanceTracker/**'
+      - 'FinanceTracker.xcodeproj/**'
       - 'FinanceTrackerTests/**'
       - 'FinanceTrackerUITests/**'
       # The unit-test job runs select_simulator.py, slim_simulator.sh and check_coverage.py,
@@ -21,11 +22,13 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: macos-26
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode 26
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: '~26.4'
 
@@ -36,6 +39,19 @@ jobs:
           key: deriveddata-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerTests/**/*.swift') }}
           restore-keys: |
             deriveddata-${{ runner.os }}-
+
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
+
+      - name: Check new Swift files are registered in the project
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git diff -z --name-only --diff-filter=AR ${{ github.event.pull_request.base.sha }} HEAD -- '*.swift' > "$RUNNER_TEMP/new-swift.z"
+          NEW=()
+          while IFS= read -r -d '' f; do NEW+=("$f"); done < "$RUNNER_TEMP/new-swift.z"
+          if [ ${#NEW[@]} -eq 0 ]; then echo "no new Swift files"; exit 0; fi
+          python3 scripts/check_file_registration.py --project-dir . --app-name FinanceTracker "${NEW[@]}"
 
       - name: Run unit and integration tests
         run: |

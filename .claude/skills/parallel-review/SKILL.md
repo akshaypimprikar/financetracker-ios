@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 # Parallel Review Agent
 
-You are the **Parallel Review Agent** for FinanceTracker. Your job is to catch architecture-compliance and line-level issues on a feature branch *before* the PR is opened, by running `/gates`' Gate 9 checks, `/review`'s Design/Code-quality checklists, and `code-review:code-review` against the branch diff ahead of time.
+You are the **Parallel Review Agent** for FinanceTracker. Your job is to catch architecture-compliance and line-level issues on a feature branch *before* the PR is opened, by running `/gates`' Gate 10 checks, `/review`'s Design/Code-quality checklists, and `code-review:code-review` against the branch diff ahead of time.
 
-Exception: see `/pr-followup` for the `disable-model-invocation` fallback behavior that applies to Check 2 below (don't stall, print a warning, continue) — its exact warning string is the canonical source; Check 2 below derives its own by one documented substitution, not an independent copy.
+Exception: Check 2 below follows `/pr-followup`'s invocation-error fallback (don't stall, print a warning, continue), but prints its own warning string: it runs the `code-review:code-review` plugin, while `/pr-followup` runs the built-in `code-review`, so the two strings name different tools. Check 2's string is the only copy of it.
 
 ## Trigger
 Invoked manually after `/feature` completes and before `/gates` (e.g. `/parallel-review feature/recurring-transactions`). Defaults to the current branch if no argument is given.
@@ -24,24 +24,24 @@ Also read the following files if they exist — skip silently if absent:
   Rate only against entries from earlier PRs: if this branch already has an open PR, skip that PR's own
   entries (`/review`'s isolated reviewer likewise sees only earlier PRs' entries)
 
-### Check 1 — Architecture compliance (`/gates`' Gate 9, pre-gates mode)
+### Check 1 — Architecture compliance (`/gates`' Gate 10, pre-gates mode)
 `/review`'s own Architecture section defers to `/gates` having already run and expects a PR gate summary to check against — neither exists yet at this pre-PR, pre-`/gates` point, so run the actual checks instead of that deferral:
 
-- **Gate 9 — Architecture & layer-rule compliance**, from `.claude/skills/gates/SKILL.md` directly, using Gate 9's own pass/fail criteria. Most of its commands already use `git diff develop...HEAD`, the same scope this command needs — except the UI-selector-listing command, which scans all of `FinanceTrackerUITests/*.swift` unconditionally; that command's output is a listing to cross-check, not itself a violation.
+- **Gate 10 — Architecture & layer-rule compliance**: `scripts/check_gates.sh --only 10`, with Gate 10's pass/fail criteria from `.claude/skills/gates/SKILL.md`. It reads the committed `git diff develop...HEAD`, the same scope this command needs, and stops with exit 3 on a dirty tree, so commit first.
 - **Design compliance checks**, from `.claude/skills/review/SKILL.md`, scoped to `git diff develop...HEAD` — only if `Views/` or UI components are touched.
 - **Code quality checks**, from `.claude/skills/review/SKILL.md`, scoped to `git diff develop...HEAD` — unconditional, unlike Design compliance.
 
 This is a report-only run: do **not** append to `.claude/context/rejections.md` and do **not** merge — those steps belong to the post-PR `/review`.
 
 ### Check 2 — Line-level quality (`code-review:code-review`)
-Run the `code-review:code-review` skill against `git diff develop...HEAD`. On an invocation error, don't stall: print `/pr-followup`'s canonical warning string with its trailing `before merging` replaced by `before /gates` (nothing is merging yet at this pre-PR point) and continue to the Output format below.
+Run the `code-review:code-review` skill against `git diff develop...HEAD`. On an invocation error, don't stall: print `⚠️ code-review:code-review couldn't be agent-invoked (plugin not installed at user scope?) — run it yourself before /gates.` (this check still runs the plugin; `/pr-followup` uses the built-in `code-review`, so its warning no longer fits) and continue to the Output format below.
 
 ## Output format
 
 ```
 ## Parallel Review — <branch>
 
-### Architecture compliance (Gate 9 + /review checklist)
+### Architecture compliance (Gate 10 + /review checklist)
 [✓|✗] <check> — <file:line if failed>
 ...
 Verdict: APPROVED | CHANGES REQUESTED
@@ -49,12 +49,12 @@ Verdict: APPROVED | CHANGES REQUESTED
 ### Code quality (code-review:code-review)
 - <finding> — <file:line> — <severity>
 ...
-(or, on an invocation error: `/pr-followup`'s warning string with `before merging` → `before /gates`)
+(or, on an invocation error: Check 2's warning string)
 
 ## Combined verdict
 READY FOR /gates | READY FOR /gates (pending your own code-review:code-review pass) | FIX BEFORE /gates: <deduplicated list — same file:line flagged by both checks reported once>
 ```
-Rule: any Check 1 failure (verdict is `CHANGES REQUESTED`, or any Gate 9 command fails its own pass/fail criteria) forces `FIX BEFORE /gates` — these are the same rules `/gates` will enforce as hard blockers. For Check 2, any Critical or High `code-review:code-review` finding also forces `FIX BEFORE /gates`; Medium/Low-only findings don't block. Use the middle, qualified verdict only when Check 2 never actually ran (the `disable-model-invocation` case) and Check 1 is otherwise clean. Only emit the plain `READY FOR /gates` when both checks ran and are clean (or Medium/Low-only).
+Rule: any Check 1 failure (verdict is `CHANGES REQUESTED`, or Gate 10 fails) forces `FIX BEFORE /gates` — these are the same rules `/gates` will enforce as hard blockers. For Check 2, any Critical or High `code-review:code-review` finding also forces `FIX BEFORE /gates`; Medium/Low-only findings don't block. Use the middle, qualified verdict only when Check 2 never actually ran (the `disable-model-invocation` case) and Check 1 is otherwise clean. Only emit the plain `READY FOR /gates` when both checks ran and are clean (or Medium/Low-only).
 
 ## Relationship to post-PR `/review`
 This does not replace the post-PR `/review` gate — `/review` still runs after the PR opens and is the system of record for `.claude/context/rejections.md` and the merge decision. `/parallel-review` is an earlier checkpoint: catching issues here before `/gates` means the post-PR `/review` should pass on the first pass.

@@ -276,6 +276,8 @@ struct ImportSheet: View {
                             // the on-device suggester over stale data wastes a model
                             // call per unique payee for nothing the user asked for.
                             await viewModel.loadSuggestions()
+                        } catch is CancellationError {
+                            // A newer tap, file or reset superseded this parse; that one owns the UI.
                         } catch {
                             viewModel.markMappingFailed()
                         }

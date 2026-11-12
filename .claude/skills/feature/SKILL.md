@@ -24,13 +24,13 @@ Before starting any task:
 - Iron law before the RED step of each task: **no production code without a failing test that already exists.** Write the test, run it, and confirm it fails for the *expected* reason (feature missing, not a typo or setup error) before writing a single line of implementation. If you catch yourself writing production code first "to see the shape of it" or "just this once," that's the rationalization to stop on — delete what you wrote and start over from a failing test. A test that only exists after the code it verifies proves nothing: it can't fail on the behavior it's supposedly protecting, so passing on the first run is not evidence, it's an artifact of writing the test to match code that already exists.
 - If the task adds or modifies a mutation on a shared/persisted entity (create, update, or delete on an `@Model` type), the failing test written first must cover **both** a repeat-call/duplicate case (e.g. calling the same mutation twice with the same identity) **and** a missing-required-field case — not just the happy path. `docs/2026-05-18-correctness-review-postmortem.md` documents both failure shapes: Rule 6 for the repeat-call case ("the guard was not written because the failure mode was not imagined"), and issue #10 for the missing-field case (`AddTransactionSheet.canAdd` didn't check `selectedToAccount != nil` for transfers, so a transfer with no destination could be saved). TDD's write-test-first sequencing alone does not force imagining either failure mode, only that some test exists — this rule forces both specific gaps that postmortem found.
 - After implementation passes tests, run the `simplify` skill on changed files before committing
-- If this task's implementation introduces a new protocol declaration, or adds/modifies a mutation on an `@Model` type (the same shapes `/gates` Gate 10 and Gate 9 check for), run a **doubt-driven review** before the GREEN commit: hand a fresh-context subagent only the diff plus this task's acceptance criteria from the plan — not your reasoning or this session's conversation — and instruct it explicitly to find problems with the change or state plainly that it found none. Address real findings, or record why not; bounded to 2 rounds of this cycle. Log any real finding to `.claude/context/incidents.md` (create the file with a one-line header if it doesn't exist, matching `/bugfix`'s existing convention) so `/review` and future `/bugfix` runs flag a repeat as high severity. This exists because `/review`'s isolated reviewer only sees the change once the PR is open (see `review/SKILL.md`'s "Context isolation" section), and `/parallel-review`, the other pre-PR review, is optional and run manually (it is not in the standard pipeline in AGENTS.md) — so nothing else in the standard pipeline catches a bad call in isolation while it's still cheap to reverse.
+- If this task's implementation introduces a new protocol declaration, or adds/modifies a mutation on an `@Model` type (the same shapes `/gates` Gate 8 and Gate 10 check for), run a **doubt-driven review** before the GREEN commit: hand a fresh-context subagent only the diff plus this task's acceptance criteria from the plan — not your reasoning or this session's conversation — and instruct it explicitly to find problems with the change or state plainly that it found none. Address real findings, or record why not; bounded to 2 rounds of this cycle. Log any real finding to `.claude/context/incidents.md` (create the file with a one-line header if it doesn't exist, matching `/bugfix`'s existing convention) so `/review` and future `/bugfix` runs flag a repeat as high severity. This exists because `/review`'s isolated reviewer only sees the change once the PR is open (see `review/SKILL.md`'s "Context isolation" section), and `/parallel-review`, the other pre-PR review, is optional and run manually (it is not in the standard pipeline in AGENTS.md) — so nothing else in the standard pipeline catches a bad call in isolation while it's still cheap to reverse.
 - Append a one-line entry to the `## [Unreleased]` section of `CHANGELOG.md` (create the section if absent)
 - **Two commits per task, in this order — not one:**
-  1. **RED commit** — the new/modified test file(s) only, no production code. Commit message must quote the actual failing-test output (the assertion/error line, not just "test written"). Never bundle a test file and the production file it exercises in the same commit — that's the exact pattern that made prior task commits unverifiable (see Gate 11 in `/gates`).
+  1. **RED commit** — the new/modified test file(s) only, no production code. Commit message must quote the actual failing-test output (the assertion/error line, not just "test written"). Never bundle a test file and the production file it exercises in the same commit — that's the exact pattern that made prior task commits unverifiable (see Gate 9 in `/gates`).
   2. **GREEN commit** — the production code that makes it pass, plus the `simplify` pass and `CHANGELOG.md` entry. Commit message must quote the passing-test output line.
 - Run the full test suite (including UI tests) after every task — do not proceed if tests fail. Use the "Full test suite" command below; never add `-skip-testing` or `-only-testing` flags.
-- Never edit `project.pbxproj` — files auto-compile via `PBXFileSystemSynchronizedRootGroup`
+- Never hand-edit `project.pbxproj`. With synchronized groups (`scripts/detect_file_registration.sh . FinanceTracker` prints `synchronized`) files auto-compile; with `classic` groups run `ruby scripts/register_files.rb . FinanceTracker <new files>` after creating each file; on `xcproj` or `stop`, ask the human
 
 ## Build commands (all run from git root `/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/`)
 
@@ -47,15 +47,18 @@ xcodebuild test -project FinanceTracker.xcodeproj -scheme FinanceTracker \
   2>&1 | grep -E "Test.*passed|Test.*failed|BUILD"
 ```
 
+## Project settings
+Read `project` in `scripts/pipeline_lanes.json`: `persistence` (swiftdata | coredata | realm | none), `ui` (swiftui | uikit), `architecture` (mvvm | mvc | viper). If the key is absent, assume swiftdata, swiftui, mvvm. FinanceTracker sets swiftdata, swiftui, mvvm. Apply the persistence and UI rules below for the configured values. Read "ViewModel" as Controller (mvc) or Presenter (viper).
+
 ## Architecture rules (from AGENTS.md)
-- Domain Services: zero SwiftData imports
+- Domain Services: zero persistence-framework imports (SwiftData, CoreData, RealmSwift)
 - Repository Protocols: Foundation-only imports
 - Money values: `Decimal`, never `Double`
-- ViewModels depend on protocols, never concrete implementations
+- ViewModels (or Controllers / Presenters) depend on protocols, never concrete implementations
 - Views contain no business logic
 
 ## Done when
-All tasks complete, full test suite green, `/test`'s coverage-gap audit done, and all blocking `/gates` criteria pass (Gates 10 and 12 are advisory). Then open a PR to `develop` and run `/pr-followup`, which runs `code-review:code-review` and then `/review` and records both in the PR body for the `review-evidence` check.
+All tasks complete, full test suite green, `/test`'s coverage-gap audit done, and all blocking `/gates` criteria pass (Gates 8 and 13 are advisory). Then open a PR to `develop` and run `/pr-followup`, which runs `code-review` (medium, `app` lane only) and then `/review` and records each in the PR body for the `review-evidence` check.
 
 To drive the entire feature-to-gates cycle autonomously:
 ```

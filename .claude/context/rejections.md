@@ -631,3 +631,261 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:172
 **Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#152 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** The PR re-pointed two `gates.yml` citations in the spec's gates bullet (`:70-96`→`:71-97`, `:97-100`→`:99-102`) but left `.github/workflows/gates.yml:70-71` for the release-lane skip, which is now a blank line and the step name (the `if` is `:72`); the CHANGELOG line claimed the spec cites the current lines. Repeats PR#146's "corrected claim left in one spec sentence".
+**Rule violated:** no formal rule, caught in review
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:93
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: comment left describing the removed wait
+**What was wrong:** The PR replaced `waitUntil` with `waitForImport()` but left the comment beside it saying "the `defer { isImporting = false }` this waitUntil is gated on": it named the removed helper and a `defer` that does not exist (the real one is `defer { importTask = nil }`). Repeats PR#146's "corrected claim left in one spec sentence".
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:163
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: CHANGELOG called #136 both open and fixed
+**What was wrong:** The PR's new `[Unreleased]` Fixed bullet says the ThreadSanitizer crash (#136) is fixed, while the Changed bullet above it still said Concurrency Advisory stays optional "while its ThreadSanitizer crash (#136) is open".
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:10
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#153 — Round 1: test wait with no timeout could hang the suite
+**What was wrong:** The new `FakeCategorySuggesting.waitUntilCalled(1)` suspends on a continuation with no timeout, and the test using it had no time limit, so a regression that skipped the suggester would hang the test run instead of failing it.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:876
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#154 — Round 1: parallel-review still claimed its warning is derived
+**What was wrong:** The PR gave `/parallel-review` Check 2 its own invocation-error warning (`:37`), but left `:11` ("derives its own by one documented substitution, not an independent copy") and `:52` (`/pr-followup`'s string with `before merging` → `before /gates`) saying it is derived from `/pr-followup`'s, so the file contradicted itself. Repeats "2026-09-08 — PR#105 — Round 3: duplication regression in the fallback wording".
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/parallel-review/SKILL.md:11
+**Caught by:** this review (isolated subagent)
+
+## 2026-09-30 — PR#154 — Round 1: review named only the plugin as the code-review source
+**What was wrong:** After the PR moved `/pr-followup` to the built-in `code-review`, `/review`'s logging rule still said "code-review round" PR-body sections come "from `code-review:code-review`", which misleads about where that content comes from.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:268
+**Caught by:** this review (isolated subagent)
+
+## 2026-10-05 — PR#160 — Round 1: Gate 0 filter left as two copies
+**What was wrong:** Issue #158 asked for one copy of the build-relevance pathspec, but Gate 0 and the importHash golden-test skip each kept a literal copy; the new test only caught them drifting apart, and the CHANGELOG and SKILL.md presented the two copies as intended.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:36,212
+**Caught by:** this review (isolated subagent)
+
+## 2026-10-05 — PR#160 — Round 1: pathspec test matched only one exact spelling
+**What was wrong:** `test_gate0_pathspec.py` extracted the pathspec only from `git diff develop...HEAD --name-only -- '*.swift' …`, so a copy written with other flags or ordering would not be checked.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/tests/test_gate0_pathspec.py
+**Caught by:** this review (isolated subagent)
+
+## 2026-10-07 — PR#163 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** `docs/superpowers/specs/2026-09-28-pipeline-lanes.md:128` still cited `sync-workflow/SKILL.md:65` after this PR's own edit moved the cited line to `:67`. `check_citations.py` only checks that the line exists.
+**Rule violated:** no formal rule, caught in review (repeats "2026-09-30 — PR#152 — Round 1: stale citation left in the re-cited spec bullet")
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:128
+**Caught by:** this review
+
+## 2026-10-07 — PR#163 — Round 1: a new header claims the file restates no rules
+**What was wrong:** `gates/reference.md:3` said nothing in it is a gate command, threshold or pass rule, while the file restates Gate 2's pass/fail reasoning, Gate 12's `[i]` status and the `/loop` stop condition.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/reference.md:3
+**Caught by:** this review
+
+## 2026-10-07 — PR#163 — Round 1: CHANGELOG states the blocking rule without its two exceptions
+**What was wrong:** `CHANGELOG.md:12` said a MEDIUM blocks only as a defect in lines the PR changes, leaving out the unchanged-code-dependency and guard-bypass exceptions that `review/SKILL.md` keeps.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:12
+**Caught by:** this review
+
+## 2026-10-07 — PR#164 — Round 1: citation regex drops the leading dot
+**What was wrong:** `scripts/check_finding_lines.py` parsed `.claude/skills/review/SKILL.md:40` as path `claude/skills/...`, so every `.claude/` finding was classed OUTSIDE and a real MEDIUM would be lowered to LOW.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_finding_lines.py
+**Caught by:** this review
+
+## 2026-10-07 — PR#164 — Round 1: round cap counts confirm verdicts
+**What was wrong:** `check_review_evidence.py` counted `Round confirm` verdicts toward the two-round cap, contradicting `review/SKILL.md`, which says a confirm is not a round.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_review_evidence.py
+**Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: script verdict could override a failed gate
+**What was wrong:** `review/SKILL.md:209-216` said `review_verdict.py` "prints the verdict", but it returns APPROVED whenever no finding blocks and never sees the gate-verification failures that force CHANGES REQUESTED.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md
+**Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: dangling "two exceptions above" reference
+**What was wrong:** `review/SKILL.md:224` referred to "the two exceptions above" after this PR deleted the text that defined them.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:224
+**Caught by:** this review
+
+## 2026-10-07 — PR#165 — Round 1: flags not type-checked
+**What was wrong:** `review_verdict.py` accepted non-bool flags, so `"advisory": "false"` (a truthy string) turned a blocking MEDIUM into APPROVED.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/review_verdict.py
+**Caught by:** this review
+
+## 2026-10-07 — PR#178 — Round 1: review SKILL.md contradicts review_verdict.py
+**What was wrong:** `review/SKILL.md:210` said the verdict flags "default false", but this PR makes `review_verdict.py` exit 2 on a non-advisory MEDIUM with none of `in_diff`, `depends_on_unchanged` or `guard_bypass` set.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/review/SKILL.md:210
+**Caught by:** this review
+
+## 2026-10-07 — PR#181 — Round 1: gates SKILL.md contradicts check_tdd_commit_order.py
+**What was wrong:** `gates/SKILL.md:299` said the mvvm preset scopes `Repositories/`, but `ARCHITECTURE_PRESETS["mvvm"]` scopes only `/Repositories/SwiftData/`, so a reader would think protocol files are gated.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:299
+**Caught by:** this review
+
+## 2026-10-26 — PR#186 — Misleading isolation claim in doc comment
+**What was wrong:** The rewritten `CategoryCandidate` doc said `CategorySuggesting`'s async requirement "runs off the caller's actor". With `SWIFT_APPROACHABLE_CONCURRENCY = YES` (`NonisolatedNonsendingByDefault`) it runs on the caller's actor, so the stated reason for the projection was wrong.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CategorySuggesting.swift:4
+**Caught by:** this review
+
+## 2026-10-28 — PR#191 — Wrong magnitude in a CHANGELOG known-issue entry
+**What was wrong:** The Known issues entry for FB23627448 said precision loss starts at "100 trillion or more with cents". 16 significant digits with cents is a 14-digit integer part, so it starts at 10 trillion, and the PR's own test value `12345678901234.56` (about 12.3 trillion) rounds. Readers would have taken 10 to 100 trillion as safe.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:34
+**Caught by:** this review
+
+## 2026-11-02 — PR#197 — Round 1: stale citation left in the re-cited spec bullet
+**What was wrong:** Inserting 7 lines into `.claude/skills/sync-workflow/SKILL.md` moved the `git add .claude/skills/ scaffold/` line from 67 to 74, but `docs/superpowers/specs/2026-09-28-pipeline-lanes.md:130` still cited `:67`. `check_citations.py` only checks the line exists.
+**Rule violated:** no formal rule, caught in review (repeats PR#163 and PR#152 entries of the same name)
+**File:** docs/superpowers/specs/2026-09-28-pipeline-lanes.md:130
+**Caught by:** this review
+
+## 2026-11-02 — PR#198 — Round 1: shell-run apply_patch with no inline heredoc headers bypasses the guard hook
+**What was wrong:** `PATCH_TARGET` only matches `*** Update File:` headers at real line starts in the command text. On a `feature/*` branch, `printf '*** Begin Patch\n*** Update File: CLAUDE.md\n...' | apply_patch` (literal `\n`) and `apply_patch "$(cat p.patch)"` both exit 0, while the CHANGELOG and the `evaluate` comment read as if shell-run patches are covered. Ported unchanged from pragma #136, which has the same gap.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/hooks/guard_protected_paths.py:80
+**Caught by:** this review
+
+## 2026-11-11 — PR#201 — Round 1: Gate 5 passes on an empty [Unreleased] section
+**What was wrong:** `scripts/check_gates.sh` Gate 5 runs `grep -A 10 "## \[Unreleased\]" CHANGELOG.md | grep -v "^##" | grep -v "^$"`. The 10-line window runs past an empty `[Unreleased]` section into the previous release's bullets, so `## [Unreleased]`, blank, `## [1.5.1]`, `### Fixed`, `- old thing` prints `- old thing` and the gate reports `[✓] CHANGELOG`. Ported unchanged from the old hand-run grep and from pragma #155, which has the same line.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_gates.sh:183
+**Caught by:** this review
+
+## 2026-11-11 — PR#201 — Round 1: Gate 14 golden test silently skips when $OUT does not survive
+**What was wrong:** `.claude/skills/gates/SKILL.md` sets `OUT=$(mktemp -t check-gates)` in the check_gates.sh block, and Gate 14 later reads `"$OUT"` for the Build row. Shell variables do not carry across Bash tool calls, so with an empty `$OUT` both greps fail and the block prints `GOLDEN SKIP: Gate 1 did not pass`, reported as `[–]`: the `importHash` golden test is skipped after a passing build instead of failing closed.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/skills/gates/SKILL.md:194
+**Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: CHANGELOG states the delimiter and decimal-fallback rules without their exceptions
+**What was wrong:** `CHANGELOG.md:27-28` (and the comment at `CSVImportService.swift:127`) said a delimiter tie goes to `;` and the decimal fallback applies when no amount is unambiguous; the code broke equal agreement by field count and also fell back on tied votes, dropping amounts written the other way. Repeats 2026-10-07 PR#163.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:27
+**Caught by:** this review
+
+## 2026-11-11 — PR#214 — Round 1: delimiter field-count tie-break regressed headerless `;` files
+**What was wrong:** `detectDelimiter` compared `(agreeing, fields)`, so a headerless `;` file whose payees hold two commas (`2026-05-01;12,50;Doe, John, Jr`) split into more fields on `,` and was read as comma-delimited; every row failed to parse. The old `contains(";")` rule imported it.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:139
+**Caught by:** this review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: delimiter detection failed on a one-field preamble line
+**What was wrong:** `score` returned `(false, 0)` for both delimiters whenever the first record had one field, so a `;` bank export with a title line fell back to the tie rule. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:109
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: headerless `;` file read as comma-delimited on a tie
+**What was wrong:** When both delimiters gave the same consistent field count, `,` won, so a headerless `2026-05-01;12,50;Bakery` file split on the decimal comma. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:114
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: an unclosed opening quote swallowed the rest of the file
+**What was wrong:** A payee starting with `"` and never closed (`"Weird Al Tribute,12.50`) left `inQuotes` set to EOF, so every later row became one field and was dropped without warning. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:87
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: trailing-sign and currency-suffix amounts dropped
+**What was wrong:** `12.50-` and `12.50 USD` parsed before the fix (as a prefix, then `abs`); the new full-match parser rejected them, so those rows were skipped silently. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:144
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: a leading `0` group was read as a thousands group
+**What was wrong:** With `.` as the decimal separator, `"0,123"` was grouped as `0|123` and imported as 123. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:154
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 731f9da: malformed amounts voted on the decimal separator
+**What was wrong:** `1.2.3` passed the character filter and voted `,`, so a few malformed values could flip the separator for the whole file. Fixed in e47842f.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:128
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: a later quote closed a stray opening quote and swallowed rows
+**What was wrong:** Unclosed-quote recovery only ran at EOF, so any later `"` closed the runaway field and every row in between was merged into one field and dropped. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:102
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: footer and summary rows voted on the decimal separator
+**What was wrong:** Rows whose date did not parse (`Summe;1.234,56`, a second header) still voted, so a non-transaction line could flip the separator for the whole file. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:148
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 83a7bc1: VT, FF, U+0085, U+2028 and U+2029 ended records
+**What was wrong:** `char.isNewline` split unquoted fields on those characters, where the old code split only on `\n`, so a payee with a U+2028 broke its row. Fixed in ff6eca7.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:115
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: letter currency markers dropped the row
+**What was wrong:** The amount regex allowed only `\p{Sc}` or uppercase listed codes, so `R$ 10,00`, `10,00 kr` and `12.50 usd` were skipped silently. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:184
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at ff6eca7: Indian lakh grouping rejected
+**What was wrong:** Grouping required every group after the first to have 3 digits, so `INR 1,23,456.78` was skipped although INR was a listed code. Fixed in 1acaafc.
+**Rule violated:** no formal rule, caught in review
+**File:** FinanceTracker/Services/CSVImportService.swift:206
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: a stale applyMapping wrote after reset or a second tap
+**What was wrong:** The off-main parse let an earlier `applyMapping` finish after `reset()`, `loadCSV()` or a second tap and overwrite `pendingTransactions` and `step`. Fixed in 69eee13 (`mappingGeneration`).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:105
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 1acaafc: an inch-mark quote closed a stray quote and swallowed rows
+**What was wrong:** A stray `"` closed by `27"` at a line end made one field of the dated rows between them. Fixed in 69eee13 (a field that would hold a later row reads its quote as a literal).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a superseded applyMapping returned normally and ran loadSuggestions on stale data
+**What was wrong:** The 69eee13 stale guard returned instead of throwing, so ImportSheet's Task ran `loadSuggestions()` on the previous attempt's rows. Fixed in 98146c4 (throws `CancellationError`, which the sheet ignores).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/ViewModels/ImportViewModel.swift:121
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: a multi-line memo with a dated line was split into a phantom row
+**What was wrong:** The 69eee13 stray-quote check fired on any later line with a date, so `"Card purchase\n11/10/2026, Store"` was split. Fixed in 98146c4 (the line also needs a row's field count) and, for the first record of a headerless file, in 59f3678 (width from the fields around the quoted one).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:111
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — code-review at 69eee13: CR/DR suffixes and apostrophe/thin-space grouping dropped rows
+**What was wrong:** `12.50 CR`, `12.50 DR`, `1'234.50`, `1’234.50` and thin-space grouping, which the old prefix parse read, were skipped by the strict parser. Fixed in 98146c4.
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTracker/Services/CSVImportService.swift:201
+**Caught by:** code-review
+
+## 2026-11-12 — PR#214 — CI at 59f3678: applyMapping tests raced on Task.yield()
+**What was wrong:** Tests that reset or re-tapped mid-parse relied on one `Task.yield()` to put `applyMapping` mid-flight; under load the Task had not started, so CI Unit Tests failed. Fixed in 07c1386 and 6f950a1 (the fake holds `existingHashes()` until released).
+**Rule violated:** no formal rule, caught before this review
+**File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:112
+**Caught by:** CI and code-review

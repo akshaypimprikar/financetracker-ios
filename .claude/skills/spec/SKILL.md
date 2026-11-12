@@ -66,13 +66,13 @@ One paragraph describing what this builds and why.
 Which layers are touched and how they interact.
 
 ## Data Models
-New or modified @Model classes with full Swift signatures.
+New or modified persisted types with full Swift signatures (`@Model` classes for swiftdata, `NSManagedObject` subclasses and the `.xcdatamodeld` change for coredata, `Object` subclasses for realm, plain structs for none).
 
 ## Domain Services
 New or modified services — method signatures + pure-function contracts.
 
 ## Navigation
-New screens, sheets, or changes to existing navigation.
+New screens, sheets, or changes to existing navigation (`[uikit]`: view controllers, segues or coordinators).
 
 ## Design
 *Only required for features that touch Views.*
@@ -93,11 +93,14 @@ Implementation details found in review that `/plan` decides, instead of more spe
 ### 6. Flag scope creep
 If the feature idea implies multiple independent subsystems, say so and suggest splitting into sub-specs.
 
+## Project settings
+Read `project` in `scripts/pipeline_lanes.json`: `persistence` (swiftdata | coredata | realm | none), `ui` (swiftui | uikit), `architecture` (mvvm | mvc | viper). If the key is absent, assume swiftdata, swiftui, mvvm. FinanceTracker sets swiftdata, swiftui, mvvm. Apply the persistence and UI rules below for the configured values. Read "ViewModel" as Controller (mvc) or Presenter (viper).
+
 ## Architecture Rules (enforce in every spec)
 - Views contain no business logic
-- Domain Services have **zero** SwiftData imports — 100% unit testable without a simulator
+- Domain Services have **zero** persistence-framework imports (SwiftData, CoreData or RealmSwift) — 100% unit testable without a simulator
 - All money values use `Decimal`, never `Double`
-- ViewModels depend on repository protocols, never concrete SwiftData implementations
+- ViewModels (or Controllers / Presenters) depend on repository protocols, never concrete implementations
 - New models go in `FinanceTracker/Models/`, services in `FinanceTracker/Services/`
 - New repository protocols go in `FinanceTracker/Repositories/Protocols/`, implementations in `FinanceTracker/Repositories/SwiftData/`
 

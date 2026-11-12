@@ -9,11 +9,13 @@ jobs:
   release-tests:
     name: Release Tests (Unit + Integration)
     runs-on: macos-26
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode 26
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: '~26.4'
 
@@ -24,6 +26,10 @@ jobs:
           key: deriveddata-release-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerTests/**/*.swift') }}
           restore-keys: |
             deriveddata-release-${{ runner.os }}-
+
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
 
       - name: Run unit and integration tests (Release)
         run: |
@@ -63,11 +69,13 @@ jobs:
   release-ui-tests:
     name: Release UI Tests
     runs-on: macos-26
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode 26
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: '~26.4'
 
@@ -78,6 +86,10 @@ jobs:
           key: deriveddata-release-ui-${{ runner.os }}-${{ hashFiles('FinanceTracker/**/*.swift', 'FinanceTrackerUITests/**/*.swift') }}
           restore-keys: |
             deriveddata-release-ui-${{ runner.os }}-
+
+      - name: Install CocoaPods dependencies
+        if: hashFiles('Podfile') != ''
+        run: pod install
 
       - name: Run UI tests (Release)
         run: |
