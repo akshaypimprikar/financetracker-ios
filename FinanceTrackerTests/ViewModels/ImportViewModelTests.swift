@@ -121,19 +121,23 @@ struct ImportViewModelTests {
     @Test func supersededApplyMappingThrowsCancellationAndTheNewerOneWins() async throws {
         let container = try makeContainer()
         let ctx = ModelContext(container)
+        let fake = FakeTransactionImportWriting()
         let vm = ImportViewModel(
             accountRepo: SwiftDataAccountRepository(context: ctx),
             importRecordRepo: SwiftDataImportRecordRepository(context: ctx),
-            importWriter: FakeTransactionImportWriting(),
+            importWriter: fake,
             categoryRepo: SwiftDataCategoryRepository(context: ctx)
         )
         vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
 
-        // A double tap of Parse & Preview.
+        // A double tap of Parse & Preview: the second tap lands while the first is mid-flight.
+        fake.holdExistingHashes()
         let first = Task { try await vm.applyMapping(mapping) }
-        await Task.yield()
+        try await fake.waitUntilExistingHashesStarted(1)
         let second = Task { try await vm.applyMapping(mapping) }
+        try await fake.waitUntilExistingHashesStarted(2)
+        fake.releaseExistingHashes()
 
         await #expect(throws: CancellationError.self) { try await first.value }
         try await second.value
@@ -155,9 +159,11 @@ struct ImportViewModelTests {
         vm.loadCSV("date,amount,payee\n2026-05-01,25.50,Coffee Shop")
         let mapping = ColumnMapping(dateIndex: 0, amountIndex: 1, payeeIndex: 2, hasHeader: true)
 
+        fake.holdExistingHashes()
         let parse = Task { try await vm.applyMapping(mapping) }
-        await Task.yield()
+        try await fake.waitUntilExistingHashesStarted(1)
         vm.reset()
+        fake.releaseExistingHashes()
 
         // The failure belongs to a session the user left, so it must not raise the mapping-failed alert.
         await #expect(throws: CancellationError.self) { try await parse.value }
