@@ -4,7 +4,7 @@ All notable changes to FinanceTracker are documented here.
 
 ---
 
-## [Unreleased]
+## [1.5.2] — 2026-11-12
 
 ### Added
 - **Decimal persistence regression test (Apple FB23627448).** `DecimalPersistenceTests` round-trips `Transaction.amount`, `Account.openingBalance` and `Budget.monthlyLimit` through `SchemaV1` plus `FinanceTrackerMigrationPlan` on an on-disk store, read back through a fresh container. The in-memory cases are only a smoke check, because they read back through the writer's container and may be served from cache. Measured with Xcode 27.1 on iOS 26.4.1 and 27.0: values up to 15 significant digits are exact, and all three 16-digit values round on disk (`123456789012345.6` becomes `123456789012346`). These are marked as a known issue without `isIntermittent`, so an OS fix makes the test fail. Test-only, no app change.

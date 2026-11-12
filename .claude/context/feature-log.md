@@ -2,6 +2,11 @@
 
 <!-- Append one entry per release. Never edit past entries. -->
 
+## v1.5.2 — 2026-11-12
+**Features added:** CSV import fixes: comma-decimal amounts no longer truncated (#189), delimiter detection and RFC 4180 quoting (#190), a superseded parse can no longer overwrite a newer import step (#214); decimal persistence regression test with a documented SwiftData 15-significant-digit known issue (Apple FB23627448); `/gates` runs Gates 0-11 as one script (pragma #155 ported); guard hook runs in Codex CLI; gate-runner fixes ported from pragma (#169, #171, #175, #178: Gate 7 security exit 4, Gate 10 crash row, Gate 11 path parsing, Gate 6 hardware-exception boundary, non-ASCII/newline paths in `check_pr_lane.py`); review process changes (PR A #164, PR B #165, `gates` and `review-evidence` required checks); Xcode 27 advisory CI job and whole-module test-target compile fix.
+**Key files changed:** `FinanceTracker/Services/CSVImportService.swift`, `ImportViewModel`, `scripts/check_gates.sh`, `scripts/check_gate_integrity.py`, `scripts/check_pr_lane.py`, `scripts/check_coverage.py`, `scripts/review_verdict.py`, `scripts/pipeline_lanes.json`, `.claude/skills/{gates,review,status,release,sync-workflow}/`, `.claude/hooks/`, `.github/workflows/`.
+**Key architectural decisions:** CSV decimal separator is chosen per file and only dated rows vote; review blocking decisions move from skill prose into `scripts/review_verdict.py`.
+
 ## v1.5.1 — 2026-09-30
 **Features added:** `review-evidence` checks out the PR's base branch (`ref: github.event.pull_request.base.ref`) instead of the default branch, so lane and evidence changes merged to `develop` apply to PRs into `develop` before a release (#145; wording in `gates.yml` and the lanes spec, #146). 2026-09-29 pipeline-review fixes (#142): `/status` maps `hotfix/*`/`chore/*` and uses `develop..HEAD`, Gate 11 reports exit 2 as a failure, `/release` documents the head-`main` back-merge and the separate feature-log PR with a real `/gates` summary, `/plan` pins `OS=26.4.1`. No app-code changes.
 **Key files changed:** `.github/workflows/review-evidence.yml`, `.github/workflows/gates.yml`, `.claude/skills/{status,gates,release,plan}/SKILL.md`, `docs/superpowers/specs/2026-09-28-pipeline-lanes.md`, `docs/pipeline-review/2026-09-29.md`
