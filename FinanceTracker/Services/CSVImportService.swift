@@ -1,5 +1,6 @@
 import Foundation
 import CryptoKit
+import RegexBuilder
 
 struct ParsedTransaction: Sendable {
     let date: Date
@@ -9,14 +10,14 @@ struct ParsedTransaction: Sendable {
     var categoryID: UUID? = nil   // mutable, defaulted; never affects importHash
 }
 
-struct ColumnMapping {
+nonisolated struct ColumnMapping {
     let dateIndex: Int
     let amountIndex: Int
     let payeeIndex: Int
     let hasHeader: Bool
 }
 
-struct CSVImportService {
+nonisolated struct CSVImportService {
     private static let dateFormatters: [DateFormatter] = {
         ["yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy"].map {
             let f = DateFormatter()
@@ -30,16 +31,17 @@ struct CSVImportService {
         let delimiter = Self.detectDelimiter(in: csv)
         var rows = Self.rows(from: csv, delimiter: delimiter)
         if mapping.hasHeader && !rows.isEmpty { rows.removeFirst() }
-        rows = rows.filter { $0.count > max(mapping.dateIndex, mapping.amountIndex, mapping.payeeIndex) }
+        let dated = rows
+            .filter { $0.count > max(mapping.dateIndex, mapping.amountIndex, mapping.payeeIndex) }
+            .compactMap { columns in Self.parseDate(columns[mapping.dateIndex]).map { (date: $0, columns: columns) } }
         let decimalSeparator = Self.decimalSeparator(
-            amounts: rows.filter { Self.parseDate($0[mapping.dateIndex]) != nil }.map { $0[mapping.amountIndex] },
+            amounts: dated.map { $0.columns[mapping.amountIndex] },
             fallback: delimiter == ";" ? "," : "."
         )
 
-        return try rows.compactMap { columns -> ParsedTransaction? in
-            guard let date = Self.parseDate(columns[mapping.dateIndex]) else { return nil }
-            guard let rawAmount = Self.parseAmount(columns[mapping.amountIndex], decimalSeparator: decimalSeparator) else { return nil }
-            let amount = abs(rawAmount)
+        // Amounts are stored unsigned, so the sign is dropped.
+        return dated.compactMap { date, columns -> ParsedTransaction? in
+            guard let amount = Self.parseAmount(columns[mapping.amountIndex], decimalSeparator: decimalSeparator) else { return nil }
             let payee = columns[mapping.payeeIndex]
             return ParsedTransaction(
                 date: date,
@@ -48,6 +50,11 @@ struct CSVImportService {
                 importHash: Self.importHash(date: date, amount: amount, payee: payee)
             )
         }
+    }
+
+    /// `parse` off the caller's actor, so a large file doesn't block the UI.
+    @concurrent func parseInBackground(csv: String, mapping: ColumnMapping) async throws -> [ParsedTransaction] {
+        try parse(csv: csv, mapping: mapping)
     }
 
     /// Splits CSV text into trimmed fields per record (RFC 4180 quoting), dropping blank records.
@@ -163,7 +170,7 @@ struct CSVImportService {
     /// The decimal separator one amount implies by itself, or nil when it can't tell:
     /// "1,234" or "1.234" (one separator, 3 digits after, a 1-3 digit integer part other than 0) could be either.
     private static func separatorHint(_ raw: String) -> Character? {
-        guard let number = amountParts(raw)?.number.filter({ $0 == "." || $0 == "," || $0.isNumber }) else { return nil }
+        guard let number = amountNumber(raw)?.filter({ $0 == "." || $0 == "," || $0.isNumber }) else { return nil }
         switch (number.lastIndex(of: "."), number.lastIndex(of: ",")) {
         case let (dot?, comma?):
             return dot > comma ? "." : ","
@@ -178,22 +185,51 @@ struct CSVImportService {
         }
     }
 
-    /// Splits off what bank exports put around the number: a currency symbol or common ISO currency code
-    /// ("$4.25", "12,50 €", "USD 3.00") and a leading or trailing sign ("12.50-"). Nil if anything else is left.
-    private static func amountParts(_ raw: String) -> (sign: String, number: String)? {
-        let pattern = /^\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*([+-]?)\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*([0-9.,][0-9., \u{00A0}\u{202F}]*?)\s*([+-]?)\s*(?:(?:USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD)|\p{Sc})?\s*$/
-        guard let match = raw.wholeMatch(of: pattern) else { return nil }
+    /// A currency marker: a currency symbol ("$", "€"), any uppercase 3-letter code ("GHS"), or a common
+    /// code or local abbreviation in any case ("usd", "kr", "zł", "R$", "Fr.", "Kč"). Lowercase codes are
+    /// limited to the list so trailing text such as "12.50abc" is still rejected.
+    private static let currencyMarker = Regex {
+        ChoiceOf {
+            /\p{Sc}/
+            /[A-Z]{3}/
+            Regex {
+                /USD|EUR|GBP|CHF|CAD|AUD|NZD|JPY|CNY|INR|SEK|NOK|DKK|PLN|CZK|HUF|RON|BRL|MXN|ZAR|SGD|HKD|kr|zł|R\$|Fr\.|Kč/
+            }.ignoresCase()
+        }
+    }
+
+    private static let amountPattern = Regex {
+        /\s*/
+        Optionally { currencyMarker }
+        /\s*/
+        Capture { /[+-]?/ }
+        /\s*/
+        Optionally { currencyMarker }
+        /\s*/
+        Capture { /[0-9.,][0-9., \u{00A0}\u{202F}]*?/ }
+        /\s*/
+        Capture { /[+-]?/ }
+        /\s*/
+        Optionally { currencyMarker }
+        /\s*/
+    }
+
+    /// The number left after removing what bank exports put around it: a currency marker
+    /// ("$4.25", "12,50 €", "USD 3.00") and a leading or trailing sign ("12.50-"), but not both signs.
+    /// Nil if anything else is left.
+    private static func amountNumber(_ raw: String) -> String? {
+        guard let match = raw.wholeMatch(of: amountPattern) else { return nil }
         let (_, leading, number, trailing) = match.output
         guard leading.isEmpty || trailing.isEmpty else { return nil }
-        return (leading + trailing == "-" ? "-" : "", String(number))
+        return String(number)
     }
 
     /// Parses the whole amount or returns nil, never a valid prefix (`Decimal(string:)` turned "12,50" into 12).
-    /// Spaces between digits count as grouping ("1 234,56").
+    /// Spaces between digits count as grouping ("1 234,56"). The result is unsigned.
     private static func parseAmount(_ raw: String, decimalSeparator: Character) -> Decimal? {
-        guard let amount = amountParts(raw) else { return nil }
+        guard let number = amountNumber(raw) else { return nil }
         let grouping: Character = decimalSeparator == "," ? "." : ","
-        let text = String(amount.number.map { " \u{00A0}\u{202F}".contains($0) ? grouping : $0 })
+        let text = String(number.map { " \u{00A0}\u{202F}".contains($0) ? grouping : $0 })
         let parts = text.split(separator: decimalSeparator, omittingEmptySubsequences: false)
         guard parts.count <= 2 else { return nil }
         let isDigits: (Substring) -> Bool = { !$0.isEmpty && $0.allSatisfy { $0.isASCII && $0.isNumber } }
@@ -203,9 +239,13 @@ struct CSVImportService {
         let groups = integer.isEmpty ? ["0"] : integer.split(separator: grouping, omittingEmptySubsequences: false)
         guard groups.allSatisfy(isDigits) else { return nil }
         if groups.count > 1 {
-            guard groups[0].count <= 3, groups[0].first != "0", groups.dropFirst().allSatisfy({ $0.count == 3 }) else { return nil }
+            let thousands = groups[0].count <= 3 && groups.dropFirst().allSatisfy { $0.count == 3 }
+            // Indian lakh grouping: "1,23,456.78" (groups of 2, then the last 3 digits).
+            let lakh = groups.count > 2 && groups[0].count <= 2 && groups.last?.count == 3
+                && groups.dropFirst().dropLast().allSatisfy { $0.count == 2 }
+            guard groups[0].first != "0", thousands || lakh else { return nil }
         }
-        var normalized = amount.sign + groups.joined()
+        var normalized = groups.joined()
         if !fraction.isEmpty {
             guard isDigits(fraction) else { return nil }
             normalized += "." + fraction

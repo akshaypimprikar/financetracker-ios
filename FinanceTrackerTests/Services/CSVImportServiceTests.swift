@@ -267,11 +267,35 @@ struct CSVImportServiceTests {
         #expect(results.map(\.payee) == ["A\u{2028}B"])
     }
 
-    @Test func onlyCurrencyCodesAreStrippedFromAmounts() throws {
-        let csv = "date,amount,payee\n2026-05-01,REF 12.50,A\n2026-05-02,EUR 3.00,B"
+    @Test func onlyCurrencyMarkersAreStrippedFromAmounts() throws {
+        // Any uppercase 3-letter code counts as a currency code ("REF" too); longer words, other short
+        // words and punctuation do not.
+        let csv = "date,amount,payee\n2026-05-01,REFX 12.50,A\n2026-05-02,No 3.00,B\n2026-05-03,Ref. 4.00,C\n2026-05-04,REF 5.00,D\n2026-05-05,EUR 6.00,E"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["D", "E"])
+    }
+
+    @Test func letterCurrencyMarkersParseInAnyCase() throws {
+        let csv = "date,amount,payee\n2026-05-01,12.50 usd,A\n2026-05-02,kr 100.00,B\n2026-05-03,ZŁ 1.50,C\n2026-05-04,R$ 5.00,D\n2026-05-05,Fr. 7.25,E\n2026-05-06,9.00 Kč,F\n2026-05-07,GHS 2.00,G"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.amount) == ["12.50", "100", "1.50", "5", "7.25", "9", "2"].map { Decimal(string: $0)! })
+    }
+
+    @Test func signOnBothSidesIsRejected() throws {
+        let csv = "date,amount,payee\n2026-05-01,-12.50-,A\n2026-05-02,-3.00,B"
         let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
 
         #expect(results.map(\.payee) == ["B"])
+    }
+
+    @Test func indianLakhGroupingParses() throws {
+        let csv = "date,amount,payee\n2026-05-01,\"1,23,456.78\",A\n2026-05-02,\"12,34,567\",B\n2026-05-03,\"1,00,00,000.00\",C\n2026-05-04,\"1,2,345.00\",D\n2026-05-05,\"12,345,67.00\",E"
+        let results = try CSVImportService().parse(csv: csv, mapping: dateAmountPayee)
+
+        #expect(results.map(\.payee) == ["A", "B", "C"])
+        #expect(results.map(\.amount) == ["123456.78", "1234567", "10000000"].map { Decimal(string: $0)! })
     }
 
     @Test func titleLineBeforeSemicolonHeaderKeepsSemicolon() throws {

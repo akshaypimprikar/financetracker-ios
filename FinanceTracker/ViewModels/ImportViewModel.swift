@@ -68,6 +68,7 @@ final class ImportViewModel {
     /// an accurate record of what actually landed in the store matters regardless of
     /// which session is currently on screen.
     private var importGeneration = 0
+    private static let previewCharacterLimit = 64 * 1024
 
     init(
         accountRepo: any AccountRepositoryProtocol,
@@ -95,12 +96,14 @@ final class ImportViewModel {
 
     func loadCSV(_ text: String) {
         rawCSVText = text
-        csvSampleRows = CSVImportService.rows(from: text, limit: 5)
+        // The preview reads only the start of the file, so an unclosed quote can't make it scan
+        // the whole file on the main actor.
+        csvSampleRows = CSVImportService.rows(from: String(text.prefix(Self.previewCharacterLimit)), limit: 5)
         step = .columnMapping
     }
 
     func applyMapping(_ mapping: ColumnMapping) async throws {
-        let parsed = try importService.parse(csv: rawCSVText, mapping: mapping)
+        let parsed = try await importService.parseInBackground(csv: rawCSVText, mapping: mapping)
         let existingHashes = try await importWriter.existingHashes()
         let deduped = importService.deduplicated(parsed: parsed, existingHashes: existingHashes)
         pendingTransactions = deduped
