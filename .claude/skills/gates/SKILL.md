@@ -28,7 +28,9 @@ cat "$OUT"; echo "check_gates.sh exit $RC"
 It runs the pre-step and Gates 0–11 in order, prints each gate's details, and ends with the Gate summary block
 (`Gates run at <sha>`, `Lane:`, one line per gate). Paste that block into the PR body as printed; never retype or
 edit it. Exit 0: every blocking gate in it passed. Exit 1: a blocking gate failed — fix it, commit, and re-run.
-Exit 2: a usage or config error. Exit 3: the tree is dirty. If `scripts/check_gates.sh` is missing, `/gates` FAILS;
+Exit 2: a usage or config error. Exit 3: the tree is dirty. Exit 4: every blocking gate passed but Gate 7 printed
+`[!] Security`; run the security review (Gate 7) before you call `/gates` done. A `[✗] File names` row means a
+changed path has a newline in its name, which the gates cannot check: rename it. If `scripts/check_gates.sh` is missing, `/gates` FAILS;
 do not fall back to running the checks by hand. Gate 14 reads the saved output from that file, which is named
 after the commit, so a later shell call (where `$OUT` is unset) still finds it and output from another commit is never read.
 
@@ -85,7 +87,7 @@ Pass: `feature/*`, `fix/*`, `hotfix/*`, `release/*`, `spec/*`, `design/*`, `ci/*
 
 ### Gate 5 — CHANGELOG.md has Unreleased entries
 Pass: at least one non-empty line in the `## [Unreleased]` section, read up to the next `## ` heading (`###`
-subheadings are not entries).
+subheadings, CRLF blank lines and link definitions such as `[1.0.0]: https://...` are not entries).
 Fail: section missing or empty — create the section and add a one-line summary per task, using
 `git log develop..HEAD --oneline` to enumerate commits. `/feature`'s two-commit-per-task structure means only the
 GREEN (implementation) commit carries user-facing content — summarize those, skipping RED (test-only) commits.
