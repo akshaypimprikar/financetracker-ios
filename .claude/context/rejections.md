@@ -889,3 +889,9 @@
 **Rule violated:** no formal rule, caught before this review
 **File:** FinanceTrackerTests/ViewModels/ImportViewModelTests.swift:112
 **Caught by:** CI and code-review
+
+## 2026-11-12 — PR#226 — Review doc marks a partly done item as fully done
+**What was wrong:** The pipeline-review settings-hygiene item is ticked `[x]` and the file is `addressed: true`, but the PR removes only 4 of the listed `.claude/settings.json` entries (`pkill -f serve_csv.py` and two `rm -rf /tmp/*.xcresult *` entries remain). There is no deferral note, so the doc claims more than the diff did.
+**Rule violated:** no formal rule, caught in review
+**File:** docs/pipeline-review/2026-11-12.md:37
+**Caught by:** this review

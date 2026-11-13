@@ -51,7 +51,7 @@ fallback.
    capture the app's default launch screen.
 4. Call `screenshot` with `returnFormat: "base64"` so it renders inline in this session in one
    call — Akshay reviews it directly in the transcript. Only fall back to `returnFormat: "path"`
-   saved under `.gates-artifacts/gate12-<branch-name>-<screen-or-task>.png` (gitignored) if the
+   saved under `.gates-artifacts/gate13-<branch-name>-<screen-or-task>.png` (gitignored) if the
    base64 payload is rejected as too large, then Read that path back to render it.
 
 This gate captures evidence; it does **not** evaluate it. No pass/fail judgment is made against
@@ -91,6 +91,6 @@ What is not covered:
 - The hook's Bash detection is a best-effort parse. `python -c`, interpreter heredocs, variable or glob expansion (including `cd $VAR`), `find -exec`/`-delete`, `xargs rm` fed from stdin, `git checkout <ref> -- file`, `git restore` and `rm -rf <dir that only contains a nested project>` are not detected, and a symlink created and written through in one command is not followed.
 - The hook fails open on a detached HEAD, a missing script or malformed input, and it allows every edit off `feature/*`. That includes the hook and its `settings.json` entry (editing them on a `chore/*` or `fix/*` branch is the intended route, reviewed as its own PR, including a `fewer-permission-prompts` prune of `settings.json`).
 - **It only runs in sessions that load this repo's `.claude/settings.json`.** Verified 2026-09-23: in a session started from `~/Desktop/Claude` (the parent directory), an `Edit` to `.claude/skills/status/SKILL.md` on a `feature/*` branch succeeded, so the hook did not fire. Start the session from this repo's root for the live layer to apply; the CI backstop applies either way.
-- Neither layer catches an agent that renames its branch away from `feature/*`. `.claude/settings.local.json` (which can carry `disableAllHooks`), `.github/workflows/*` and `.githooks/*` are not on the protected list.
+- Neither layer catches an agent that renames its branch away from `feature/*`. `.claude/settings.local.json` (which can carry `disableAllHooks`) and `.githooks/*` are not on the protected list.
 
 `/pipeline-review`'s Settings hygiene check (item 7) still reads `.claude/settings.json` for hook-config hygiene, but that is a periodic audit. The hook pattern is sourced from a practitioner design (`karanb192/claude-code-hooks`'s "config-guard" hook, built in direct response to the ChainDrop npm worm persisting itself via `.claude/settings.json` rewrites) surfaced in the 2026-09-08 Agentic AI Intelligence Report.

@@ -21,6 +21,13 @@ Haiku scorer per issue); from 2026-09-28, when it became the default here, it
 made each PR's review several times more expensive. `/review`'s isolated
 subagent already covers design and rule compliance.
 
+Note: `code-review` is a Claude Code skill and may not be invocable at all —
+either because it is unavailable in this session, or because this coding
+agent has no such skill mechanism. Either way, on the `app` lane step 3
+below catches the invocation error and continues to reporting rather than
+halting the whole command; you'll still need to run an equivalent review
+yourself before merging.
+
 ## Trigger
 Invoked right after `gh pr create` succeeds, or manually against an existing
 PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
@@ -49,7 +56,7 @@ PR: `/pr-followup 71` or `/pr-followup fix/some-branch`.
    SHA it reviewed: `code-review: <comment URL> at <sha>`, or
    `code-review: no issues at <sha>` when it posted nothing.
 3. `app` lane only: if the step 2 invocation errors (e.g. `Unknown skill`), don't stall. Print
-   `⚠️ code-review couldn't be agent-invoked — run it yourself before merging.`
+   `⚠️ code-review couldn't be invoked here (unavailable, or unsupported on this agent) — run an equivalent review yourself before merging.`
    and continue.
 4. Run `/review <PR>`. It posts the verdict and updates the PR body's `Review:`
    line. Stop at CHANGES REQUESTED until the blocking issues are fixed. `/review`

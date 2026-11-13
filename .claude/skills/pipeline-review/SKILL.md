@@ -54,7 +54,7 @@ Check whether the following gates exist as skill files or documented steps in th
 | CHANGELOG incremental update | Step in `/feature` | High |
 | `/test` before `/gates`; `code-review` before `/review` (`app` lane only since FT #163) | `feature/SKILL.md` Done-when + `pr-followup/SKILL.md` + `AGENTS.md` | High |
 | Lane config and required checks (`gates`, `review-evidence`) | `scripts/pipeline_lanes.json`, `.github/workflows/gates.yml`, `.github/workflows/review-evidence.yml` | Critical |
-| Coverage check (`ios-coverage` skill) | `/gates` or post-`/test` step | Medium |
+| Coverage gate (Gate 6) | `scripts/check_gates.sh` | Medium |
 | Security check for CSV/data PRs | `security-review` skill reference | Medium |
 | Session recovery command (`/status`) | `.claude/skills/status/SKILL.md` | Low |
 
