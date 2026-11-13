@@ -112,13 +112,10 @@
       "Bash(xcodebuild build-for-testing *)",
       "Bash(system_profiler SPHardwareDataType)",
       "mcp__XcodeBuildMCP__snapshot_ui",
-      "Bash(pkill -f serve_csv.py)",
       "Bash(gh run view * --log *)",
       "Bash(gh issue *)",
       "Bash(python3 scripts/check_coverage.py *)",
       "Bash(python3 scripts/check_tdd_commit_order.py *)",
-      "Bash(rm -rf /tmp/debug_ui.xcresult *)",
-      "Bash(rm -rf /tmp/FinanceTracker.xcresult *)",
       "Bash(git -C \"/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki\" diff --stat)",
       "Bash(git -C \"/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki\" status)",
       "Bash(cua-driver type_text *)",
@@ -142,20 +139,10 @@
       "Bash(twitter follow *)"
     ],
     "additionalDirectories": [
-      "/Users/akshaypimprikar/Desktop/Claude/pragma",
-      "/Users/akshaypimprikar/.claude/skills",
-      "/Users/akshaypimprikar/Desktop/Claude/ActionTracker",
       "/Users/akshaypimprikar/.claude",
-      "/Users/akshaypimprikar/Desktop/Claude/FinanceTracker/.claude/skills",
-      "/Users/akshaypimprikar/Desktop/Claude/Wiki/LinkedIn Posts Wiki",
       "/Users/akshaypimprikar/Desktop",
       "/tmp",
-      "/Users/akshaypimprikar/.claude/skills/prompt-master",
-      "/Users/akshaypimprikar/.claude/skills/prompt-master/references",
-      "/Users/akshaypimprikar/Desktop/Claude/pragma/scaffold/.github/workflows",
-      "/Users/akshaypimprikar/Library/Developer/Xcode/DerivedData",
-      "/Users/akshaypimprikar/Desktop/Claude/DevBrain",
-      "/Users/akshaypimprikar/Desktop/Claude/pragma/.claude/commands"
+      "/Users/akshaypimprikar/Library/Developer/Xcode/DerivedData"
     ]
   },
   "hooks": {

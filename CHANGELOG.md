@@ -9,7 +9,7 @@ All notable changes to FinanceTracker are documented here.
 ### Fixed
 - **Pipeline docs drifted from the scripts (2026-11-12 pipeline review).** `/review` named `pr-checks.yml` for the base-branch gate run; the job is in `gates.yml`. `/gates` and `gates/reference.md` listed `.github/workflows/*` as unprotected, but the guard hook protects it. Gate 13 screenshots were named `gate12-`. `/pipeline-review` checked for the `ios-coverage` skill instead of the Gate 6 coverage script. `/pr-followup` gets pragma's agent-neutral note and warning for when `code-review` can't be invoked.
 - **Gate 11 check 5 (lowered coverage threshold) now also reads `CONSTRAINTS.md` and `deterministic-pr-gates/SKILL.md`,** matching pragma's list (pragma #183). `scripts/tests/test_gate_definition_files.py` checks the list and that every entry is guarded.
-- **Removed four one-off permission entries from `.claude/settings.json`** (a LinkedIn `find`, two `xargs` forms and an escaped `xcodebuild` prefix).
+- **Removed seven one-off permission entries from `.claude/settings.json`** (a LinkedIn `find`, two `xargs` forms, an escaped `xcodebuild` prefix, `pkill -f serve_csv.py` and two `rm -rf /tmp/*.xcresult` forms), and 10 `additionalDirectories` entries already covered by `~/Desktop` or `~/.claude`.
 
 ## [1.5.2] — 2026-11-12
 
