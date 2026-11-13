@@ -79,7 +79,7 @@ coverage pass is too expensive to repeat here. Everything else that is cheap and
    whether to trust it".
 2. **Re-run the deterministic gates at that SHA and compare to the summary.** Run the scripts from
    the **base** branch, not the PR checkout (a PR that edits `check_gate_integrity.py` must not be
-   judged by its own edited copy — the `gates` job in `pr-checks.yml` does the same), and pass the PR's branch name because
+   judged by its own edited copy — the `gates` job in `gates.yml` does the same), and pass the PR's branch name because
    a `gh pr checkout`/worktree HEAD may be detached, which makes the integrity script silently skip
    its `feature/*` check:
    ```bash

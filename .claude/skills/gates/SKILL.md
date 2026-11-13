@@ -325,7 +325,7 @@ Exceptions: `release/*` and `hotfix/*` branches use `--base main`, except a hotf
 
 ## Guard against self-modifying guardrail files
 
-`.claude/hooks/guard_protected_paths.py` (a `PreToolUse` hook) blocks edits to the guarded files on a `feature/*` branch, and Gate 11 plus the `gates` CI job catch the same set on a plain commit and push. What each layer covers, what it misses, and where the pattern came from: `reference.md` § Guard. Known gaps, so a clean gate summary is not read as proof: the hook fails open on a detached HEAD and allows every edit off `feature/*`, it does not load in a session started from `~/Desktop/Claude` (the parent directory), its Bash-write detection is best effort, a branch renamed away from `feature/*` escapes it, and `.claude/settings.local.json` (which can carry `disableAllHooks`), `.github/workflows/*` and `.githooks/*` are not protected.
+`.claude/hooks/guard_protected_paths.py` (a `PreToolUse` hook) blocks edits to the guarded files on a `feature/*` branch, and Gate 11 plus the `gates` CI job catch the same set on a plain commit and push. What each layer covers, what it misses, and where the pattern came from: `reference.md` § Guard. Known gaps, so a clean gate summary is not read as proof: the hook fails open on a detached HEAD and allows every edit off `feature/*`, it does not load in a session started from `~/Desktop/Claude` (the parent directory), its Bash-write detection is best effort, a branch renamed away from `feature/*` escapes it, and `.claude/settings.local.json` (which can carry `disableAllHooks`) and `.githooks/*` are not protected.
 
 ## Done when
 All 14 gates report (Gates 1–14; Gate 0 only decides whether Gates 1–2 run): the 12 blocking gates pass and Gates

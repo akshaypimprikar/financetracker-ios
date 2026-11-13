@@ -72,6 +72,8 @@ GATE_DEFINITION_FILES = (
     "AGENTS.md",
     "CLAUDE.md",
     ".claude/context/invariants.md",
+    "CONSTRAINTS.md",
+    ".claude/skills/deterministic-pr-gates/SKILL.md",
 )
 # Wider than GATE_DEFINITION_FILES, and used by check #1 only: every file the
 # PreToolUse hook (.claude/hooks/guard_protected_paths.py; scaffold/.claude/hooks/
