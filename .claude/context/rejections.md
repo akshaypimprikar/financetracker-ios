@@ -901,3 +901,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** .claude/settings.json:155
 **Caught by:** this review
+
+## 2026-11-14 — PR#231 — Cross-repo port copied a pragma-only fact
+**What was wrong:** The FinanceTracker port of pragma's Gate 4 `sync/*` fix kept pragma's rationale in the CHANGELOG and in the test comment: "`pipeline_lanes.json` defines a `sync` lane". FinanceTracker's lanes config has no `sync` lane, so both statements were false in this repo.
+**Rule violated:** no formal rule, caught in review
+**File:** CHANGELOG.md:10, scripts/tests/test_check_gates.py
+**Caught by:** this review

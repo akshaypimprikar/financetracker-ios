@@ -259,6 +259,14 @@ class CheckGatesTests(unittest.TestCase):
         self.assertTrue(self.row(summary, "CHANGELOG").startswith("[✗]"))
         self.assertIn("Existing.swift:1:", out)
 
+    def test_sync_branch_passes_naming(self):
+        # pragma's /sync-workflow opens its PR from sync/<date> (pragma's own
+        # sync lane uses that prefix); check_gates.sh is shared, so Gate 4 accepts it.
+        git(self.repo, "branch", "-m", "chore/x", "sync/2026-11-14")
+        rc, summary, out = self.run_gates("--only", "4")
+        self.assertEqual(rc, 0, out)
+        self.assertTrue(self.row(summary, "Branch naming").startswith("[✓]"))
+
     def test_empty_unreleased_above_a_release_fails_changelog(self):
         # PR#201 F1: a fixed-size window read the previous release's bullets as Unreleased entries.
         self.commit({"CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n\n### Added\n\n## [1.0.0]\n- Old entry\n"})
