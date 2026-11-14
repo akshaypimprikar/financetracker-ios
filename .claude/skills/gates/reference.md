@@ -16,7 +16,7 @@ for the two known Xcode 27 patterns.
 
 ## Gate 2 — why zero executed tests fails
 
-Pass: `GATE 2 PASS` with an executed-test count above zero. The count is required because
+Pass: the script prints `[✓] Tests — N tests executed` with N above zero. The count is required because
 `xcodebuild test` reports `** TEST SUCCEEDED **` with exit 0 when a test filter or scheme change
 matches nothing (verified 2026-09-20: `-only-testing:FinanceTrackerTests/<nonexistent suite>` ran zero
 tests and still printed `TEST SUCCEEDED`). Fail: empty log, non-zero exit, any failed test case, or zero
@@ -84,7 +84,7 @@ To drive the full feature-to-PR cycle autonomously (no interval = Claude self-pa
 
 Gates 0–14 are agent-run checks (0–11 through `scripts/check_gates.sh`), so an agent under pressure to make a stuck gate pass — most exposed during an unattended `/loop` run with no human turn in between — could edit a gate definition instead of fixing the underlying violation, then report a clean gate summary. Two layers cut against that:
 
-- **Live:** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` and, best effort, Bash writes to `.claude/skills/*/SKILL.md`, `.claude/skills/*/reference.md`, `scripts/check_*`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*` and `FinanceTrackerTests/ImportHashGoldenTests.swift` while the branch matches `feature/*` (exit 2, with the remedy printed). Each is matched at the repo root or under any subdirectory. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix and checks that its glob list matches the CI script's.
+- **Live:** `.claude/hooks/guard_protected_paths.py`, wired as a `PreToolUse` hook in `.claude/settings.json`, blocks `Write`/`Edit`/`MultiEdit` and, best effort, Bash writes to `.claude/skills/*/SKILL.md`, `.claude/skills/*/reference.md`, `scripts/check_*`, `AGENTS.md`, `CLAUDE.md`, `CONSTRAINTS.md`, `.claude/context/invariants.md`, `.claude/settings.json`, `.claude/hooks/*`, `FinanceTrackerTests/ImportHashGoldenTests.swift`, `scripts/pipeline_lanes.json`, `scripts/detect_build_target.sh`, `scripts/select_simulator.py`, `.github/workflows/*`, `.codex/hooks.json` and `.codex/config.toml` while the branch matches `feature/*` (exit 2, with the remedy printed). Each is matched at the repo root or under any subdirectory. `python3 .claude/hooks/guard_protected_paths.py --self-test` exercises the allow/block matrix and checks that its glob list matches the CI script's.
 - **CI backstop:** Gate 11 (`scripts/check_gate_integrity.py`, check 1) flags the same set on a `feature/*` PR through `GUARDED_PATH_GLOBS`, including a guarded file renamed or copied away. The `gates` CI job (`.github/workflows/gates.yml`) repeats it outside the session using the base branch's copy of the script and runs on every PR, a step in that job runs the hook's self-test (which fails if the hook's and the script's glob lists differ; it runs the PR's own copy, so it catches an honest slip, not a deliberate one), and `/review` re-runs the script. This catches a plain commit and push that never went through Claude Code.
 
 What is not covered:

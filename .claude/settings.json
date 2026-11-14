@@ -152,7 +152,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/skills/' && echo '{\"systemMessage\": \"REMINDER: .claude/skills/ was modified \u2014 run /sync-workflow to propagate changes to pragma.\"}' || true; } 2>/dev/null || true"
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -q '\\.claude/skills/' && echo '{\"systemMessage\": \"REMINDER: .claude/skills/ was modified \u2014 this goes to pragma in the next weekly /sync-workflow batch; do not sync now.\"}' || true; } 2>/dev/null || true"
           }
         ]
       }

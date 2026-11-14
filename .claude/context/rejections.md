@@ -895,3 +895,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** docs/pipeline-review/2026-11-12.md:37
 **Caught by:** this review
+
+## 2026-11-14 — PR#228 — Hook command broken by quoting
+**What was wrong:** The reworded `PostToolUse` skill-edit reminder in `.claude/settings.json` put `don't` inside a single-quoted `echo '...'`. The apostrophe ended the quote, so the whole hook command failed to parse (`bash -n` exit 2) and the reminder could never fire. JSON validation passed, so the break was invisible until the command itself was syntax-checked.
+**Rule violated:** no formal rule, caught in review
+**File:** .claude/settings.json:155
+**Caught by:** this review
