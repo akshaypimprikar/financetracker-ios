@@ -260,8 +260,8 @@ class CheckGatesTests(unittest.TestCase):
         self.assertIn("Existing.swift:1:", out)
 
     def test_sync_branch_passes_naming(self):
-        # /sync-workflow opens its PR from sync/<date>; the sync lane in
-        # pipeline_lanes.json uses the same prefix, so Gate 4 must accept it.
+        # pragma's /sync-workflow opens its PR from sync/<date> (pragma's own
+        # sync lane uses that prefix); check_gates.sh is shared, so Gate 4 accepts it.
         git(self.repo, "branch", "-m", "chore/x", "sync/2026-11-14")
         rc, summary, out = self.run_gates("--only", "4")
         self.assertEqual(rc, 0, out)
