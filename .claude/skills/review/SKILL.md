@@ -23,12 +23,12 @@ Also read the following files if they exist — skip silently if absent:
 How to rate a repeat of an entry in either file is stated under "Judgment checks" below, and the
 subagent gets that wording verbatim.
 
-### Lane, rounds and design mode (docs/superpowers/specs/2026-09-28-pipeline-lanes.md)
+### Lane, rounds and design mode
 
 **Lane first.** Run `python3 scripts/check_pr_lane.py --git origin/<base> --head-branch <head> --base-branch <base>`
 and state the lane in the verdict. The `docs`, `release` and `sync` lanes need no `/review`: say so and stop.
 `app` and `pipeline` continue. `scripts/pipeline_lanes.json` lists what each lane needs to merge; the
-`review-evidence` CI check enforces it.
+`review-evidence` CI check (`scripts/check_review_evidence.py`) enforces it.
 
 **One round by default.** Round 1 reviews the whole PR. Only a blocking finding (see "Merge its output"
 below) sends the PR back. Every other finding gets a GitHub issue and the verdict is APPROVED with the issue
