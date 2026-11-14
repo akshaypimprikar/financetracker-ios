@@ -310,7 +310,7 @@ class CheckGatesTests(unittest.TestCase):
             self.assertIn("— N/A (release/*: checked in each PR to develop)", self.row(summary, name))
 
     def test_release_mode_prefers_origin_develop_over_a_stale_local_develop(self):
-        # #195 review F2: a local develop behind origin/develop made develop's commits look like release changes.
+        # pragma #195 review F2: a local develop behind origin/develop made develop's commits look like release changes.
         self.cut_release({})
         git(self.repo, "update-ref", "refs/remotes/origin/develop", "develop")
         git(self.repo, "branch", "-f", "develop", "main")
@@ -318,6 +318,15 @@ class CheckGatesTests(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn("Lane: release", summary)
         self.assertEqual(self.row(summary, "No TODO/FIXME/HACK"), "[✓] No TODO/FIXME/HACK")
+
+    def test_release_branch_that_adds_code_is_gated(self):
+        # FinanceTracker #233 review: a release/* commit adding untested code got N/A rows and exit 0.
+        self.cut_release({"App/Services/Big.swift": "struct Big {}\n"})
+        rc, summary, out = self.run_gates()
+        self.assertNotIn("Lane: release", summary)
+        self.assertEqual(self.row(summary, "Build"), "[✓] Build")
+        self.assertEqual(self.row(summary, "CHANGELOG"), "[–] CHANGELOG — N/A (release renames [Unreleased])")
+        self.assertNotIn("N/A (release/*", self.row(summary, "Coverage"))
 
     def test_release_branch_still_checks_the_release_commit_itself(self):
         self.cut_release({"App/Services/Existing.swift": "struct Existing {} // TODO: remove\n"})

@@ -26,8 +26,9 @@ scripts/check_gates.sh > "$OUT" 2>&1; RC=$?   # --base main on release/* and hot
 cat "$OUT"; echo "check_gates.sh exit $RC"
 ```
 On `release/*` the script runs in release mode: the gates diff against `origin/develop` (local `develop` if there is
-no remote), so they see only the release commit (every other commit was gated in its own PR to `develop`), and
-Gates 1-2 and 5-9 print `[–] ... — N/A`. The `Lane:` line still uses the PR's base, `main`.
+no remote), so they see only the release commit (every other commit was gated in its own PR to `develop`). Gate 5
+prints `N/A`, and so do Gates 1-2 and 6-9 when the lane is `release`; a release commit that adds code is gated as
+usual. The `Lane:` line still uses `main`. Gates 12 and 13 diff against `origin/develop` on `release/*` too.
 It runs the pre-step and Gates 0–11 in order, prints each gate's details, and ends with the Gate summary block
 (`Gates run at <sha>`, `Lane:`, one line per gate). Paste that block into the PR body as printed; never retype or
 edit it. Exit 0: every blocking gate in it passed. Exit 1: a blocking gate failed — fix it, commit, and re-run.
@@ -176,7 +177,8 @@ change to its own `chore/*` or `fix/*` branch. A missing script fails as `[✗] 
 
 ### Gate 12 — CSV import concurrency shape (conditional: TransactionImportActor.swift changed)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+git diff "$B"...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
   grep -v "^\s*///\|^\s*//" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift | grep -n "@MainActor"
   grep -cE "func (existingHashes|save)\(.*\b(Account|Transaction|Category|Budget|ImportRecord)\b" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
   grep -c "modelContext\.save()" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
@@ -187,7 +189,8 @@ Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
 ### Gate 13 — Visual verification (advisory, conditional: Views/ changed)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/'
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+git diff "$B"...HEAD --name-only -- '*.swift' | grep '/Views/'
 ```
 Skip this gate if this returns no output — no UI-facing changes to verify visually. Also
 skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator tools
