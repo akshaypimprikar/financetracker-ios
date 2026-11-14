@@ -25,6 +25,10 @@ find "$(git rev-parse --git-dir)" -maxdepth 1 -name 'check_gates-*.out' ! -name 
 scripts/check_gates.sh > "$OUT" 2>&1; RC=$?   # --base main on release/* and hotfix/* (the default there); --branch <name> on a detached HEAD
 cat "$OUT"; echo "check_gates.sh exit $RC"
 ```
+On `release/*` the script runs in release mode: the gates diff against `origin/develop` (local `develop` if there is
+no remote), so they see only the release commit (every other commit was gated in its own PR to `develop`). Gate 5
+prints `N/A`, and so do Gates 1-2 and 6-9 when the lane is `release`; a release commit that adds code is gated as
+usual. The `Lane:` line still uses `main`. Gates 12 and 13 diff against `origin/develop` on `release/*` too.
 It runs the pre-step and Gates 0–11 in order, prints each gate's details, and ends with the Gate summary block
 (`Gates run at <sha>`, `Lane:`, one line per gate). Paste that block into the PR body as printed; never retype or
 edit it. Exit 0: every blocking gate in it passed. Exit 1: a blocking gate failed — fix it, commit, and re-run.
@@ -93,7 +97,8 @@ Fail: section missing or empty — create the section and add a one-line summary
 GREEN (implementation) commit carries user-facing content — summarize those, skipping RED (test-only) commits.
 Commit it and re-run the script.
 N/A: a PR that changes only `.claude/context/feature-log.md` (`/release` puts its entry in the release commit);
-the script reports `[–] CHANGELOG — N/A (feature-log only)`.
+the script reports `[–] CHANGELOG — N/A (feature-log only)`. On `release/*` it reports
+`[–] CHANGELOG — N/A (release renames [Unreleased])`, because `/release` turns that section into the version heading.
 
 ### Gate 6 — Coverage (conditional: new Swift files on branch)
 Each new non-test `.swift` file must reach ≥80% line coverage in Gate 2's result bundle (`xccov`). Skipped:
@@ -121,7 +126,9 @@ Runs `scripts/check_tdd_commit_order.py <base>`. For every new file in a scoped 
 `Services/`, `Repositories/SwiftData/` — set `project.architecture` in `scripts/pipeline_lanes.json`, or list your
 own folders in `project.scoped_layer_dirs`) that has a matching `*Tests.swift` file, the test file must be added in a
 strictly earlier commit than the implementation — never the same commit, never a later one (why: `reference.md`
-§ Gate 9). Fail: fix by re-doing the task as two commits (test-only, confirm it fails, then implementation) per
+§ Gate 9). When several test files share that name, the one whose folders mirror the source file's is used; a tie
+fails and names the files, so move or rename one (it fails even when both tests predate the branch).
+Fail: fix by re-doing the task as two commits (test-only, confirm it fails, then implementation) per
 `/feature`'s per-task rules. Exit 2 (the configured layer names match no file in the repo, e.g. after a folder
 rename) is reported `[✗]`, never a pass: update `project.architecture` or `project.scoped_layer_dirs`. A branch that
 adds no `.swift` file has nothing to check, so the script skips the gate without running the TDD script. Rewriting
@@ -161,7 +168,7 @@ dependency, out of scope here. A dimensionless ratio is the accepted exception: 
 found", not proof.
 
 ### Gate 11 — Gate integrity (floor-guard)
-Runs `scripts/check_gate_integrity.py <base> <branch>` (`main` on `release/*` and `hotfix/*`). Detects
+Runs `scripts/check_gate_integrity.py <base> <branch>` (`develop` on `release/*`, `main` on `hotfix/*`). Detects
 gate-weakening — a gate-definition file edited on a `feature/*` branch, a test deleted instead of fixed, a new
 suppression marker, an unfinished stub, or a lowered threshold — rather than code-quality issues. It is the
 diff-detectable half of "Guard against self-modifying guardrail files" below; the live half is
@@ -170,7 +177,8 @@ change to its own `chore/*` or `fix/*` branch. A missing script fails as `[✗] 
 
 ### Gate 12 — CSV import concurrency shape (conditional: TransactionImportActor.swift changed)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+git diff "$B"...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
   grep -v "^\s*///\|^\s*//" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift | grep -n "@MainActor"
   grep -cE "func (existingHashes|save)\(.*\b(Account|Transaction|Category|Budget|ImportRecord)\b" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
   grep -c "modelContext\.save()" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
@@ -181,7 +189,8 @@ Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
 ### Gate 13 — Visual verification (advisory, conditional: Views/ changed)
 ```bash
-git diff develop...HEAD --name-only -- '*.swift' | grep '/Views/'
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+git diff "$B"...HEAD --name-only -- '*.swift' | grep '/Views/'
 ```
 Skip this gate if this returns no output — no UI-facing changes to verify visually. Also
 skip, reporting `[–] Visual verification — skipped (XcodeBuildMCP simulator tools
@@ -201,6 +210,8 @@ if [ ! -s "$OUT" ]; then
   echo "GOLDEN FAIL: no check_gates.sh output for this commit; run the script first"
 elif grep -q '^\[–\] Build — skipped (no build-relevant changes)$' "$OUT"; then
   echo "GOLDEN SKIP: no build-relevant changes (Gate 0 empty)"
+elif grep -q '^\[–\] Build — N/A' "$OUT"; then
+  echo "GOLDEN SKIP: release/* (Gate 1 N/A; the suite ran in each PR to develop)"
 elif ! grep -q '^\[✓\] Build$' "$OUT"; then
   echo "GOLDEN SKIP: Gate 1 did not pass"
 elif ! git cat-file -e develop:FinanceTrackerTests/ImportHashGoldenTests.swift 2>/dev/null; then
