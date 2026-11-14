@@ -163,6 +163,8 @@ fix/*       — off develop (hotfix/* off main)
 release/*   — off develop, PR to main, back-merged to develop
 spec/*      — off develop, for spec + plan docs
 design/*    — off develop, for Theme token additions
+chore/*     — off develop, for maintenance (pipeline, docs, settings)
+ci/*        — off develop, for pipeline/infrastructure work
 ```
 
 ---
