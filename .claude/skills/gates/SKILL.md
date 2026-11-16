@@ -177,7 +177,7 @@ change to its own `chore/*` or `fix/*` branch. A missing script fails as `[✗] 
 
 ### Gate 12 — CSV import concurrency shape (conditional: TransactionImportActor.swift changed)
 ```bash
-B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop; git rev-parse -q --verify "$B^{commit}" >/dev/null || B=develop ;; esac   # as the script's release mode
 git diff "$B"...HEAD --name-only -- '*.swift' | grep -q "TransactionImportActor.swift" && {
   grep -v "^\s*///\|^\s*//" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift | grep -n "@MainActor"
   grep -cE "func (existingHashes|save)\(.*\b(Account|Transaction|Category|Budget|ImportRecord)\b" FinanceTracker/Repositories/SwiftData/TransactionImportActor.swift
@@ -189,7 +189,7 @@ Skip this gate if `TransactionImportActor.swift` is untouched on this branch.
 
 ### Gate 13 — Visual verification (advisory, conditional: Views/ changed)
 ```bash
-B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop ;; esac   # as the script's release mode
+B=develop; case "$(git branch --show-current)" in release/*) B=origin/develop; git rev-parse -q --verify "$B^{commit}" >/dev/null || B=develop ;; esac   # as the script's release mode
 git diff "$B"...HEAD --name-only -- '*.swift' | grep '/Views/'
 ```
 Skip this gate if this returns no output — no UI-facing changes to verify visually. Also
