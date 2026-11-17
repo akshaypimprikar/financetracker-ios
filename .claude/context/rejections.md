@@ -943,3 +943,9 @@
 **Rule violated:** no formal rule, caught in review (guard bypass)
 **File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs), CHANGELOG.md, .claude/skills/gates/reference.md
 **Caught by:** this review
+
+## 2026-11-17 — PR#234 — Repo walk after the 20 s deadline still let the hook run past its timeout (repeats pragma PR#140)
+**What was wrong:** the round-2 fix's deadline guarded only `resolve_both`/`existing_dir`; the later `for d in dirs` loop ran an uncached `repo_root` per (duplicated) directory, so `patch` + `-da ` x 8000 from a 430-deep cwd ran over 70 s and fails open. Found by pragma#196's confirm review of the same hook after this PR's round 3.
+**Rule violated:** repeats the pragma 2026-11-03 PR#140 Round 6/7 entries (super-linear work lets a hook timeout fail open)
+**File:** .claude/hooks/guard_protected_paths.py (evaluate repo walk)
+**Caught by:** akshaypimprikar/pragma#196 Round confirm on 2d71985
