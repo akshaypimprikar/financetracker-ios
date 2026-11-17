@@ -931,3 +931,15 @@
 **Rule violated:** repeats the 2026-10-07 PR#163 and 2026-11-11 PR#214 entries (CHANGELOG states a blocking rule without its exceptions)
 **File:** CHANGELOG.md, .claude/skills/gates/reference.md
 **Caught by:** this review
+
+## 2026-11-17 — PR#234 — Round 2: uncached realpath let a deep-tree patch-tool check outrun the hook timeout (repeats PR#140)
+**What was wrong:** the round-1 fix's `resolve_both()` called `os.path.realpath` per path inside loops capped only by item count, so 24 deep `a/.../../n` header names ran 82 s (over 120 s on Python 3.9), past the 60 s hook timeout, which fails open.
+**Rule violated:** repeats the pragma 2026-11-03 PR#140 Round 6/7 entries (super-linear work lets a hook timeout fail open)
+**File:** .claude/hooks/guard_protected_paths.py (resolve_both, diff_header_dirs)
+**Caught by:** this review
+
+## 2026-11-17 — PR#234 — Round 2: `git${IFS}apply` behind find -exec, watch or parallel still ran unseen
+**What was wrong:** the round-1 fix checked for a `$`-built `git` word only up to the parsed command word, so `find . -exec git${IFS}apply x.diff ';'`, `watch`, `parallel` and `chronic` forms exited 0 on feature/* and wrote `CLAUDE.md`; the docs said such a word "counts as a run".
+**Rule violated:** no formal rule, caught in review (guard bypass)
+**File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs), CHANGELOG.md, .claude/skills/gates/reference.md
+**Caught by:** this review
