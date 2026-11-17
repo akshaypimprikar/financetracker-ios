@@ -907,3 +907,9 @@
 **Rule violated:** no formal rule, caught in review
 **File:** CHANGELOG.md:10, scripts/tests/test_check_gates.py
 **Caught by:** this review
+
+## 2026-11-14 — PR#233 — Release mode skipped gates for any release/* branch
+**What was wrong:** `check_gates.sh` release mode printed N/A for Gates 1-2 and 6-9 on every `release/*` branch, so a release commit that adds untested code (lane `app`) passed with exit 0.
+**Rule violated:** no formal rule, caught in review
+**File:** scripts/check_gates.sh:49
+**Caught by:** this review
