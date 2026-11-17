@@ -913,3 +913,21 @@
 **Rule violated:** no formal rule, caught in review
 **File:** scripts/check_gates.sh:49
 **Caught by:** this review
+
+## 2026-11-17 — PR#234 — Round 1: `git${IFS}apply` ran git apply on feature/* unseen
+**What was wrong:** `DIFF_TOOL_NAME` needed whitespace after `git`, and the tokenizer reads `git${IFS}apply` as one word (zsh `git${=IFS}apply` even as an assignment), so the hook exited 0 and the zsh form overwrote `CLAUDE.md` on a feature branch.
+**Rule violated:** no formal rule, caught in review (guard bypass)
+**File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs)
+**Caught by:** this review
+
+## 2026-11-17 — PR#234 — Round 1: relative and symlinked diff-header names reached a feature repo
+**What was wrong:** only absolute or `..` diff-header names were read and paths resolved lexically, so a diff naming `feat/CLAUDE.md` from a non-repo parent folder, `lnk2/CLAUDE.md` through a chore-repo symlink, and `git -C lnk/.. apply` wrote into a `feature/*` repo with exit 0.
+**Rule violated:** no formal rule, caught in review (guard bypass)
+**File:** .claude/hooks/guard_protected_paths.py (diff_header_dirs, named_dirs)
+**Caught by:** this review
+
+## 2026-11-17 — PR#234 — Round 1: docs said only a variable-named diff file blocks on every branch (repeats PR#163, PR#214)
+**What was wrong:** CHANGELOG and `gates/reference.md` said only a file named through a variable or `$( )` blocks on every branch, but any `$` or backtick outside single quotes in a patch-tool command does (`npm version patch -m "v$V"`).
+**Rule violated:** repeats the 2026-10-07 PR#163 and 2026-11-11 PR#214 entries (CHANGELOG states a blocking rule without its exceptions)
+**File:** CHANGELOG.md, .claude/skills/gates/reference.md
+**Caught by:** this review
