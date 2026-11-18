@@ -973,3 +973,9 @@
 **Rule violated:** the 2026-11-18 "a false-block fix must not reopen a bypass the previous form closed" rule
 **File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs)
 **Caught by:** this review (Round confirm on 82b251e)
+
+## 2026-11-18 — PR#234 — A closed launcher list for the `git$` word check kept leaking
+**What was wrong:** the `git$` word check ran only after `eval`/`watch`/`parallel`/`find -exec`; `trap`, `fd -x`, `entr` and quotes inside an eval string still ran unseen on feature/*.
+**Rule violated:** pragma #140's lesson (a denylist of ways to run a tool keeps leaking; fail closed instead)
+**File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs)
+**Caught by:** background security scan on c237e95
