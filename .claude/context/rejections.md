@@ -961,3 +961,15 @@
 **Rule violated:** a false-block fix must not reopen a bypass the previous form closed
 **File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs)
 **Caught by:** this review (Round confirm on e50724f)
+
+## 2026-11-18 — PR#234 — Shell apply_patch names x directories built before any deadline (repeats PR#140 in pragma)
+**What was wrong:** `patch_targets` built every (name, directory) pair before `dirs` was deduped or any deadline applied; 3,000 `cd .;` plus an 800-name `apply_patch` heredoc from a 430-deep cwd took 99 s on `/usr/bin/python3`, so the hook timed out and failed open.
+**Rule violated:** repeats pragma's 2026-11-03 PR#140 Round 6/7 entries and the 2026-11-18 write-target timeout entry
+**File:** .claude/hooks/guard_protected_paths.py (evaluate, patch_targets)
+**Caught by:** this review (Round confirm on 82b251e)
+
+## 2026-11-18 — PR#234 — Documented a reopened bypass instead of closing it
+**What was wrong:** `find . -exec bin/git${IFS}apply` was listed as "not seen"; `eval`, `find -exec`, `watch` and `parallel` with a bare relative path to a `$`-built git ran unseen on feature/* and changed CLAUDE.md.
+**Rule violated:** the 2026-11-18 "a false-block fix must not reopen a bypass the previous form closed" rule
+**File:** .claude/hooks/guard_protected_paths.py (diff_apply_dirs)
+**Caught by:** this review (Round confirm on 82b251e)
